@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: x-image-finder-v1
+    runtime: docker
+    plan: free
+    autoDeploy: false
