@@ -13,7 +13,7 @@
              viewport-fit=cover"
 >
 
-<title>X 图片找图器</title>
+<title>X 媒体找图器</title>
 
 <style>
 
@@ -36,8 +36,8 @@ body {
 
 .container {
     width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
+    max-width: 950px;
+    margin: auto;
     padding:
         calc(18px + env(safe-area-inset-top))
         14px
@@ -45,8 +45,8 @@ body {
 }
 
 h1 {
-    font-size: 25px;
     margin: 0 0 6px;
+    font-size: 25px;
 }
 
 .subtitle {
@@ -66,8 +66,8 @@ h1 {
 
 label {
     display: block;
-    font-size: 13px;
     color: #666;
+    font-size: 13px;
     margin-bottom: 7px;
 }
 
@@ -79,7 +79,7 @@ input[type="date"] {
     border-radius: 11px;
     padding: 0 12px;
     font-size: 16px;
-    background: #fff;
+    background: white;
     outline: none;
 }
 
@@ -93,14 +93,17 @@ input:focus {
     gap: 10px;
 }
 
-.quick-buttons {
+.section {
+    margin-top: 15px;
+}
+
+.option-row {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
-    margin-top: 10px;
 }
 
-.quick {
+.option {
     border: 1px solid #ddd;
     background: #fafafa;
     border-radius: 20px;
@@ -108,7 +111,7 @@ input:focus {
     font-size: 13px;
 }
 
-.quick.active {
+.option.active {
     background: #111;
     color: white;
     border-color: #111;
@@ -123,7 +126,7 @@ input:focus {
     color: white;
     font-size: 16px;
     font-weight: 600;
-    margin-top: 14px;
+    margin-top: 16px;
 }
 
 .primary:disabled {
@@ -144,13 +147,13 @@ input:focus {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
     margin-bottom: 12px;
 }
 
 .result-count {
-    font-size: 14px;
-    color: #666;
+    color: #777;
+    font-size: 13px;
+    margin-top: 4px;
 }
 
 .gallery {
@@ -164,39 +167,66 @@ input:focus {
     background: white;
     border-radius: 12px;
     overflow: hidden;
-    position: relative;
 }
 
-.item img {
+.media-wrap {
+    position: relative;
+    background: #eee;
+}
+
+.media-wrap img {
     display: block;
     width: 100%;
     height: auto;
     cursor: pointer;
 }
 
+.video-badge {
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    background: rgba(0,0,0,.75);
+    color: white;
+    border-radius: 20px;
+    padding: 5px 9px;
+    font-size: 11px;
+}
+
+.source-badge {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    background: rgba(0,0,0,.75);
+    color: white;
+    border-radius: 20px;
+    padding: 5px 9px;
+    font-size: 11px;
+}
+
 .item-info {
-    padding: 8px 9px;
+    padding: 8px;
 }
 
 .item-date {
-    font-size: 11px;
     color: #888;
+    font-size: 11px;
 }
 
 .item-actions {
-    display: flex;
-    gap: 6px;
-    margin-top: 6px;
+    display: grid;
+    grid-template-columns:
+        1fr 1fr 1fr;
+    gap: 5px;
+    margin-top: 7px;
 }
 
 .small-btn {
-    flex: 1;
-    min-width: 0;
     height: 34px;
     border: 1px solid #ddd;
     background: white;
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 11px;
+    padding: 0 3px;
 }
 
 .small-btn:active {
@@ -209,23 +239,24 @@ input:focus {
     color: #777;
 }
 
-.hidden {
-    display: none !important;
-}
-
-/* 大图 */
+/* 大图 / 视频 */
 
 .modal {
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: rgba(0,0,0,.94);
+    background: rgba(0,0,0,.95);
     display: flex;
     flex-direction: column;
 }
 
+.modal.hidden,
+.hidden {
+    display: none !important;
+}
+
 .modal-top {
-    height: 58px;
+    min-height: 58px;
     padding:
         env(safe-area-inset-top)
         12px
@@ -241,7 +272,6 @@ input:focus {
     color: white;
     border-radius: 20px;
     padding: 8px 13px;
-    font-size: 14px;
 }
 
 .modal-content {
@@ -259,10 +289,14 @@ input:focus {
     object-fit: contain;
 }
 
+.modal-content video {
+    max-width: 100%;
+    max-height: 100%;
+}
+
 .modal-bottom {
     padding:
-        10px
-        12px
+        10px 12px
         calc(12px + env(safe-area-inset-bottom));
     display: flex;
     gap: 8px;
@@ -302,204 +336,287 @@ input:focus {
 
 <div class="container">
 
-    <h1>🖼️ X 图片找图器</h1>
+<h1>🖼️ X 媒体找图器</h1>
 
-    <div class="subtitle">
-        输入 X 博主主页，只显示他发过的图片
-    </div>
+<div class="subtitle">
+输入 X 博主主页，快速查找其发布的图片和视频
+</div>
 
-    <div class="card">
 
-        <label>
-            X 博主主页
-        </label>
+<div class="card">
 
-        <input
-            id="profile"
-            type="text"
-            placeholder="例如：https://x.com/NASA"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-        >
+<label>
+X 博主主页
+</label>
 
-        <label
-            style="margin-top:15px;"
-        >
-            时间范围
-        </label>
+<input
+    id="profile"
+    type="text"
+    placeholder="例如：https://x.com/NASA"
+    autocomplete="off"
+    autocapitalize="off"
+    spellcheck="false"
+/>
 
-        <div class="quick-buttons">
 
-            <button
-                class="quick active"
-                data-range="all"
-            >
-                全部
-            </button>
+<div class="section">
 
-            <button
-                class="quick"
-                data-range="7"
-            >
-                最近7天
-            </button>
+<label>
+时间范围
+</label>
 
-            <button
-                class="quick"
-                data-range="30"
-            >
-                最近30天
-            </button>
+<div class="option-row">
 
-            <button
-                class="quick"
-                data-range="365"
-            >
-                最近1年
-            </button>
+<button
+    class="option active"
+    data-group="range"
+    data-value="all"
+>
+全部
+</button>
 
-            <button
-                class="quick"
-                data-range="custom"
-            >
-                自定义
-            </button>
+<button
+    class="option"
+    data-group="range"
+    data-value="7"
+>
+最近7天
+</button>
 
-        </div>
+<button
+    class="option"
+    data-group="range"
+    data-value="30"
+>
+最近30天
+</button>
 
-        <div
-            id="customDates"
-            class="date-row hidden"
-            style="margin-top:12px;"
-        >
+<button
+    class="option"
+    data-group="range"
+    data-value="365"
+>
+最近1年
+</button>
 
-            <div>
+<button
+    class="option"
+    data-group="range"
+    data-value="custom"
+>
+自定义
+</button>
 
-                <label>
-                    开始日期
-                </label>
-
-                <input
-                    id="startDate"
-                    type="date"
-                >
-
-            </div>
-
-            <div>
-
-                <label>
-                    结束日期
-                </label>
-
-                <input
-                    id="endDate"
-                    type="date"
-                >
-
-            </div>
-
-        </div>
-
-        <button
-            id="searchButton"
-            class="primary"
-        >
-            开始找图
-        </button>
-
-    </div>
-
-    <div
-        id="statusCard"
-        class="card hidden"
-    >
-
-        <div
-            id="status"
-            class="status"
-        ></div>
-
-    </div>
-
-    <div
-        id="resultCard"
-        class="card hidden"
-    >
-
-        <div class="result-header">
-
-            <div>
-
-                <strong id="resultTitle">
-                    图片
-                </strong>
-
-                <div
-                    id="resultCount"
-                    class="result-count"
-                ></div>
-
-            </div>
-
-        </div>
-
-        <div
-            id="gallery"
-            class="gallery"
-        ></div>
-
-    </div>
+</div>
 
 </div>
 
 
-<!-- 大图 -->
+<div
+    id="customDates"
+    class="date-row hidden"
+    style="margin-top:12px;"
+>
+
+<div>
+
+<label>
+开始日期
+</label>
+
+<input
+    id="startDate"
+    type="date"
+/>
+
+</div>
+
+<div>
+
+<label>
+结束日期
+</label>
+
+<input
+    id="endDate"
+    type="date"
+/>
+
+</div>
+
+</div>
+
+
+<div class="section">
+
+<label>
+媒体类型
+</label>
+
+<div class="option-row">
+
+<button
+    class="option active"
+    data-group="media"
+    data-value="photo"
+>
+🖼️ 图片
+</button>
+
+<button
+    class="option"
+    data-group="media"
+    data-value="video"
+>
+🎬 视频
+</button>
+
+<button
+    class="option"
+    data-group="media"
+    data-value="all"
+>
+🖼️+🎬 全部
+</button>
+
+</div>
+
+</div>
+
+
+<div class="section">
+
+<label>
+帖子来源
+</label>
+
+<div class="option-row">
+
+<button
+    class="option active"
+    data-group="source"
+    data-value="all"
+>
+全部
+</button>
+
+<button
+    class="option"
+    data-group="source"
+    data-value="original"
+>
+原创
+</button>
+
+<button
+    class="option"
+    data-group="source"
+    data-value="repost"
+>
+转帖 / 引用
+</button>
+
+</div>
+
+</div>
+
+
+<button
+    id="searchButton"
+    class="primary"
+>
+开始找图
+</button>
+
+</div>
+
+
+<div
+    id="statusCard"
+    class="card hidden"
+>
+
+<div
+    id="status"
+    class="status"
+></div>
+
+</div>
+
+
+<div
+    id="resultCard"
+    class="card hidden"
+>
+
+<div class="result-header">
+
+<div>
+
+<strong id="resultTitle">
+图片
+</strong>
+
+<div
+    id="resultCount"
+    class="result-count"
+></div>
+
+</div>
+
+</div>
+
+<div
+    id="gallery"
+    class="gallery"
+></div>
+
+</div>
+
+</div>
+
+
+<!-- 大图 / 视频 -->
 
 <div
     id="modal"
     class="modal hidden"
 >
 
-    <div class="modal-top">
+<div class="modal-top">
 
-        <button
-            id="closeModal"
-            class="modal-button"
-        >
-            ✕ 关闭
-        </button>
+<button
+    id="closeModal"
+    class="modal-button"
+>
+✕ 关闭
+</button>
 
-    </div>
+</div>
 
-    <div class="modal-content">
+<div
+    id="modalContent"
+    class="modal-content"
+>
+</div>
 
-        <img
-            id="modalImage"
-            src=""
-            alt=""
-        >
+<div class="modal-bottom">
 
-    </div>
+<button
+    id="downloadButton"
+    class="download"
+>
+⬇ 下载原图
+</button>
 
-    <div class="modal-bottom">
+<button
+    id="originalButton"
+    class="original"
+>
+🔗 打开原帖
+</button>
 
-        <button
-            id="downloadButton"
-            class="download"
-        >
-            ⬇ 下载原图
-        </button>
-
-        <button
-            id="originalButton"
-            class="original"
-        >
-            🔗 打开原帖
-        </button>
-
-    </div>
+</div>
 
 </div>
 
@@ -507,102 +624,178 @@ input:focus {
 <script>
 
 const profileInput =
-    document.getElementById("profile");
+    document.getElementById(
+        "profile"
+    );
 
 const searchButton =
-    document.getElementById("searchButton");
+    document.getElementById(
+        "searchButton"
+    );
 
 const statusCard =
-    document.getElementById("statusCard");
+    document.getElementById(
+        "statusCard"
+    );
 
 const status =
-    document.getElementById("status");
+    document.getElementById(
+        "status"
+    );
 
 const resultCard =
-    document.getElementById("resultCard");
+    document.getElementById(
+        "resultCard"
+    );
 
 const resultTitle =
-    document.getElementById("resultTitle");
+    document.getElementById(
+        "resultTitle"
+    );
 
 const resultCount =
-    document.getElementById("resultCount");
+    document.getElementById(
+        "resultCount"
+    );
 
 const gallery =
-    document.getElementById("gallery");
+    document.getElementById(
+        "gallery"
+    );
 
 const customDates =
-    document.getElementById("customDates");
+    document.getElementById(
+        "customDates"
+    );
 
 const startDate =
-    document.getElementById("startDate");
+    document.getElementById(
+        "startDate"
+    );
 
 const endDate =
-    document.getElementById("endDate");
+    document.getElementById(
+        "endDate"
+    );
 
 const modal =
-    document.getElementById("modal");
+    document.getElementById(
+        "modal"
+    );
 
-const modalImage =
-    document.getElementById("modalImage");
+const modalContent =
+    document.getElementById(
+        "modalContent"
+    );
 
 const closeModal =
-    document.getElementById("closeModal");
+    document.getElementById(
+        "closeModal"
+    );
 
 const downloadButton =
-    document.getElementById("downloadButton");
+    document.getElementById(
+        "downloadButton"
+    );
 
 const originalButton =
-    document.getElementById("originalButton");
+    document.getElementById(
+        "originalButton"
+    );
 
 
-let selectedRange = "all";
+let range =
+    "all";
 
-let currentImage = null;
+let mediaType =
+    "photo";
+
+let sourceType =
+    "all";
+
+let currentItem =
+    null;
 
 
-/* 时间快捷按钮 */
+/* -------------------------------------------------
+   菜单
+------------------------------------------------- */
 
 document
-    .querySelectorAll(".quick")
+    .querySelectorAll(".option")
     .forEach(button => {
 
         button.addEventListener(
             "click",
             () => {
 
+                const group =
+                    button.dataset.group;
+
+                const value =
+                    button.dataset.value;
+
                 document
-                    .querySelectorAll(".quick")
-                    .forEach(b =>
+                    .querySelectorAll(
+                        `.option[data-group="${group}"]`
+                    )
+                    .forEach(b => {
+
                         b.classList.remove(
                             "active"
-                        )
-                    );
+                        );
+
+                    });
 
                 button.classList.add(
                     "active"
                 );
 
-                selectedRange =
-                    button.dataset.range;
-
                 if (
-                    selectedRange ===
-                    "custom"
+                    group === "range"
                 ) {
 
-                    customDates
-                        .classList
-                        .remove(
-                            "hidden"
-                        );
+                    range =
+                        value;
 
-                } else {
+                    if (
+                        value ===
+                        "custom"
+                    ) {
 
-                    customDates
-                        .classList
-                        .add(
-                            "hidden"
-                        );
+                        customDates
+                            .classList
+                            .remove(
+                                "hidden"
+                            );
+
+                    } else {
+
+                        customDates
+                            .classList
+                            .add(
+                                "hidden"
+                            );
+
+                    }
+
+                }
+
+                if (
+                    group === "media"
+                ) {
+
+                    mediaType =
+                        value;
+
+                }
+
+                if (
+                    group === "source"
+                ) {
+
+                    sourceType =
+                        value;
 
                 }
 
@@ -612,76 +805,13 @@ document
     });
 
 
-/* 设置日期 */
+/* -------------------------------------------------
+   日期
+------------------------------------------------- */
 
-function getDates() {
-
-    const now =
-        new Date();
-
-    let start = null;
-    let end = null;
-
-    if (
-        selectedRange ===
-        "custom"
-    ) {
-
-        start =
-            startDate.value || null;
-
-        end =
-            endDate.value || null;
-
-        return {
-            start,
-            end
-        };
-
-    }
-
-    if (
-        selectedRange ===
-        "all"
-    ) {
-
-        return {
-            start: null,
-            end: null
-        };
-
-    }
-
-    const days =
-        Number(
-            selectedRange
-        );
-
-    const startDateObj =
-        new Date(now);
-
-    startDateObj.setDate(
-        startDateObj.getDate()
-        - days
-    );
-
-    start =
-        formatDate(
-            startDateObj
-        );
-
-    end =
-        formatDate(now);
-
-    return {
-        start,
-        end
-    };
-
-}
-
-
-function formatDate(date) {
+function formatDate(
+    date
+) {
 
     const y =
         date.getFullYear();
@@ -701,7 +831,62 @@ function formatDate(date) {
 }
 
 
-/* 开始搜索 */
+function getDates() {
+
+    if (
+        range ===
+        "all"
+    ) {
+
+        return {
+            start: null,
+            end: null
+        };
+
+    }
+
+    if (
+        range ===
+        "custom"
+    ) {
+
+        return {
+            start:
+                startDate.value ||
+                null,
+
+            end:
+                endDate.value ||
+                null
+        };
+
+    }
+
+    const now =
+        new Date();
+
+    const start =
+        new Date(now);
+
+    start.setDate(
+        start.getDate()
+        - Number(range)
+    );
+
+    return {
+        start:
+            formatDate(start),
+
+        end:
+            formatDate(now)
+    };
+
+}
+
+
+/* -------------------------------------------------
+   搜索
+------------------------------------------------- */
 
 searchButton.addEventListener(
     "click",
@@ -763,11 +948,7 @@ async function search() {
         true;
 
     searchButton.textContent =
-        "正在寻找图片…";
-
-    resultCard.classList.add(
-        "hidden"
-    );
+        "正在寻找媒体…";
 
     statusCard.classList.remove(
         "hidden"
@@ -777,7 +958,11 @@ async function search() {
         "status";
 
     status.textContent =
-        "正在连接图片数据源…";
+        "正在连接 X 媒体数据源…";
+
+    resultCard.classList.add(
+        "hidden"
+    );
 
     gallery.innerHTML = "";
 
@@ -789,6 +974,16 @@ async function search() {
         params.set(
             "profile",
             profile
+        );
+
+        params.set(
+            "media_type",
+            mediaType
+        );
+
+        params.set(
+            "source_type",
+            sourceType
         );
 
         if (dates.start) {
@@ -826,7 +1021,9 @@ async function search() {
 
         }
 
-        renderResults(data);
+        renderResults(
+            data
+        );
 
     } catch (error) {
 
@@ -848,9 +1045,9 @@ async function search() {
 }
 
 
-/* 显示错误 */
-
-function showError(message) {
+function showError(
+    message
+) {
 
     statusCard.classList.remove(
         "hidden"
@@ -865,9 +1062,13 @@ function showError(message) {
 }
 
 
-/* 显示结果 */
+/* -------------------------------------------------
+   结果
+------------------------------------------------- */
 
-function renderResults(data) {
+function renderResults(
+    data
+) {
 
     statusCard.classList.add(
         "hidden"
@@ -881,7 +1082,7 @@ function renderResults(data) {
         `@${data.username}`;
 
     resultCount.textContent =
-        `找到 ${data.count} 张图片 · 查询了 ${data.pages} 页`;
+        `找到 ${data.count} 个媒体 · 查询 ${data.pages} 页`;
 
     if (
         !data.items ||
@@ -890,7 +1091,7 @@ function renderResults(data) {
 
         gallery.innerHTML = `
             <div class="loader">
-                这个时间范围内没有找到图片。
+                这个条件下没有找到媒体。
             </div>
         `;
 
@@ -901,11 +1102,8 @@ function renderResults(data) {
     data.items.forEach(
         item => {
 
-            const element =
-                createItem(item);
-
             gallery.appendChild(
-                element
+                createItem(item)
             );
 
         }
@@ -914,9 +1112,159 @@ function renderResults(data) {
 }
 
 
-/* 创建图片 */
+/* -------------------------------------------------
+   文件名
+------------------------------------------------- */
 
-function createItem(item) {
+function getFilename(
+    item
+) {
+
+    /*
+      规则：
+
+      单图：
+      2026-08-11.jpg
+
+      同一帖子多图：
+      2026-08-11-1.jpg
+      2026-08-11-2.jpg
+
+      视频：
+      2026-08-11.mp4
+
+      不加入具体时间。
+    */
+
+    const match =
+        item.created_at.match(
+            /(\w+)\s+(\w+)\s+(\d+).*?(\d{4})$/
+        );
+
+    let date =
+        formatDateFromX(
+            item.created_at
+        );
+
+    if (!date) {
+
+        date =
+            "x-media";
+
+    }
+
+    let suffix =
+        "";
+
+    if (
+        item.media_total &&
+        item.media_total > 1
+    ) {
+
+        suffix =
+            `-${item.media_index}`;
+
+    }
+
+    let extension =
+        ".jpg";
+
+    if (
+        item.media_type ===
+        "video"
+    ) {
+
+        extension =
+            ".mp4";
+
+    } else if (
+        item.media_url
+        &&
+        item.media_url
+            .toLowerCase()
+            .includes(".png")
+    ) {
+
+        extension =
+            ".png";
+
+    } else if (
+        item.media_url
+        &&
+        item.media_url
+            .toLowerCase()
+            .includes(".webp")
+    ) {
+
+        extension =
+            ".webp";
+
+    }
+
+    return (
+        `${date}${suffix}${extension}`
+    );
+
+}
+
+
+function formatDateFromX(
+    value
+) {
+
+    if (!value) {
+        return null;
+    }
+
+    const match =
+        value.match(
+            /^\w+\s+(\w+)\s+(\d+).*?(\d{4})$/
+        );
+
+    if (!match) {
+        return null;
+    }
+
+    const months = {
+        Jan: "01",
+        Feb: "02",
+        Mar: "03",
+        Apr: "04",
+        May: "05",
+        Jun: "06",
+        Jul: "07",
+        Aug: "08",
+        Sep: "09",
+        Oct: "10",
+        Nov: "11",
+        Dec: "12"
+    };
+
+    const month =
+        months[match[1]];
+
+    if (!month) {
+        return null;
+    }
+
+    return (
+        `${match[3]}-` +
+        `${month}-` +
+        `${String(
+            match[2]
+        ).padStart(2, "0")}`
+    );
+
+}
+
+
+/* -------------------------------------------------
+   创建媒体卡片
+------------------------------------------------- */
+
+function createItem(
+    item
+) {
 
     const wrapper =
         document.createElement(
@@ -926,30 +1274,106 @@ function createItem(item) {
     wrapper.className =
         "item";
 
+
+    const mediaWrap =
+        document.createElement(
+            "div"
+        );
+
+    mediaWrap.className =
+        "media-wrap";
+
+
     const img =
         document.createElement(
             "img"
         );
 
-    img.src =
-        item.image;
+    if (
+        item.media_type ===
+        "video"
+    ) {
+
+        img.src =
+            item.thumbnail ||
+            "";
+
+    } else {
+
+        img.src =
+            item.media_url;
+
+    }
 
     img.loading =
         "lazy";
 
     img.alt =
-        item.alt || "";
+        item.alt ||
+        "";
 
     img.addEventListener(
         "click",
-        () => {
-
-            openModal(item);
-
-        }
+        () => openModal(item)
     );
 
-    wrapper.appendChild(img);
+    mediaWrap.appendChild(
+        img
+    );
+
+
+    if (
+        item.media_type ===
+        "video"
+    ) {
+
+        const badge =
+            document.createElement(
+                "div"
+            );
+
+        badge.className =
+            "video-badge";
+
+        badge.textContent =
+            "▶ 视频";
+
+        mediaWrap.appendChild(
+            badge
+        );
+
+    }
+
+
+    if (
+        item.source !==
+        "original"
+    ) {
+
+        const source =
+            document.createElement(
+                "div"
+            );
+
+        source.className =
+            "source-badge";
+
+        source.textContent =
+            item.source ===
+            "repost"
+                ? "转帖"
+                : "引用";
+
+        mediaWrap.appendChild(
+            source
+        );
+
+    }
+
+
+    wrapper.appendChild(
+        mediaWrap
+    );
 
 
     const info =
@@ -970,11 +1394,14 @@ function createItem(item) {
         "item-date";
 
     date.textContent =
-        formatDisplayDate(
+        formatDateFromX(
             item.created_at
-        );
+        ) ||
+        item.created_at;
 
-    info.appendChild(date);
+    info.appendChild(
+        date
+    );
 
 
     const actions =
@@ -986,35 +1413,58 @@ function createItem(item) {
         "item-actions";
 
 
-    const viewButton =
+    const view =
         document.createElement(
             "button"
         );
 
-    viewButton.className =
+    view.className =
         "small-btn";
 
-    viewButton.textContent =
-        "查看大图";
+    view.textContent =
+        item.media_type ===
+        "video"
+            ? "▶ 播放"
+            : "查看大图";
 
-    viewButton.addEventListener(
+    view.addEventListener(
         "click",
         () => openModal(item)
     );
 
 
-    const postButton =
+    const download =
         document.createElement(
             "button"
         );
 
-    postButton.className =
+    download.className =
         "small-btn";
 
-    postButton.textContent =
+    download.textContent =
+        item.media_type ===
+        "video"
+            ? "⬇ 下载视频"
+            : "⬇ 下载原图";
+
+    download.addEventListener(
+        "click",
+        () => downloadItem(item)
+    );
+
+
+    const post =
+        document.createElement(
+            "button"
+        );
+
+    post.className =
+        "small-btn";
+
+    post.textContent =
         "原帖";
 
-    postButton.addEventListener(
+    post.addEventListener(
         "click",
         () => {
 
@@ -1028,58 +1478,122 @@ function createItem(item) {
 
 
     actions.appendChild(
-        viewButton
+        view
     );
 
     actions.appendChild(
-        postButton
+        download
+    );
+
+    actions.appendChild(
+        post
     );
 
     info.appendChild(
         actions
     );
 
-    wrapper.appendChild(info);
+    wrapper.appendChild(
+        info
+    );
 
     return wrapper;
 
 }
 
 
-/* 日期格式 */
+/* -------------------------------------------------
+   下载
+------------------------------------------------- */
 
-function formatDisplayDate(value) {
+function downloadItem(
+    item
+) {
 
-    if (!value) {
-        return "";
-    }
+    const filename =
+        getFilename(item);
 
-    const match =
-        value.match(
-            /^(?:\w+)\s+(\w+)\s+(\d+)\s+(\d+):(\d+):(\d+).+?(\d{4})$/
+    const url =
+        "/api/download?url=" +
+        encodeURIComponent(
+            item.media_url
+        ) +
+        "&filename=" +
+        encodeURIComponent(
+            filename
         );
 
-    if (!match) {
-        return value;
-    }
-
-    return `${match[7]}-${match[1]}-${match[2]}`;
+    window.location.href =
+        url;
 
 }
 
 
-/* 打开大图 */
+/* -------------------------------------------------
+   大图 / 视频
+------------------------------------------------- */
 
-function openModal(item) {
+function openModal(
+    item
+) {
 
-    currentImage =
+    currentItem =
         item;
 
-    modalImage.src =
-        item.image;
+    modalContent.innerHTML =
+        "";
 
-    modalImage.alt =
-        item.alt || "";
+    if (
+        item.media_type ===
+        "video"
+    ) {
+
+        const video =
+            document.createElement(
+                "video"
+            );
+
+        video.src =
+            item.video_url ||
+            item.media_url;
+
+        video.controls =
+            true;
+
+        video.autoplay =
+            true;
+
+        video.playsInline =
+            true;
+
+        modalContent.appendChild(
+            video
+        );
+
+        downloadButton.textContent =
+            "⬇ 下载视频";
+
+    } else {
+
+        const img =
+            document.createElement(
+                "img"
+            );
+
+        img.src =
+            item.media_url;
+
+        img.alt =
+            item.alt || "";
+
+        modalContent.appendChild(
+            img
+        );
+
+        downloadButton.textContent =
+            "⬇ 下载原图";
+
+    }
 
     modal.classList.remove(
         "hidden"
@@ -1088,27 +1602,11 @@ function openModal(item) {
 }
 
 
-/* 关闭 */
-
 closeModal.addEventListener(
     "click",
-    () => {
-
-        modal.classList.add(
-            "hidden"
-        );
-
-        modalImage.src =
-            "";
-
-        currentImage =
-            null;
-
-    }
+    closeModalWindow
 );
 
-
-/* 点击黑色区域关闭 */
 
 modal.addEventListener(
     "click",
@@ -1119,9 +1617,7 @@ modal.addEventListener(
             modal
         ) {
 
-            modal.classList.add(
-                "hidden"
-            );
+            closeModalWindow();
 
         }
 
@@ -1129,41 +1625,63 @@ modal.addEventListener(
 );
 
 
-/* 下载 */
+function closeModalWindow() {
+
+    modal.classList.add(
+        "hidden"
+    );
+
+    modalContent.innerHTML =
+        "";
+
+    currentItem =
+        null;
+
+}
+
+
+/* -------------------------------------------------
+   大图页面下载
+------------------------------------------------- */
 
 downloadButton.addEventListener(
     "click",
-    async () => {
+    () => {
 
-        if (!currentImage) {
+        if (
+            !currentItem
+        ) {
+
             return;
+
         }
 
-        const url =
-            `/api/download?url=` +
-            encodeURIComponent(
-                currentImage.image
-            );
-
-        window.location.href =
-            url;
+        downloadItem(
+            currentItem
+        );
 
     }
 );
 
 
-/* 打开原帖 */
+/* -------------------------------------------------
+   原帖
+------------------------------------------------- */
 
 originalButton.addEventListener(
     "click",
     () => {
 
-        if (!currentImage) {
+        if (
+            !currentItem
+        ) {
+
             return;
+
         }
 
         window.open(
-            currentImage.tweet_url,
+            currentItem.tweet_url,
             "_blank"
         );
 
