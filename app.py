@@ -1,14 +1,35 @@
 import re
+import os
+import asyncio
+import subprocess
+import tempfile
+import uuid
+
 from datetime import datetime, timezone
 from urllib.parse import urlparse, unquote
 
 import httpx
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, StreamingResponse
+
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    Query,
+)
+
+from fastapi.responses import (
+    FileResponse,
+    StreamingResponse,
+)
+
 from fastapi.middleware.cors import CORSMiddleware
 
+from starlette.background import BackgroundTask
 
-app = FastAPI(title="X Media Finder")
+
+app = FastAPI(
+    title="X Media Finder"
+)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,12 +52,17 @@ def get_username(profile: str) -> str:
     profile = profile.strip()
 
     if not profile:
-        raise ValueError("请输入 X 博主主页链接")
+        raise ValueError(
+            "请输入 X 博主主页链接"
+        )
 
-    if not profile.startswith(("http://", "https://")):
+    if not profile.startswith(
+        ("http://", "https://")
+    ):
         profile = "https://" + profile
 
     parsed = urlparse(profile)
+
     host = parsed.netloc.lower()
 
     if host not in {
@@ -45,14 +71,21 @@ def get_username(profile: str) -> str:
         "twitter.com",
         "www.twitter.com",
     }:
+
         raise ValueError(
             "请输入类似 https://x.com/username 的 X 主页链接"
         )
 
-    parts = [x for x in parsed.path.split("/") if x]
+    parts = [
+        x
+        for x in parsed.path.split("/")
+        if x
+    ]
 
     if not parts:
-        raise ValueError("无法识别 X 用户名")
+        raise ValueError(
+            "无法识别 X 用户名"
+        )
 
     username = parts[0]
 
@@ -65,7 +98,10 @@ def get_username(profile: str) -> str:
         "messages",
         "settings",
     }:
-        raise ValueError("这不是有效的 X 博主主页")
+
+        raise ValueError(
+            "这不是有效的 X 博主主页"
+        )
 
     username = re.sub(
         r"[^A-Za-z0-9_]",
@@ -74,7 +110,9 @@ def get_username(profile: str) -> str:
     )
 
     if not username:
-        raise ValueError("用户名无效")
+        raise ValueError(
+            "用户名无效"
+        )
 
     return username
 
@@ -85,12 +123,16 @@ def parse_x_date(value):
         return None
 
     try:
+
         return datetime.strptime(
             value,
             "%a %b %d %H:%M:%S %z %Y"
-        ).astimezone(timezone.utc)
+        ).astimezone(
+            timezone.utc
+        )
 
     except Exception:
+
         return None
 
 
@@ -112,6 +154,7 @@ def date_from_string(
         )
 
         if end_of_day:
+
             dt = dt.replace(
                 hour=23,
                 minute=59,
@@ -143,6 +186,7 @@ async def fetch_media_page(
     }
 
     if cursor:
+
         params["cursor"] = cursor
 
     url = (
@@ -151,6 +195,7 @@ async def fetch_media_page(
     )
 
     headers = {
+
         "User-Agent": (
             "Mozilla/5.0 "
             "(iPhone; CPU iPhone OS 18_0 like Mac OS X) "
@@ -158,6 +203,7 @@ async def fetch_media_page(
             "Version/18.0 Mobile/15E148 "
             "Safari/604.1"
         )
+
     }
 
     try:
@@ -225,19 +271,23 @@ def get_post_source(tweet):
 
     # 真正的转帖
     if tweet.get("reposted_by"):
+
         return "repost"
 
     # 不同版本 API 可能使用不同字段表示引用
     quote_fields = [
+
         "quote",
         "quoted_tweet",
         "quote_status",
         "quoted_status",
+
     ]
 
     for field in quote_fields:
 
         if tweet.get(field):
+
             return "quote"
 
     return "original"
@@ -259,15 +309,21 @@ def extract_photos(tweet):
 
     for index, photo in enumerate(photos):
 
-        if not isinstance(photo, dict):
+        if not isinstance(
+            photo,
+            dict
+        ):
+
             continue
 
         url = photo.get("url")
 
         if not url:
+
             continue
 
         result.append({
+
             "id": str(
                 photo.get("id")
                 or f"{tweet.get('id')}-{index}"
@@ -275,18 +331,23 @@ def extract_photos(tweet):
 
             "url": url,
 
-            "width": photo.get("width"),
+            "width":
+                photo.get("width"),
 
-            "height": photo.get("height"),
+            "height":
+                photo.get("height"),
 
             "alt": (
                 photo.get("altText")
                 or ""
             ),
 
-            "index": index + 1,
+            "index":
+                index + 1,
 
-            "total": total,
+            "total":
+                total,
+
         })
 
     return result
@@ -304,21 +365,34 @@ def extract_videos(tweet):
 
     result = []
 
-    for index, video in enumerate(videos):
+    for index, video in enumerate(
+        videos
+    ):
 
-        if not isinstance(video, dict):
+        if not isinstance(
+            video,
+            dict
+        ):
+
             continue
 
         video_url = video.get("url")
 
-        formats = video.get("formats") or []
+        formats = (
+            video.get("formats")
+            or []
+        )
 
         # 找最高码率 MP4
         mp4_formats = []
 
         for fmt in formats:
 
-            if not isinstance(fmt, dict):
+            if not isinstance(
+                fmt,
+                dict
+            ):
+
                 continue
 
             fmt_url = fmt.get("url")
@@ -332,24 +406,33 @@ def extract_videos(tweet):
                 fmt_url
                 and container == "mp4"
             ):
-                mp4_formats.append(fmt)
+
+                mp4_formats.append(
+                    fmt
+                )
 
         if mp4_formats:
 
             best = max(
                 mp4_formats,
                 key=lambda x: (
-                    x.get("bitrate") or 0
+                    x.get("bitrate")
+                    or 0
                 )
             )
 
-            video_url = best.get("url")
+            video_url = best.get(
+                "url"
+            )
 
         if not video_url:
+
             continue
 
         thumbnail = (
-            video.get("thumbnail_url")
+            video.get(
+                "thumbnail_url"
+            )
             or ""
         )
 
@@ -357,22 +440,33 @@ def extract_videos(tweet):
 
             "id": str(
                 video.get("id")
-                or f"{tweet.get('id')}-video-{index}"
+                or (
+                    f"{tweet.get('id')}"
+                    f"-video-{index}"
+                )
             ),
 
-            "url": video_url,
+            "url":
+                video_url,
 
-            "thumbnail": thumbnail,
+            "thumbnail":
+                thumbnail,
 
-            "width": video.get("width"),
+            "width":
+                video.get("width"),
 
-            "height": video.get("height"),
+            "height":
+                video.get("height"),
 
-            "duration": video.get("duration"),
+            "duration":
+                video.get("duration"),
 
-            "index": index + 1,
+            "index":
+                index + 1,
 
-            "total": len(videos),
+            "total":
+                len(videos),
+
         })
 
     return result
@@ -404,6 +498,7 @@ async def search(
         ge=1,
         le=100
     ),
+
 ):
 
     try:
@@ -482,6 +577,7 @@ async def search(
         )
 
         if not tweets:
+
             break
 
         reached_start = False
@@ -489,7 +585,9 @@ async def search(
         for tweet in tweets:
 
             created_at_text = (
-                tweet.get("created_at")
+                tweet.get(
+                    "created_at"
+                )
                 or ""
             )
 
@@ -498,6 +596,7 @@ async def search(
             )
 
             if not created_at:
+
                 continue
 
             # 到达开始日期之前
@@ -518,8 +617,10 @@ async def search(
 
                 continue
 
-            post_source = get_post_source(
-                tweet
+            post_source = (
+                get_post_source(
+                    tweet
+                )
             )
 
             # 来源筛选
@@ -547,11 +648,14 @@ async def search(
             )
 
             base = {
+
                 "tweet_id": str(
-                    tweet.get("id") or ""
+                    tweet.get("id")
+                    or ""
                 ),
 
-                "tweet_url": tweet_url,
+                "tweet_url":
+                    tweet_url,
 
                 "created_at":
                     created_at_text,
@@ -562,10 +666,12 @@ async def search(
                     ),
 
                 "text":
-                    tweet.get("text") or "",
+                    tweet.get("text")
+                    or "",
 
                 "source":
                     post_source,
+
             }
 
             # -------------------------
@@ -584,6 +690,7 @@ async def search(
                 for photo in photos:
 
                     item = {
+
                         **base,
 
                         "media_type":
@@ -615,9 +722,12 @@ async def search(
 
                         "media_total":
                             photo["total"],
+
                     }
 
-                    items.append(item)
+                    items.append(
+                        item
+                    )
 
             # -------------------------
             # 视频
@@ -635,6 +745,7 @@ async def search(
                 for video in videos:
 
                     item = {
+
                         **base,
 
                         "media_type":
@@ -669,9 +780,12 @@ async def search(
 
                         "media_total":
                             video["total"],
+
                     }
 
-                    items.append(item)
+                    items.append(
+                        item
+                    )
 
         # 已经进入目标开始日期以前
         if (
@@ -695,6 +809,7 @@ async def search(
             )
 
         if not next_cursor:
+
             break
 
         if (
@@ -718,6 +833,7 @@ async def search(
     )
 
     return {
+
         "ok": True,
 
         "username":
@@ -731,6 +847,7 @@ async def search(
 
         "items":
             items,
+
     }
 
 
@@ -767,10 +884,13 @@ async def download(
     parsed = urlparse(url)
 
     allowed_hosts = {
+
         "pbs.twimg.com",
         "pbs.twimg.com.",
+
         "video.twimg.com",
         "video.twimg.com.",
+
     }
 
     if (
@@ -785,6 +905,7 @@ async def download(
         )
 
     headers = {
+
         "User-Agent": (
             "Mozilla/5.0 "
             "(iPhone; CPU iPhone OS 18_0 like Mac OS X) "
@@ -792,6 +913,7 @@ async def download(
             "Version/18.0 Mobile/15E148 "
             "Safari/604.1"
         )
+
     }
 
     try:
@@ -832,18 +954,23 @@ async def download(
 
     # 根据媒体类型确定后缀
     if "mp4" in content_type:
+
         extension = ".mp4"
 
     elif "webm" in content_type:
+
         extension = ".webm"
 
     elif "png" in content_type:
+
         extension = ".png"
 
     elif "webp" in content_type:
+
         extension = ".webp"
 
     else:
+
         extension = ".jpg"
 
     filename = safe_filename(
@@ -851,6 +978,7 @@ async def download(
     )
 
     if not filename:
+
         filename = "x-media"
 
     if not filename.lower().endswith(
@@ -860,7 +988,10 @@ async def download(
         filename += extension
 
     return StreamingResponse(
-        iter([response.content]),
+
+        iter([
+            response.content
+        ]),
 
         media_type=(
             content_type
@@ -868,26 +999,24 @@ async def download(
         ),
 
         headers={
+
             "Content-Disposition":
                 f'attachment; filename="{filename}"'
+
         },
+
     )
+
 
 # ---------------------------------------------------------
 # HLS / M3U8 视频下载
 # ---------------------------------------------------------
 
-import asyncio
-import os
-import subprocess
-from urllib.parse import urlparse
-
-from fastapi.responses import StreamingResponse
-
-
 HLS_ALLOWED_HOSTS = {
+
     "video.twimg.com",
     "video.twimg.com.",
+
 }
 
 
@@ -911,10 +1040,11 @@ def validate_hls_url(url: str):
             detail="视频地址必须使用 HTTPS"
         )
 
-    if (
-        parsed.netloc.lower()
-        not in HLS_ALLOWED_HOSTS
-    ):
+    hostname = (
+        parsed.hostname or ""
+    ).lower()
+
+    if hostname not in HLS_ALLOWED_HOSTS:
 
         raise HTTPException(
             status_code=400,
@@ -924,70 +1054,52 @@ def validate_hls_url(url: str):
     return url
 
 
-def safe_video_filename(
-    value
-):
-
-    value = str(
-        value or "x-video"
-    )
-
-    value = re.sub(
-        r'[\\/:*?"<>|]+',
-        "_",
-        value
-    )
-
-    value = value.strip()
-
-    if not value:
-
-        value = "x-video"
-
-    if not value.lower().endswith(
-        ".mp4"
-    ):
-
-        value += ".mp4"
-
-    return value[:150]
-
-
-async def ffmpeg_stream(
-    url,
-    process
+def cleanup_video_directory(
+    directory
 ):
 
     try:
 
-        while True:
+        if not os.path.isdir(
+            directory
+        ):
 
-            chunk = await asyncio.to_thread(
-                process.stdout.read,
-                1024 * 1024
+            return
+
+        for filename in os.listdir(
+            directory
+        ):
+
+            path = os.path.join(
+                directory,
+                filename
             )
 
-            if not chunk:
+            try:
 
-                break
+                if os.path.isfile(
+                    path
+                ):
 
-            yield chunk
+                    os.remove(path)
 
-        return_code = await asyncio.to_thread(
-            process.wait
-        )
+            except Exception:
 
-        if return_code != 0:
+                pass
 
-            raise RuntimeError(
-                "FFmpeg 视频转换失败"
+        try:
+
+            os.rmdir(
+                directory
             )
 
-    finally:
+        except Exception:
 
-        if process.poll() is None:
+            pass
 
-            process.kill()
+    except Exception:
+
+        pass
 
 
 @app.get(
@@ -1003,13 +1115,44 @@ async def video_download(
 
 ):
 
+    # -----------------------------------------
+    # 验证 M3U8 地址
+    # -----------------------------------------
+
     validate_hls_url(
         url
     )
 
-    filename = safe_video_filename(
+    filename = safe_filename(
         filename
     )
+
+    if not filename:
+
+        filename = "x-video.mp4"
+
+    if not filename.lower().endswith(
+        ".mp4"
+    ):
+
+        filename += ".mp4"
+
+    # -----------------------------------------
+    # 创建临时目录
+    # -----------------------------------------
+
+    temp_dir = tempfile.mkdtemp(
+        prefix="x-video-"
+    )
+
+    output_path = os.path.join(
+        temp_dir,
+        f"{uuid.uuid4()}.mp4"
+    )
+
+    # -----------------------------------------
+    # 请求头
+    # -----------------------------------------
 
     user_agent = (
         "Mozilla/5.0 "
@@ -1027,6 +1170,10 @@ async def video_download(
         + "Referer: https://x.com/\r\n"
     )
 
+    # -----------------------------------------
+    # FFmpeg
+    # -----------------------------------------
+
     command = [
 
         "ffmpeg",
@@ -1042,6 +1189,9 @@ async def video_download(
         "-protocol_whitelist",
         "file,http,https,tcp,tls,crypto",
 
+        "-allowed_extensions",
+        "ALL",
+
         "-i",
         url,
 
@@ -1054,22 +1204,20 @@ async def video_download(
         "-c",
         "copy",
 
-        "-bsf:a",
-        "aac_adtstoasc",
-
         "-movflags",
-        "frag_keyframe+empty_moov",
+        "+faststart",
 
-        "-f",
-        "mp4",
+        "-y",
 
-        "pipe:1",
+        output_path,
 
     ]
 
     try:
 
-        process = subprocess.Popen(
+        process = await asyncio.to_thread(
+
+            subprocess.run,
 
             command,
 
@@ -1077,44 +1225,140 @@ async def video_download(
 
             stderr=subprocess.PIPE,
 
-            bufsize=1024 * 1024,
+            timeout=180,
 
         )
 
+    except subprocess.TimeoutExpired:
+
+        cleanup_video_directory(
+            temp_dir
+        )
+
+        raise HTTPException(
+            status_code=504,
+            detail="视频转换超时"
+        )
+
     except Exception as e:
+
+        cleanup_video_directory(
+            temp_dir
+        )
 
         raise HTTPException(
 
             status_code=500,
 
             detail=(
-                "无法启动 FFmpeg："
+                "FFmpeg 启动失败："
                 + str(e)
             )
 
         )
 
-    return StreamingResponse(
+    # -----------------------------------------
+    # FFmpeg 转换失败
+    # -----------------------------------------
 
-        ffmpeg_stream(
-            url,
-            process
-        ),
+    if process.returncode != 0:
+
+        error_message = (
+            process.stderr
+            .decode(
+                "utf-8",
+                errors="ignore"
+            )
+            .strip()
+        )
+
+        cleanup_video_directory(
+            temp_dir
+        )
+
+        raise HTTPException(
+
+            status_code=500,
+
+            detail=(
+                "FFmpeg 转换失败："
+                + (
+                    error_message[-3000:]
+                    if error_message
+                    else "未知错误"
+                )
+            )
+
+        )
+
+    # -----------------------------------------
+    # 检查输出文件
+    # -----------------------------------------
+
+    if not os.path.exists(
+        output_path
+    ):
+
+        cleanup_video_directory(
+            temp_dir
+        )
+
+        raise HTTPException(
+
+            status_code=500,
+
+            detail="FFmpeg 没有生成 MP4"
+
+        )
+
+    file_size = os.path.getsize(
+        output_path
+    )
+
+    if file_size < 1024:
+
+        cleanup_video_directory(
+            temp_dir
+        )
+
+        raise HTTPException(
+
+            status_code=500,
+
+            detail="生成的 MP4 文件异常"
+
+        )
+
+    # -----------------------------------------
+    # 返回完整 MP4
+    #
+    # 注意：
+    # 这里不是 StreamingResponse。
+    #
+    # FFmpeg 已经完全结束，
+    # MP4 已经完整生成，
+    # 再交给 iPhone 下载。
+    # -----------------------------------------
+
+    return FileResponse(
+
+        path=output_path,
 
         media_type="video/mp4",
 
-        headers={
+        filename=filename,
 
-            "Content-Disposition":
-                f'attachment; filename="{filename}"',
+        background=BackgroundTask(
 
-            "Cache-Control":
-                "no-store",
+            cleanup_video_directory,
 
-        },
+            temp_dir
+
+        ),
 
     )
-    
+
+
 # ---------------------------------------------------------
 # 首页
 # ---------------------------------------------------------
@@ -1127,11 +1371,18 @@ async def index():
     )
 
 
+# ---------------------------------------------------------
+# 健康检查
+# ---------------------------------------------------------
+
 @app.get("/api/health")
 async def health():
 
     return {
+
         "ok": True,
+
         "service":
             "X Media Finder V3"
+
     }
