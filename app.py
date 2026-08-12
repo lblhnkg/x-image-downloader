@@ -1,13 +1,12 @@
-import os
 import re
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 
+import httpx
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-import httpx
 
-from xtf import Router
 
 app = FastAPI(title="X Image Finder")
 
@@ -15,21 +14,26 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["GET"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-def get_username(value: str) -> str:
-    value = value.strip()
+FX_API = "https://api.fxtwitter.com"
 
-    if not value:
-        raise ValueError("请输入 X 博主主页")
 
-    if not value.startswith(("http://", "https://")):
-        value = "https://" + value
+def get_username(profile: str) -> str:
+    """从 X 主页链接提取用户名"""
 
-    parsed = urlparse(value)
+    profile = profile.strip()
+
+    if not profile:
+        raise ValueError("请输入 X 博主主页链接")
+
+    if not profile.startswith(("http://", "https://")):
+        profile = "https://" + profile
+
+    parsed = urlparse(profile)
     host = parsed.netloc.lower()
 
     if host not in {
@@ -39,13 +43,13 @@ def get_username(value: str) -> str:
         "www.twitter.com",
     }:
         raise ValueError(
-            "请输入类似 https://x.com/username 的主页链接"
+            "请输入类似 https://x.com/username 的 X 主页链接"
         )
 
-    parts = [p for p in parsed.path.split("/") if p]
+    parts = [x for x in parsed.path.split("/") if x]
 
     if not parts:
-        raise ValueError("没有识别到 X 用户名")
+        raise ValueError("无法识别 X 用户名")
 
     username = parts[0]
 
@@ -56,8 +60,9 @@ def get_username(value: str) -> str:
         "i",
         "notifications",
         "messages",
+        "settings",
     }:
-        raise ValueError("这不是博主主页链接")
+        raise ValueError("这不是有效的 X 博主主页")
 
     username = re.sub(r"[^A-Za-z0-9_]", "", username)
 
@@ -67,204 +72,346 @@ def get_username(value: str) -> str:
     return username
 
 
-def obj_to_dict(obj):
-    if isinstance(obj, dict):
-        return obj
+def parse_x_date(value):
+    """解析 FxTwitter 的 created_at"""
 
-    if hasattr(obj, "to_dict"):
-        return obj.to_dict()
+    if not value:
+        return None
 
-    if hasattr(obj, "model_dump"):
-        return obj.model_dump()
+    try:
+        # 例如：
+        # Tue Aug 11 20:53:00 +0000 2026
+        dt = datetime.strptime(
+            value,
+            "%a %b %d %H:%M:%S %z %Y"
+        )
 
-    if hasattr(obj, "__dict__"):
-        return obj.__dict__
+        return dt.astimezone(timezone.utc)
 
-    return {}
+    except Exception:
+        return None
 
 
-def extract_media(tweet):
-    data = obj_to_dict(tweet)
+def date_from_string(value, end_of_day=False):
+    """解析网页传来的 YYYY-MM-DD"""
 
-    media = (
-        data.get("media")
-        or data.get("media_urls")
-        or data.get("mediaURLs")
-        or []
+    if not value:
+        return None
+
+    try:
+        dt = datetime.strptime(
+            value,
+            "%Y-%m-%d"
+        ).replace(tzinfo=timezone.utc)
+
+        if end_of_day:
+            dt = dt.replace(
+                hour=23,
+                minute=59,
+                second=59,
+                microsecond=999999,
+            )
+
+        return dt
+
+    except Exception:
+        raise ValueError(
+            f"日期格式错误：{value}"
+        )
+
+
+async def fetch_media_page(
+    username: str,
+    cursor: str | None = None,
+    count: int = 100,
+):
+    """获取一个用户的一页媒体帖子"""
+
+    params = {
+        "count": min(count, 100)
+    }
+
+    if cursor:
+        params["cursor"] = cursor
+
+    url = (
+        f"{FX_API}/2/profile/"
+        f"{username}/media"
     )
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 "
+            "(iPhone; CPU iPhone OS 18_0 like Mac OS X) "
+            "AppleWebKit/605.1.15 "
+            "Version/18.0 Mobile/15E148 Safari/604.1"
+        )
+    }
+
+    async with httpx.AsyncClient(
+        timeout=30,
+        follow_redirects=True,
+        headers=headers,
+    ) as client:
+
+        response = await client.get(
+            url,
+            params=params,
+        )
+
+    if response.status_code != 200:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                f"FxTwitter 返回 HTTP "
+                f"{response.status_code}"
+            ),
+        )
+
+    try:
+        data = response.json()
+    except Exception:
+        raise HTTPException(
+            status_code=502,
+            detail="FxTwitter 返回的不是有效 JSON",
+        )
+
+    if data.get("code") != 200:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "FxTwitter 返回错误："
+                + str(data)
+            ),
+        )
+
+    return data.get("results", []), data.get(
+        "cursor",
+        {}
+    )
+
+
+def extract_photos(tweet):
+    """从帖子中提取真正的照片"""
+
+    media = tweet.get("media") or {}
+
+    photos = media.get("photos") or []
 
     result = []
 
-    if isinstance(media, dict):
-        possible = []
+    for index, photo in enumerate(photos):
 
-        for key in (
-            "all",
-            "photos",
-            "images",
-            "media",
-        ):
-            value = media.get(key)
-            if value:
-                if isinstance(value, list):
-                    possible.extend(value)
-                else:
-                    possible.append(value)
-
-        media = possible
-
-    if isinstance(media, str):
-        media = [media]
-
-    for item in media or []:
-
-        if isinstance(item, str):
-            url = item
-
-            if "pbs.twimg.com" in url:
-                result.append({
-                    "url": url,
-                    "thumb": url,
-                })
-
+        if not isinstance(photo, dict):
             continue
 
-        if not isinstance(item, dict):
+        url = photo.get("url")
+
+        if not url:
             continue
 
-        url = (
-            item.get("url")
-            or item.get("media_url")
-            or item.get("media_url_https")
-            or item.get("original_url")
-            or item.get("original")
-        )
-
-        thumb = (
-            item.get("thumbnail_url")
-            or item.get("thumbnail")
-            or url
-        )
-
-        if url:
-            result.append({
-                "url": url,
-                "thumb": thumb,
-                "width": item.get("width"),
-                "height": item.get("height"),
-            })
+        result.append({
+            "id": str(
+                photo.get("id")
+                or f"{tweet.get('id')}-{index}"
+            ),
+            "url": url,
+            "width": photo.get("width"),
+            "height": photo.get("height"),
+            "alt": photo.get("altText") or "",
+        })
 
     return result
 
 
 @app.get("/")
-def home():
-    return FileResponse("static/index.html")
+async def index():
+    return FileResponse(
+        "static/index.html"
+    )
 
 
 @app.get("/api/health")
-def health():
+async def health():
     return {
         "ok": True,
-        "message": "X Image Finder is running"
+        "service": "X Image Finder",
     }
 
 
-@app.get("/api/timeline")
-def timeline(
+@app.get("/api/search")
+async def search(
     profile: str = Query(...),
-    limit: int = Query(100, ge=1, le=200),
+    start_date: str | None = None,
+    end_date: str | None = None,
+    max_pages: int = Query(
+        100,
+        ge=1,
+        le=100,
+    ),
 ):
+    """
+    搜索用户图片。
+
+    时间范围：
+    start_date = YYYY-MM-DD
+    end_date   = YYYY-MM-DD
+
+    max_pages：
+    最多翻多少页，每页最多 100 条。
+    """
+
     try:
         username = get_username(profile)
-    except Exception as e:
+
+        start_dt = date_from_string(
+            start_date
+        )
+
+        end_dt = date_from_string(
+            end_date,
+            end_of_day=True
+        )
+
+    except ValueError as e:
         raise HTTPException(
             status_code=400,
             detail=str(e)
         )
 
-    try:
-        # 使用当前 x-tweet-fetcher v3 的标准 Python API。
-        # 不强制指定 backend，让 Router 使用它自己的 backend 路由。
-        router = Router()
-
-        tweets = router.fetch_timeline(
-            username,
-            limit=limit
-        )
-
-    except Exception as e:
-
-        # 不再把上游失败伪装成“0 张图片”。
+    if (
+        start_dt
+        and end_dt
+        and start_dt > end_dt
+    ):
         raise HTTPException(
-            status_code=502,
-            detail=(
-                "X 时间线获取失败。"
-                f"后端返回：{str(e)}"
+            status_code=400,
+            detail="开始日期不能晚于结束日期",
+        )
+
+    all_images = []
+
+    cursor = None
+    pages = 0
+
+    # 防止某些异常情况下 cursor 一直循环
+    seen_cursors = set()
+
+    while pages < max_pages:
+
+        pages += 1
+
+        tweets, cursor_data = await fetch_media_page(
+            username,
+            cursor=cursor,
+            count=100,
+        )
+
+        if not tweets:
+            break
+
+        reached_older_than_start = False
+
+        for tweet in tweets:
+
+            created_at_text = (
+                tweet.get("created_at")
+                or ""
             )
-        )
 
-    items = []
-
-    for tweet in tweets:
-
-        data = obj_to_dict(tweet)
-
-        tweet_id = (
-            data.get("tweet_id")
-            or data.get("id")
-            or ""
-        )
-
-        tweet_url = (
-            data.get("url")
-            or data.get("tweet_url")
-        )
-
-        if not tweet_url and tweet_id:
-            tweet_url = (
-                f"https://x.com/"
-                f"{username}/status/{tweet_id}"
+            created_at = parse_x_date(
+                created_at_text
             )
 
-        created_at = (
-            data.get("created_at")
-            or data.get("date")
-            or data.get("time_ago")
-            or ""
-        )
-
-        text = (
-            data.get("text")
-            or data.get("full_text")
-            or ""
-        )
-
-        media = extract_media(tweet)
-
-        for index, photo in enumerate(media):
-
-            image_url = photo.get("url")
-
-            if not image_url:
+            # 如果无法解析日期，跳过
+            if not created_at:
                 continue
 
-            items.append({
-                "id": f"{tweet_id}-{index}",
-                "tweet_id": tweet_id,
-                "tweet_url": tweet_url,
-                "created_at": created_at,
-                "text": text,
-                "image": image_url,
-                "thumb": photo.get("thumb") or image_url,
-                "width": photo.get("width"),
-                "height": photo.get("height"),
-            })
+            # FxTwitter 返回通常是从新到旧。
+            #
+            # 如果已经比开始日期更早，
+            # 后面继续翻只会越来越旧，
+            # 所以可以停止。
+            if start_dt and created_at < start_dt:
+                reached_older_than_start = True
+                continue
+
+            # 比结束日期更新
+            if end_dt and created_at > end_dt:
+                continue
+
+            photos = extract_photos(tweet)
+
+            for photo in photos:
+
+                all_images.append({
+                    "id": (
+                        f"{tweet.get('id')}-"
+                        f"{photo['id']}"
+                    ),
+                    "tweet_id": str(
+                        tweet.get("id") or ""
+                    ),
+                    "tweet_url": (
+                        tweet.get("url")
+                        or (
+                            f"https://x.com/"
+                            f"{username}/status/"
+                            f"{tweet.get('id')}"
+                        )
+                    ),
+                    "created_at": (
+                        created_at_text
+                    ),
+                    "timestamp": (
+                        int(created_at.timestamp())
+                    ),
+                    "text": (
+                        tweet.get("text")
+                        or ""
+                    ),
+                    "image": photo["url"],
+                    "width": photo.get("width"),
+                    "height": photo.get("height"),
+                    "alt": photo.get("alt") or "",
+                })
+
+        # 如果已经进入开始日期以前，
+        # 没必要继续翻历史。
+        if (
+            start_dt
+            and reached_older_than_start
+        ):
+            break
+
+        next_cursor = (
+            cursor_data.get("bottom")
+            if isinstance(cursor_data, dict)
+            else None
+        )
+
+        if not next_cursor:
+            break
+
+        if next_cursor in seen_cursors:
+            break
+
+        seen_cursors.add(next_cursor)
+
+        cursor = next_cursor
+
+    # 最新 → 最旧
+    all_images.sort(
+        key=lambda x: x["timestamp"],
+        reverse=True,
+    )
 
     return {
+        "ok": True,
         "username": username,
-        "count": len(items),
-        "items": items,
+        "count": len(all_images),
+        "pages": pages,
+        "items": all_images,
     }
 
 
@@ -272,65 +419,66 @@ def timeline(
 async def download(
     url: str = Query(...)
 ):
+    """
+    下载 X 原图。
+
+    只允许 pbs.twimg.com。
+    """
 
     parsed = urlparse(url)
 
-    allowed_hosts = {
-        "pbs.twimg.com",
-        "video.twimg.com",
-    }
-
     if (
         parsed.scheme != "https"
-        or parsed.netloc.lower() not in allowed_hosts
+        or parsed.netloc.lower()
+        not in {
+            "pbs.twimg.com",
+            "pbs.twimg.com.",
+        }
     ):
         raise HTTPException(
             status_code=400,
-            detail="只允许下载 X 官方媒体地址"
+            detail="不是有效的 X 图片地址",
         )
-
-    # 如果 URL 没有 format/orig 参数，
-    # 对常见 pbs.twimg.com 图片尝试请求原始尺寸。
-    if "pbs.twimg.com" in parsed.netloc:
-        if "format=" not in url:
-            separator = "&" if "?" in url else "?"
-            url += separator + "format=jpg&name=orig"
 
     headers = {
         "User-Agent": (
             "Mozilla/5.0 "
             "(iPhone; CPU iPhone OS 18_0 like Mac OS X) "
-            "AppleWebKit/605.1.15"
+            "AppleWebKit/605.1.15 "
+            "Version/18.0 Mobile/15E148 Safari/604.1"
         )
     }
 
     try:
+
         async with httpx.AsyncClient(
+            timeout=60,
             follow_redirects=True,
-            timeout=30,
             headers=headers,
         ) as client:
 
             response = await client.get(url)
 
     except Exception as e:
+
         raise HTTPException(
             status_code=502,
-            detail=f"读取 X 原图失败：{e}"
+            detail=f"下载原图失败：{e}",
         )
 
     if response.status_code >= 400:
+
         raise HTTPException(
             status_code=response.status_code,
             detail=(
-                "X 原图读取失败。"
-                "请点击“打开原帖”从 X 保存。"
-            )
+                "X 图片服务器拒绝了下载请求，"
+                "请尝试打开原帖保存图片。"
+            ),
         )
 
     content_type = response.headers.get(
         "content-type",
-        "image/jpeg"
+        "image/jpeg",
     )
 
     if "png" in content_type:
@@ -346,5 +494,5 @@ async def download(
         headers={
             "Content-Disposition":
                 f'attachment; filename="{filename}"'
-        }
+        },
     )
