@@ -34,6 +34,11 @@ body {
         sans-serif;
 }
 
+button,
+input {
+    font-family: inherit;
+}
+
 .container {
     width: 100%;
     max-width: 950px;
@@ -45,15 +50,21 @@ body {
 }
 
 h1 {
-    margin: 0 0 6px;
+    margin: 0 0 5px;
     font-size: 25px;
+    letter-spacing: -0.5px;
 }
 
 .subtitle {
     color: #777;
-    font-size: 14px;
-    margin-bottom: 18px;
+    font-size: 13px;
+    margin-bottom: 17px;
 }
+
+
+/* =====================================================
+   通用卡片
+===================================================== */
 
 .card {
     background: white;
@@ -69,6 +80,20 @@ label {
     color: #666;
     font-size: 13px;
     margin-bottom: 7px;
+}
+
+
+/* =====================================================
+   博主输入
+===================================================== */
+
+.profile-row {
+    display: flex;
+    gap: 8px;
+}
+
+.profile-input-wrap {
+    flex: 1;
 }
 
 input[type="text"],
@@ -87,11 +112,119 @@ input:focus {
     border-color: #111;
 }
 
-.date-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+.favorite-add {
+    height: 46px;
+    min-width: 78px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 11px;
+    font-size: 13px;
+    white-space: nowrap;
 }
+
+.favorite-add:active {
+    background: #eee;
+}
+
+
+/* =====================================================
+   收藏入口
+===================================================== */
+
+.favorite-entry {
+    margin-top: 10px;
+}
+
+.favorite-main-button {
+    width: 100%;
+    height: 42px;
+    border: 1px solid #ddd;
+    background: #fafafa;
+    border-radius: 11px;
+    font-size: 14px;
+    text-align: left;
+    padding: 0 13px;
+}
+
+.favorite-main-button:active {
+    background: #eee;
+}
+
+
+/* =====================================================
+   收藏列表
+===================================================== */
+
+.favorites-panel {
+    margin-top: 10px;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.favorite-empty {
+    padding: 18px 12px;
+    color: #999;
+    font-size: 13px;
+    text-align: center;
+}
+
+.favorite-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.favorite-item:last-child {
+    border-bottom: 0;
+}
+
+.favorite-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.favorite-name {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.favorite-handle {
+    color: #888;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.favorite-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.favorite-use,
+.favorite-delete {
+    height: 32px;
+    border-radius: 8px;
+    padding: 0 8px;
+    font-size: 11px;
+    border: 1px solid #ddd;
+    background: white;
+}
+
+.favorite-use {
+    background: #111;
+    color: white;
+    border-color: #111;
+}
+
+
+/* =====================================================
+   时间 / 选项
+===================================================== */
 
 .section {
     margin-top: 15px;
@@ -99,7 +232,7 @@ input:focus {
 
 .option-row {
     display: flex;
-    gap: 8px;
+    gap: 7px;
     flex-wrap: wrap;
 }
 
@@ -107,7 +240,7 @@ input:focus {
     border: 1px solid #ddd;
     background: #fafafa;
     border-radius: 20px;
-    padding: 8px 13px;
+    padding: 8px 12px;
     font-size: 13px;
 }
 
@@ -116,6 +249,21 @@ input:focus {
     color: white;
     border-color: #111;
 }
+
+.date-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.custom-dates {
+    margin-top: 11px;
+}
+
+
+/* =====================================================
+   搜索按钮
+===================================================== */
 
 .primary {
     width: 100%;
@@ -126,12 +274,17 @@ input:focus {
     color: white;
     font-size: 16px;
     font-weight: 600;
-    margin-top: 16px;
+    margin-top: 17px;
 }
 
 .primary:disabled {
     opacity: .45;
 }
+
+
+/* =====================================================
+   状态
+===================================================== */
 
 .status {
     font-size: 14px;
@@ -143,64 +296,105 @@ input:focus {
     white-space: pre-wrap;
 }
 
+.loader {
+    text-align: center;
+    padding: 20px;
+    color: #777;
+}
+
+
+/* =====================================================
+   结果
+===================================================== */
+
 .result-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 13px;
+}
+
+.result-title {
+    font-size: 16px;
+    font-weight: 700;
 }
 
 .result-count {
     color: #777;
-    font-size: 13px;
+    font-size: 12px;
     margin-top: 4px;
 }
 
+
+/* =====================================================
+   重点：正常 Grid，不再使用 columns 瀑布流
+===================================================== */
+
 .gallery {
-    columns: 2;
-    column-gap: 8px;
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 9px;
+
+    align-items: start;
 }
 
+
+/* =====================================================
+   媒体卡片
+===================================================== */
+
 .item {
-    break-inside: avoid;
-    margin-bottom: 8px;
+    min-width: 0;
     background: white;
+    border: 1px solid #eee;
     border-radius: 12px;
     overflow: hidden;
 }
 
 .media-wrap {
     position: relative;
+    width: 100%;
     background: #eee;
+    overflow: hidden;
 }
 
 .media-wrap img {
     display: block;
     width: 100%;
-    height: auto;
+
+    /*
+       统一卡片比例，避免左右高度疯狂变化。
+       图片仍然通过大图查看查看完整原图。
+    */
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+
     cursor: pointer;
 }
 
 .video-badge {
     position: absolute;
-    left: 8px;
-    top: 8px;
+    left: 7px;
+    top: 7px;
     background: rgba(0,0,0,.75);
     color: white;
     border-radius: 20px;
-    padding: 5px 9px;
-    font-size: 11px;
+    padding: 5px 8px;
+    font-size: 10px;
 }
 
 .source-badge {
     position: absolute;
-    right: 8px;
-    top: 8px;
+    right: 7px;
+    top: 7px;
     background: rgba(0,0,0,.75);
     color: white;
     border-radius: 20px;
-    padding: 5px 9px;
-    font-size: 11px;
+    padding: 5px 8px;
+    font-size: 10px;
 }
 
 .item-info {
@@ -209,37 +403,38 @@ input:focus {
 
 .item-date {
     color: #888;
-    font-size: 11px;
+    font-size: 10px;
 }
 
 .item-actions {
     display: grid;
+
     grid-template-columns:
         1fr 1fr 1fr;
-    gap: 5px;
+
+    gap: 4px;
+
     margin-top: 7px;
 }
 
 .small-btn {
-    height: 34px;
+    height: 32px;
     border: 1px solid #ddd;
     background: white;
-    border-radius: 8px;
-    font-size: 11px;
-    padding: 0 3px;
+    border-radius: 7px;
+    font-size: 10px;
+    padding: 0 2px;
+    white-space: nowrap;
 }
 
 .small-btn:active {
     background: #eee;
 }
 
-.loader {
-    text-align: center;
-    padding: 20px;
-    color: #777;
-}
 
-/* 大图 / 视频 */
+/* =====================================================
+   大图 / 视频
+===================================================== */
 
 .modal {
     position: fixed;
@@ -257,10 +452,13 @@ input:focus {
 
 .modal-top {
     min-height: 58px;
+
     padding:
         env(safe-area-inset-top)
         12px
-        0 12px;
+        0
+        12px;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -276,10 +474,13 @@ input:focus {
 
 .modal-content {
     flex: 1;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
     padding: 10px;
+
     overflow: auto;
 }
 
@@ -296,8 +497,10 @@ input:focus {
 
 .modal-bottom {
     padding:
-        10px 12px
+        10px
+        12px
         calc(12px + env(safe-area-inset-bottom));
+
     display: flex;
     gap: 8px;
 }
@@ -320,10 +523,36 @@ input:focus {
     color: white;
 }
 
+
+/* =====================================================
+   大屏幕
+===================================================== */
+
 @media (min-width: 700px) {
 
     .gallery {
-        columns: 3;
+        grid-template-columns:
+            repeat(4, minmax(0, 1fr));
+    }
+
+}
+
+
+/* =====================================================
+   小屏幕
+===================================================== */
+
+@media (max-width: 380px) {
+
+    .item-actions {
+        grid-template-columns:
+            1fr 1fr;
+    }
+
+    .item-actions
+    .small-btn:last-child {
+        grid-column:
+            1 / -1;
     }
 
 }
@@ -332,6 +561,7 @@ input:focus {
 
 </head>
 
+
 <body>
 
 <div class="container">
@@ -339,25 +569,67 @@ input:focus {
 <h1>🖼️ X 媒体找图器</h1>
 
 <div class="subtitle">
-输入 X 博主主页，快速查找其发布的图片和视频
+输入博主名、@用户名或 X 主页链接
 </div>
 
+
+<!-- ==================================================
+     搜索卡片
+================================================== -->
 
 <div class="card">
 
 <label>
-X 博主主页
+博主
 </label>
+
+<div class="profile-row">
+
+<div class="profile-input-wrap">
 
 <input
     id="profile"
     type="text"
-    placeholder="例如：https://x.com/NASA"
+    placeholder="@NASA / NASA / x.com/NASA"
     autocomplete="off"
     autocapitalize="off"
     spellcheck="false"
 />
 
+</div>
+
+<button
+    id="favoriteAdd"
+    class="favorite-add"
+>
+☆ 收藏
+</button>
+
+</div>
+
+
+<!-- 收藏入口 -->
+
+<div class="favorite-entry">
+
+<button
+    id="favoriteToggle"
+    class="favorite-main-button"
+>
+⭐ 我的收藏
+</button>
+
+<div
+    id="favoritesPanel"
+    class="favorites-panel hidden"
+></div>
+
+</div>
+
+
+<!-- ==================================================
+     时间范围
+================================================== -->
 
 <div class="section">
 
@@ -414,9 +686,10 @@ X 博主主页
 
 <div
     id="customDates"
-    class="date-row hidden"
-    style="margin-top:12px;"
+    class="custom-dates hidden"
 >
+
+<div class="date-row">
 
 <div>
 
@@ -446,6 +719,12 @@ X 博主主页
 
 </div>
 
+</div>
+
+
+<!-- ==================================================
+     媒体类型
+================================================== -->
 
 <div class="section">
 
@@ -483,6 +762,10 @@ X 博主主页
 
 </div>
 
+
+<!-- ==================================================
+     帖子来源
+================================================== -->
 
 <div class="section">
 
@@ -531,6 +814,10 @@ X 博主主页
 </div>
 
 
+<!-- ==================================================
+     状态
+================================================== -->
+
 <div
     id="statusCard"
     class="card hidden"
@@ -544,6 +831,10 @@ X 博主主页
 </div>
 
 
+<!-- ==================================================
+     搜索结果
+================================================== -->
+
 <div
     id="resultCard"
     class="card hidden"
@@ -553,9 +844,12 @@ X 博主主页
 
 <div>
 
-<strong id="resultTitle">
+<div
+    id="resultTitle"
+    class="result-title"
+>
 图片
-</strong>
+</div>
 
 <div
     id="resultCount"
@@ -573,10 +867,13 @@ X 博主主页
 
 </div>
 
+
 </div>
 
 
-<!-- 大图 / 视频 -->
+<!-- ==================================================
+     大图 / 视频 Modal
+================================================== -->
 
 <div
     id="modal"
@@ -594,11 +891,12 @@ X 博主主页
 
 </div>
 
+
 <div
     id="modalContent"
     class="modal-content"
->
-</div>
+></div>
+
 
 <div class="modal-bottom">
 
@@ -623,9 +921,29 @@ X 博主主页
 
 <script>
 
+
+/* =====================================================
+   DOM
+===================================================== */
+
 const profileInput =
     document.getElementById(
         "profile"
+    );
+
+const favoriteAdd =
+    document.getElementById(
+        "favoriteAdd"
+    );
+
+const favoriteToggle =
+    document.getElementById(
+        "favoriteToggle"
+    );
+
+const favoritesPanel =
+    document.getElementById(
+        "favoritesPanel"
     );
 
 const searchButton =
@@ -704,110 +1022,659 @@ const originalButton =
     );
 
 
-let range =
-    "all";
+/* =====================================================
+   状态
+===================================================== */
 
-let mediaType =
-    "photo";
+let range = "all";
 
-let sourceType =
-    "all";
+let mediaType = "photo";
 
-let currentItem =
-    null;
+let sourceType = "all";
+
+let currentItem = null;
 
 
-/* -------------------------------------------------
-   菜单
-------------------------------------------------- */
+/* =====================================================
+   本地收藏
+===================================================== */
+
+const FAVORITE_KEY =
+    "x_media_finder_favorites_v31";
+
+
+function getFavorites() {
+
+    try {
+
+        const data =
+            localStorage.getItem(
+                FAVORITE_KEY
+            );
+
+        if (!data) {
+            return [];
+        }
+
+        const parsed =
+            JSON.parse(data);
+
+        if (!Array.isArray(parsed)) {
+            return [];
+        }
+
+        return parsed;
+
+    } catch (e) {
+
+        return [];
+
+    }
+
+}
+
+
+function saveFavorites(
+    favorites
+) {
+
+    localStorage.setItem(
+        FAVORITE_KEY,
+        JSON.stringify(
+            favorites
+        )
+    );
+
+}
+
+
+/* =====================================================
+   解析用户名
+===================================================== */
+
+function normalizeUsername(
+    input
+) {
+
+    let value =
+        input.trim();
+
+    if (!value) {
+        return null;
+    }
+
+
+    /*
+       https://x.com/NASA
+       http://x.com/NASA
+       x.com/NASA
+       www.x.com/NASA
+    */
+
+    if (
+        value.includes("x.com/")
+        ||
+        value.includes("twitter.com/")
+    ) {
+
+        if (
+            !value.startsWith(
+                "http://"
+            )
+            &&
+            !value.startsWith(
+                "https://"
+            )
+        ) {
+
+            value =
+                "https://" +
+                value;
+
+        }
+
+        try {
+
+            const url =
+                new URL(value);
+
+            const parts =
+                url.pathname
+                    .split("/")
+                    .filter(Boolean);
+
+            if (
+                parts.length > 0
+            ) {
+
+                value =
+                    parts[0];
+
+            }
+
+        } catch (e) {
+
+            return null;
+
+        }
+
+    }
+
+
+    /*
+       @NASA
+    */
+
+    value =
+        value.replace(
+            /^@+/,
+            ""
+        );
+
+
+    /*
+       清理尾部 /
+    */
+
+    value =
+        value.replace(
+            /\/+$/,
+            ""
+        );
+
+
+    /*
+       用户名只能包含
+       字母、数字、下划线
+    */
+
+    value =
+        value.replace(
+            /[^A-Za-z0-9_]/g,
+            ""
+        );
+
+
+    if (!value) {
+        return null;
+    }
+
+
+    /*
+       X 用户名大小写
+       不影响我们的查询
+    */
+
+    return value;
+
+}
+
+
+/* =====================================================
+   收藏按钮状态
+===================================================== */
+
+function updateFavoriteButton() {
+
+    const username =
+        normalizeUsername(
+            profileInput.value
+        );
+
+    if (!username) {
+
+        favoriteAdd.textContent =
+            "☆ 收藏";
+
+        return;
+
+    }
+
+    const favorites =
+        getFavorites();
+
+    const exists =
+        favorites.some(
+            item =>
+                item.username
+                    .toLowerCase()
+                ===
+                username
+                    .toLowerCase()
+        );
+
+    favoriteAdd.textContent =
+        exists
+            ? "★ 已收藏"
+            : "☆ 收藏";
+
+}
+
+
+profileInput.addEventListener(
+    "input",
+    updateFavoriteButton
+);
+
+
+/* =====================================================
+   添加 / 取消收藏
+===================================================== */
+
+favoriteAdd.addEventListener(
+    "click",
+    () => {
+
+        const username =
+            normalizeUsername(
+                profileInput.value
+            );
+
+        if (!username) {
+
+            showError(
+                "请先输入博主名，例如 NASA 或 @NASA"
+            );
+
+            return;
+
+        }
+
+        let favorites =
+            getFavorites();
+
+        const existingIndex =
+            favorites.findIndex(
+                item =>
+                    item.username
+                        .toLowerCase()
+                    ===
+                    username
+                        .toLowerCase()
+            );
+
+
+        /*
+           已存在 → 删除
+        */
+
+        if (
+            existingIndex !== -1
+        ) {
+
+            favorites.splice(
+                existingIndex,
+                1
+            );
+
+            saveFavorites(
+                favorites
+            );
+
+            updateFavoriteButton();
+
+            renderFavorites();
+
+            return;
+
+        }
+
+
+        /*
+           新收藏
+        */
+
+        favorites.push({
+
+            username:
+                username,
+
+            name:
+                username,
+
+            addedAt:
+                Date.now()
+
+        });
+
+        saveFavorites(
+            favorites
+        );
+
+        updateFavoriteButton();
+
+        renderFavorites();
+
+        statusCard.classList.remove(
+            "hidden"
+        );
+
+        status.className =
+            "status";
+
+        status.textContent =
+            `已收藏 @${username}`;
+
+    }
+);
+
+
+/* =====================================================
+   收藏入口
+===================================================== */
+
+favoriteToggle.addEventListener(
+    "click",
+    () => {
+
+        favoritesPanel.classList.toggle(
+            "hidden"
+        );
+
+        if (
+            !favoritesPanel.classList.contains(
+                "hidden"
+            )
+        ) {
+
+            renderFavorites();
+
+        }
+
+    }
+);
+
+
+/* =====================================================
+   渲染收藏
+===================================================== */
+
+function renderFavorites() {
+
+    const favorites =
+        getFavorites();
+
+    favoritesPanel.innerHTML =
+        "";
+
+    if (
+        favorites.length === 0
+    ) {
+
+        favoritesPanel.innerHTML = `
+            <div class="favorite-empty">
+                还没有收藏博主
+            </div>
+        `;
+
+        return;
+
+    }
+
+
+    favorites.forEach(
+        (favorite, index) => {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+            item.className =
+                "favorite-item";
+
+
+            const info =
+                document.createElement(
+                    "div"
+                );
+
+            info.className =
+                "favorite-info";
+
+
+            const name =
+                document.createElement(
+                    "div"
+                );
+
+            name.className =
+                "favorite-name";
+
+            name.textContent =
+                favorite.name ||
+                favorite.username;
+
+
+            const handle =
+                document.createElement(
+                    "div"
+                );
+
+            handle.className =
+                "favorite-handle";
+
+            handle.textContent =
+                "@" +
+                favorite.username;
+
+
+            info.appendChild(
+                name
+            );
+
+            info.appendChild(
+                handle
+            );
+
+
+            const actions =
+                document.createElement(
+                    "div"
+                );
+
+            actions.className =
+                "favorite-actions";
+
+
+            const use =
+                document.createElement(
+                    "button"
+                );
+
+            use.className =
+                "favorite-use";
+
+            use.textContent =
+                "查找";
+
+
+            use.addEventListener(
+                "click",
+                () => {
+
+                    profileInput.value =
+                        favorite.username;
+
+                    updateFavoriteButton();
+
+                    favoritesPanel.classList.add(
+                        "hidden"
+                    );
+
+                    window.scrollTo({
+                        top: 0,
+                        behavior:
+                            "smooth"
+                    });
+
+                }
+            );
+
+
+            const remove =
+                document.createElement(
+                    "button"
+                );
+
+            remove.className =
+                "favorite-delete";
+
+            remove.textContent =
+                "删除";
+
+
+            remove.addEventListener(
+                "click",
+                () => {
+
+                    const list =
+                        getFavorites();
+
+                    list.splice(
+                        index,
+                        1
+                    );
+
+                    saveFavorites(
+                        list
+                    );
+
+                    renderFavorites();
+
+                    updateFavoriteButton();
+
+                }
+            );
+
+
+            actions.appendChild(
+                use
+            );
+
+            actions.appendChild(
+                remove
+            );
+
+
+            item.appendChild(
+                info
+            );
+
+            item.appendChild(
+                actions
+            );
+
+            favoritesPanel.appendChild(
+                item
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   选项菜单
+===================================================== */
 
 document
     .querySelectorAll(".option")
-    .forEach(button => {
+    .forEach(
+        button => {
 
-        button.addEventListener(
-            "click",
-            () => {
+            button.addEventListener(
+                "click",
+                () => {
 
-                const group =
-                    button.dataset.group;
+                    const group =
+                        button.dataset.group;
 
-                const value =
-                    button.dataset.value;
+                    const value =
+                        button.dataset.value;
 
-                document
-                    .querySelectorAll(
-                        `.option[data-group="${group}"]`
-                    )
-                    .forEach(b => {
 
-                        b.classList.remove(
-                            "active"
+                    document
+                        .querySelectorAll(
+                            `.option[data-group="${group}"]`
+                        )
+                        .forEach(
+                            b =>
+                                b.classList.remove(
+                                    "active"
+                                )
                         );
 
-                    });
 
-                button.classList.add(
-                    "active"
-                );
+                    button.classList.add(
+                        "active"
+                    );
 
-                if (
-                    group === "range"
-                ) {
-
-                    range =
-                        value;
 
                     if (
-                        value ===
-                        "custom"
+                        group ===
+                        "range"
                     ) {
 
-                        customDates
-                            .classList
-                            .remove(
-                                "hidden"
-                            );
+                        range =
+                            value;
 
-                    } else {
+                        if (
+                            value ===
+                            "custom"
+                        ) {
 
-                        customDates
-                            .classList
-                            .add(
-                                "hidden"
-                            );
+                            customDates
+                                .classList
+                                .remove(
+                                    "hidden"
+                                );
+
+                        } else {
+
+                            customDates
+                                .classList
+                                .add(
+                                    "hidden"
+                                );
+
+                        }
+
+                    }
+
+
+                    if (
+                        group ===
+                        "media"
+                    ) {
+
+                        mediaType =
+                            value;
+
+                    }
+
+
+                    if (
+                        group ===
+                        "source"
+                    ) {
+
+                        sourceType =
+                            value;
 
                     }
 
                 }
+            );
 
-                if (
-                    group === "media"
-                ) {
-
-                    mediaType =
-                        value;
-
-                }
-
-                if (
-                    group === "source"
-                ) {
-
-                    sourceType =
-                        value;
-
-                }
-
-            }
-        );
-
-    });
+        }
+    );
 
 
-/* -------------------------------------------------
+/* =====================================================
    日期
-------------------------------------------------- */
+===================================================== */
 
 function formatDate(
     date
@@ -819,14 +1686,22 @@ function formatDate(
     const m =
         String(
             date.getMonth() + 1
-        ).padStart(2, "0");
+        ).padStart(
+            2,
+            "0"
+        );
 
     const d =
         String(
             date.getDate()
-        ).padStart(2, "0");
+        ).padStart(
+            2,
+            "0"
+        );
 
-    return `${y}-${m}-${d}`;
+    return (
+        `${y}-${m}-${d}`
+    );
 
 }
 
@@ -845,12 +1720,14 @@ function getDates() {
 
     }
 
+
     if (
         range ===
         "custom"
     ) {
 
         return {
+
             start:
                 startDate.value ||
                 null,
@@ -858,9 +1735,11 @@ function getDates() {
             end:
                 endDate.value ||
                 null
+
         };
 
     }
+
 
     const now =
         new Date();
@@ -873,20 +1752,27 @@ function getDates() {
         - Number(range)
     );
 
+
     return {
+
         start:
-            formatDate(start),
+            formatDate(
+                start
+            ),
 
         end:
-            formatDate(now)
+            formatDate(
+                now
+            )
+
     };
 
 }
 
 
-/* -------------------------------------------------
+/* =====================================================
    搜索
-------------------------------------------------- */
+===================================================== */
 
 searchButton.addEventListener(
     "click",
@@ -913,21 +1799,42 @@ profileInput.addEventListener(
 
 async function search() {
 
-    const profile =
+    const raw =
         profileInput.value.trim();
 
-    if (!profile) {
+    const username =
+        normalizeUsername(
+            raw
+        );
+
+
+    if (!username) {
 
         showError(
-            "请输入 X 博主主页链接"
+            "无法识别博主。\n\n" +
+            "可以输入：\n" +
+            "NASA\n" +
+            "@NASA\n" +
+            "x.com/NASA\n" +
+            "https://x.com/NASA"
         );
 
         return;
 
     }
 
+
+    /*
+       自动把输入转换成标准主页 URL
+    */
+
+    const profile =
+        `https://x.com/${username}`;
+
+
     const dates =
         getDates();
+
 
     if (
         dates.start &&
@@ -944,11 +1851,13 @@ async function search() {
 
     }
 
+
     searchButton.disabled =
         true;
 
     searchButton.textContent =
         "正在寻找媒体…";
+
 
     statusCard.classList.remove(
         "hidden"
@@ -958,35 +1867,44 @@ async function search() {
         "status";
 
     status.textContent =
-        "正在连接 X 媒体数据源…";
+        `正在搜索 @${username}…`;
+
 
     resultCard.classList.add(
         "hidden"
     );
 
-    gallery.innerHTML = "";
+    gallery.innerHTML =
+        "";
+
 
     try {
 
         const params =
             new URLSearchParams();
 
+
         params.set(
             "profile",
             profile
         );
+
 
         params.set(
             "media_type",
             mediaType
         );
 
+
         params.set(
             "source_type",
             sourceType
         );
 
-        if (dates.start) {
+
+        if (
+            dates.start
+        ) {
 
             params.set(
                 "start_date",
@@ -995,7 +1913,10 @@ async function search() {
 
         }
 
-        if (dates.end) {
+
+        if (
+            dates.end
+        ) {
 
             params.set(
                 "end_date",
@@ -1004,15 +1925,20 @@ async function search() {
 
         }
 
+
         const response =
             await fetch(
                 `/api/search?${params.toString()}`
             );
 
+
         const data =
             await response.json();
 
-        if (!response.ok) {
+
+        if (
+            !response.ok
+        ) {
 
             throw new Error(
                 data.detail ||
@@ -1021,9 +1947,11 @@ async function search() {
 
         }
 
+
         renderResults(
             data
         );
+
 
     } catch (error) {
 
@@ -1031,6 +1959,7 @@ async function search() {
             error.message ||
             "搜索失败"
         );
+
 
     } finally {
 
@@ -1044,6 +1973,10 @@ async function search() {
 
 }
 
+
+/* =====================================================
+   错误
+===================================================== */
 
 function showError(
     message
@@ -1062,9 +1995,9 @@ function showError(
 }
 
 
-/* -------------------------------------------------
+/* =====================================================
    结果
-------------------------------------------------- */
+===================================================== */
 
 function renderResults(
     data
@@ -1074,15 +2007,19 @@ function renderResults(
         "hidden"
     );
 
+
     resultCard.classList.remove(
         "hidden"
     );
 
+
     resultTitle.textContent =
         `@${data.username}`;
 
+
     resultCount.textContent =
         `找到 ${data.count} 个媒体 · 查询 ${data.pages} 页`;
+
 
     if (
         !data.items ||
@@ -1090,7 +2027,10 @@ function renderResults(
     ) {
 
         gallery.innerHTML = `
-            <div class="loader">
+            <div
+                class="loader"
+                style="grid-column:1/-1;"
+            >
                 这个条件下没有找到媒体。
             </div>
         `;
@@ -1098,6 +2038,22 @@ function renderResults(
         return;
 
     }
+
+
+    /*
+       后端已经按时间排序。
+       这里不再重新排序。
+
+       Grid 的默认顺序就是：
+
+       1  2
+       3  4
+       5  6
+
+       因此手机上严格按照：
+       左 → 右
+       上 → 下
+    */
 
     data.items.forEach(
         item => {
@@ -1112,101 +2068,9 @@ function renderResults(
 }
 
 
-/* -------------------------------------------------
-   文件名
-------------------------------------------------- */
-
-function getFilename(
-    item
-) {
-
-    /*
-      规则：
-
-      单图：
-      2026-08-11.jpg
-
-      同一帖子多图：
-      2026-08-11-1.jpg
-      2026-08-11-2.jpg
-
-      视频：
-      2026-08-11.mp4
-
-      不加入具体时间。
-    */
-
-    const match =
-        item.created_at.match(
-            /(\w+)\s+(\w+)\s+(\d+).*?(\d{4})$/
-        );
-
-    let date =
-        formatDateFromX(
-            item.created_at
-        );
-
-    if (!date) {
-
-        date =
-            "x-media";
-
-    }
-
-    let suffix =
-        "";
-
-    if (
-        item.media_total &&
-        item.media_total > 1
-    ) {
-
-        suffix =
-            `-${item.media_index}`;
-
-    }
-
-    let extension =
-        ".jpg";
-
-    if (
-        item.media_type ===
-        "video"
-    ) {
-
-        extension =
-            ".mp4";
-
-    } else if (
-        item.media_url
-        &&
-        item.media_url
-            .toLowerCase()
-            .includes(".png")
-    ) {
-
-        extension =
-            ".png";
-
-    } else if (
-        item.media_url
-        &&
-        item.media_url
-            .toLowerCase()
-            .includes(".webp")
-    ) {
-
-        extension =
-            ".webp";
-
-    }
-
-    return (
-        `${date}${suffix}${extension}`
-    );
-
-}
-
+/* =====================================================
+   日期
+===================================================== */
 
 function formatDateFromX(
     value
@@ -1216,16 +2080,20 @@ function formatDateFromX(
         return null;
     }
 
+
     const match =
         value.match(
             /^\w+\s+(\w+)\s+(\d+).*?(\d{4})$/
         );
 
+
     if (!match) {
         return null;
     }
 
+
     const months = {
+
         Jan: "01",
         Feb: "02",
         Mar: "03",
@@ -1238,29 +2106,133 @@ function formatDateFromX(
         Oct: "10",
         Nov: "11",
         Dec: "12"
+
     };
 
+
     const month =
-        months[match[1]];
+        months[
+            match[1]
+        ];
+
 
     if (!month) {
         return null;
     }
+
 
     return (
         `${match[3]}-` +
         `${month}-` +
         `${String(
             match[2]
-        ).padStart(2, "0")}`
+        ).padStart(
+            2,
+            "0"
+        )}`
     );
 
 }
 
 
-/* -------------------------------------------------
+/* =====================================================
+   文件名
+===================================================== */
+
+function getFilename(
+    item
+) {
+
+    let date =
+        formatDateFromX(
+            item.created_at
+        );
+
+
+    if (!date) {
+
+        date =
+            "x-media";
+
+    }
+
+
+    let suffix =
+        "";
+
+
+    /*
+       同一条帖子多张媒体：
+
+       2026-08-11-1
+       2026-08-11-2
+       2026-08-11-3
+    */
+
+    if (
+        item.media_total &&
+        item.media_total > 1
+    ) {
+
+        suffix =
+            `-${item.media_index}`;
+
+    }
+
+
+    let extension =
+        ".jpg";
+
+
+    if (
+        item.media_type ===
+        "video"
+    ) {
+
+        extension =
+            ".mp4";
+
+    }
+
+
+    else if (
+        item.media_url
+        &&
+        item.media_url
+            .toLowerCase()
+            .includes(".png")
+    ) {
+
+        extension =
+            ".png";
+
+    }
+
+
+    else if (
+        item.media_url
+        &&
+        item.media_url
+            .toLowerCase()
+            .includes(".webp")
+    ) {
+
+        extension =
+            ".webp";
+
+    }
+
+
+    return (
+        `${date}${suffix}${extension}`
+    );
+
+}
+
+
+/* =====================================================
    创建媒体卡片
-------------------------------------------------- */
+===================================================== */
 
 function createItem(
     item
@@ -1289,6 +2261,7 @@ function createItem(
             "img"
         );
 
+
     if (
         item.media_type ===
         "video"
@@ -1305,17 +2278,22 @@ function createItem(
 
     }
 
+
     img.loading =
         "lazy";
+
 
     img.alt =
         item.alt ||
         "";
 
+
     img.addEventListener(
         "click",
-        () => openModal(item)
+        () =>
+            openModal(item)
     );
+
 
     mediaWrap.appendChild(
         img
@@ -1358,11 +2336,13 @@ function createItem(
         source.className =
             "source-badge";
 
+
         source.textContent =
             item.source ===
             "repost"
                 ? "转帖"
                 : "引用";
+
 
         mediaWrap.appendChild(
             source
@@ -1399,6 +2379,7 @@ function createItem(
         ) ||
         item.created_at;
 
+
     info.appendChild(
         date
     );
@@ -1427,9 +2408,11 @@ function createItem(
             ? "▶ 播放"
             : "查看大图";
 
+
     view.addEventListener(
         "click",
-        () => openModal(item)
+        () =>
+            openModal(item)
     );
 
 
@@ -1447,9 +2430,11 @@ function createItem(
             ? "⬇ 下载视频"
             : "⬇ 下载原图";
 
+
     download.addEventListener(
         "click",
-        () => downloadItem(item)
+        () =>
+            downloadItem(item)
     );
 
 
@@ -1463,6 +2448,7 @@ function createItem(
 
     post.textContent =
         "原帖";
+
 
     post.addEventListener(
         "click",
@@ -1489,22 +2475,25 @@ function createItem(
         post
     );
 
+
     info.appendChild(
         actions
     );
 
+
     wrapper.appendChild(
         info
     );
+
 
     return wrapper;
 
 }
 
 
-/* -------------------------------------------------
+/* =====================================================
    下载
-------------------------------------------------- */
+===================================================== */
 
 function downloadItem(
     item
@@ -1512,6 +2501,7 @@ function downloadItem(
 
     const filename =
         getFilename(item);
+
 
     const url =
         "/api/download?url=" +
@@ -1523,15 +2513,16 @@ function downloadItem(
             filename
         );
 
+
     window.location.href =
         url;
 
 }
 
 
-/* -------------------------------------------------
+/* =====================================================
    大图 / 视频
-------------------------------------------------- */
+===================================================== */
 
 function openModal(
     item
@@ -1540,8 +2531,10 @@ function openModal(
     currentItem =
         item;
 
+
     modalContent.innerHTML =
         "";
+
 
     if (
         item.media_type ===
@@ -1553,47 +2546,62 @@ function openModal(
                 "video"
             );
 
+
         video.src =
             item.video_url ||
             item.media_url;
 
+
         video.controls =
             true;
+
 
         video.autoplay =
             true;
 
+
         video.playsInline =
             true;
+
 
         modalContent.appendChild(
             video
         );
 
+
         downloadButton.textContent =
             "⬇ 下载视频";
 
-    } else {
+    }
+
+
+    else {
 
         const img =
             document.createElement(
                 "img"
             );
 
+
         img.src =
             item.media_url;
 
+
         img.alt =
-            item.alt || "";
+            item.alt ||
+            "";
+
 
         modalContent.appendChild(
             img
         );
 
+
         downloadButton.textContent =
             "⬇ 下载原图";
 
     }
+
 
     modal.classList.remove(
         "hidden"
@@ -1601,6 +2609,10 @@ function openModal(
 
 }
 
+
+/* =====================================================
+   关闭大图
+===================================================== */
 
 closeModal.addEventListener(
     "click",
@@ -1631,8 +2643,10 @@ function closeModalWindow() {
         "hidden"
     );
 
+
     modalContent.innerHTML =
         "";
+
 
     currentItem =
         null;
@@ -1640,9 +2654,9 @@ function closeModalWindow() {
 }
 
 
-/* -------------------------------------------------
-   大图页面下载
-------------------------------------------------- */
+/* =====================================================
+   大图下载
+===================================================== */
 
 downloadButton.addEventListener(
     "click",
@@ -1656,6 +2670,7 @@ downloadButton.addEventListener(
 
         }
 
+
         downloadItem(
             currentItem
         );
@@ -1664,9 +2679,9 @@ downloadButton.addEventListener(
 );
 
 
-/* -------------------------------------------------
+/* =====================================================
    原帖
-------------------------------------------------- */
+===================================================== */
 
 originalButton.addEventListener(
     "click",
@@ -1680,6 +2695,7 @@ originalButton.addEventListener(
 
         }
 
+
         window.open(
             currentItem.tweet_url,
             "_blank"
@@ -1687,6 +2703,15 @@ originalButton.addEventListener(
 
     }
 );
+
+
+/* =====================================================
+   初始状态
+===================================================== */
+
+renderFavorites();
+
+updateFavoriteButton();
 
 </script>
 
