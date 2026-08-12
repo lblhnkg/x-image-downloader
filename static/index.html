@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0c">
+<title>X 图片找图器</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b0b0c;color:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif}
+.wrap{max-width:900px;margin:auto;padding:18px 14px 50px}
+.top{position:sticky;top:0;background:rgba(11,11,12,.95);backdrop-filter:blur(14px);z-index:5;padding:10px 0 14px}
+h1{font-size:25px;margin:0 0 5px}
+.sub{color:#999;font-size:13px;margin-bottom:12px}
+.row{display:flex;gap:8px}
+.input{flex:1;min-width:0;background:#1b1b1d;color:#fff;border:1px solid #333;border-radius:13px;padding:13px;font-size:15px;outline:none}
+button{border:0;border-radius:13px;padding:0 16px;background:#fff;color:#111;font-weight:700;font-size:14px}
+.status{margin:12px 0;color:#aaa;font-size:13px;min-height:18px}
+.grid{columns:2 150px;column-gap:8px}
+.card{break-inside:avoid;margin:0 0 8px;border-radius:12px;overflow:hidden;background:#171719}
+.card img{display:block;width:100%;height:auto}
+.meta{padding:8px;font-size:11px;color:#aaa}
+.actions{display:flex;gap:6px;padding:0 8px 9px}
+.actions a{flex:1;text-align:center;text-decoration:none;background:#252527;color:#fff;border-radius:9px;padding:8px 4px;font-size:11px}
+.more{display:block;margin:18px auto;padding:12px 22px}
+.note{font-size:11px;color:#777;line-height:1.5;margin-top:12px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:20;display:none;align-items:center;justify-content:center;padding:15px}
+.modal.on{display:flex}
+.modal img{max-width:100%;max-height:82vh;object-fit:contain}
+.close{position:fixed;right:14px;top:14px;background:#333;color:#fff;width:42px;height:42px;border-radius:50%}
+.download{position:fixed;bottom:18px;left:15px;right:15px;text-align:center;background:#fff;color:#111;padding:14px;border-radius:14px;text-decoration:none;font-weight:800}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<div class="top">
+<h1>🖼️ X 图片找图器</h1>
+<div class="sub">输入博主主页，只看图片；优先尝试直接保存原图。</div>
+
+<div class="row">
+<input id="profile" class="input" placeholder="https://x.com/username" autocomplete="off">
+<button id="go">开始</button>
+</div>
+
+<div id="status" class="status"></div>
+</div>
+
+<div id="grid" class="grid"></div>
+<button id="more" class="more" style="display:none">加载更多</button>
+
+<div class="note">
+第一版默认读取最多 200 条帖子。若原图直下失败，可在大图页面点“打开原帖”。
+</div>
+</div>
+
+<div id="modal" class="modal">
+<button class="close" id="close">×</button>
+<img id="big">
+<a id="dl" class="download">⬇ 尝试下载原图</a>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+let all=[],shown=0,pageSize=40;
+
+function esc(s){
+ return String(s||"").replace(/[&<>"']/g,m=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[m]));
+}
+
+function render(){
+ const g=$("#grid");
+ g.innerHTML="";
+
+ all.slice(0,shown).forEach((x,i)=>{
+   const c=document.createElement("div");
+   c.className="card";
+
+   c.innerHTML=
+   '<img loading="lazy" src="'+esc(x.thumb||x.image)+'" alt="">'+
+   '<div class="meta">'+esc(x.created_at)+'</div>'+
+   '<div class="actions">'+
+   '<a href="#" data-i="'+i+'" class="view">看大图</a>'+
+   '<a href="'+esc(x.tweet_url)+'" target="_blank" rel="noopener">原帖</a>'+
+   '</div>';
+
+   g.appendChild(c);
+ });
+
+ document.querySelectorAll(".view").forEach(a=>{
+   a.onclick=e=>{
+     e.preventDefault();
+     openImg(all[+a.dataset.i]);
+   };
+ });
+
+ $("#more").style.display=shown<all.length?"block":"none";
+}
+
+function openImg(x){
+ $("#big").src=x.image;
+ $("#dl").href="/api/download?url="+encodeURIComponent(x.image);
+ $("#modal").classList.add("on");
+}
+
+$("#close").onclick=()=>{
+ $("#modal").classList.remove("on");
+};
+
+$("#modal").onclick=e=>{
+ if(e.target.id==="modal")
+   $("#modal").classList.remove("on");
+};
+
+$("#go").onclick=async()=>{
+ const p=$("#profile").value.trim();
+ if(!p)return;
+
+ $("#go").disabled=true;
+ $("#status").textContent="正在扫描……";
+ $("#grid").innerHTML="";
+ $("#more").style.display="none";
+
+ try{
+   const r=await fetch(
+     "/api/timeline?profile="+encodeURIComponent(p)+"&limit=200"
+   );
+
+   const j=await r.json();
+
+   if(!r.ok)
+     throw new Error(j.detail||"读取失败");
+
+   all=j.items||[];
+   shown=Math.min(pageSize,all.length);
+   render();
+
+   $("#status").textContent=
+     "@"+j.username+"：找到 "+all.length+" 张图片";
+
+ }catch(e){
+   $("#status").textContent="失败："+e.message;
+ }
+ finally{
+   $("#go").disabled=false;
+ }
+};
+
+$("#more").onclick=()=>{
+ shown=Math.min(shown+pageSize,all.length);
+ render();
+};
+</script>
+
+</body>
+</html>
