@@ -1,6 +1,7 @@
 import os
 import re
 from urllib.parse import urlparse
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,12 +9,8 @@ import httpx
 
 from xtf import Router
 
-NITTER = os.getenv(
-    "XTF_NITTER",
-    "https://xcancel.com,https://nitter.poast.org,https://nitter.privacyredirect.com,https://nitter.tiekoetter.com"
-)
-
 app = FastAPI(title="X Image Finder")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,126 +19,332 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def username_from_url(value: str) -> str:
+
+def get_username(value: str) -> str:
     value = value.strip()
+
+    if not value:
+        raise ValueError("请输入 X 博主主页")
+
     if not value.startswith(("http://", "https://")):
         value = "https://" + value
-    p = urlparse(value)
-    host = p.netloc.lower()
-    if host not in {"x.com", "www.x.com", "twitter.com", "www.twitter.com"}:
-        raise ValueError("请输入 x.com 或 twitter.com 的主页链接")
-    parts = [x for x in p.path.split("/") if x]
-    if not parts:
-        raise ValueError("没有识别到用户名")
-    if parts[0].lower() in {"home", "explore", "search", "i"}:
-        raise ValueError("请输入博主主页链接，例如 https://x.com/username")
-    return re.sub(r"[^A-Za-z0-9_]", "", parts[0])
 
-def media_from_tweet(tw):
-    if hasattr(tw, "to_dict"):
-        tw = tw.to_dict()
-    if not isinstance(tw, dict):
-        return []
-    media = tw.get("media") or tw.get("attachments") or []
+    parsed = urlparse(value)
+    host = parsed.netloc.lower()
+
+    if host not in {
+        "x.com",
+        "www.x.com",
+        "twitter.com",
+        "www.twitter.com",
+    }:
+        raise ValueError(
+            "请输入类似 https://x.com/username 的主页链接"
+        )
+
+    parts = [p for p in parsed.path.split("/") if p]
+
+    if not parts:
+        raise ValueError("没有识别到 X 用户名")
+
+    username = parts[0]
+
+    if username.lower() in {
+        "home",
+        "explore",
+        "search",
+        "i",
+        "notifications",
+        "messages",
+    }:
+        raise ValueError("这不是博主主页链接")
+
+    username = re.sub(r"[^A-Za-z0-9_]", "", username)
+
+    if not username:
+        raise ValueError("用户名无效")
+
+    return username
+
+
+def obj_to_dict(obj):
+    if isinstance(obj, dict):
+        return obj
+
+    if hasattr(obj, "to_dict"):
+        return obj.to_dict()
+
+    if hasattr(obj, "model_dump"):
+        return obj.model_dump()
+
+    if hasattr(obj, "__dict__"):
+        return obj.__dict__
+
+    return {}
+
+
+def extract_media(tweet):
+    data = obj_to_dict(tweet)
+
+    media = (
+        data.get("media")
+        or data.get("media_urls")
+        or data.get("mediaURLs")
+        or []
+    )
+
+    result = []
+
     if isinstance(media, dict):
-        # Common normalized shapes.
-        candidates = media.get("photos") or media.get("all") or media.get("images") or []
-    else:
-        candidates = media
-    out = []
-    if isinstance(candidates, dict):
-        candidates = [candidates]
-    for m in candidates or []:
-        if not isinstance(m, dict):
+        possible = []
+
+        for key in (
+            "all",
+            "photos",
+            "images",
+            "media",
+        ):
+            value = media.get(key)
+            if value:
+                if isinstance(value, list):
+                    possible.extend(value)
+                else:
+                    possible.append(value)
+
+        media = possible
+
+    if isinstance(media, str):
+        media = [media]
+
+    for item in media or []:
+
+        if isinstance(item, str):
+            url = item
+
+            if "pbs.twimg.com" in url:
+                result.append({
+                    "url": url,
+                    "thumb": url,
+                })
+
             continue
-        typ = str(m.get("type", "image")).lower()
-        if typ not in {"image", "photo", "photos"}:
+
+        if not isinstance(item, dict):
             continue
-        url = m.get("url") or m.get("media_url") or m.get("media_url_https")
-        thumb = m.get("thumbnail_url") or url
+
+        url = (
+            item.get("url")
+            or item.get("media_url")
+            or item.get("media_url_https")
+            or item.get("original_url")
+            or item.get("original")
+        )
+
+        thumb = (
+            item.get("thumbnail_url")
+            or item.get("thumbnail")
+            or url
+        )
+
         if url:
-            out.append({
+            result.append({
                 "url": url,
                 "thumb": thumb,
-                "width": m.get("width") or (m.get("size") or {}).get("width"),
-                "height": m.get("height") or (m.get("size") or {}).get("height"),
+                "width": item.get("width"),
+                "height": item.get("height"),
             })
-    # Fallback for normalized media_urls / mediaURLs.
-    if not out:
-        urls = tw.get("media_urls") or tw.get("mediaURLs") or []
-        for u in urls:
-            if isinstance(u, str) and re.search(r"\.(?:jpg|jpeg|png|webp)(?:\?|$)", u, re.I):
-                out.append({"url": u, "thumb": u, "width": None, "height": None})
-    return out
+
+    return result
+
 
 @app.get("/")
-def index():
+def home():
     return FileResponse("static/index.html")
+
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "nitter": NITTER.split(",")}
+    return {
+        "ok": True,
+        "message": "X Image Finder is running"
+    }
+
 
 @app.get("/api/timeline")
 def timeline(
-    profile: str = Query(..., description="X profile URL or @username"),
-    limit: int = Query(200, ge=5, le=200),
+    profile: str = Query(...),
+    limit: int = Query(100, ge=1, le=200),
 ):
     try:
-        username = username_from_url(profile) if ("/" in profile or profile.startswith("http")) else profile.lstrip("@")
-        username = re.sub(r"[^A-Za-z0-9_]", "", username)
-        if not username:
-            raise ValueError("用户名为空")
-        os.environ["XTF_NITTER"] = NITTER
-        router = Router(backend="nitter")
-        tweets = router.fetch_timeline(username, limit=limit)
+        username = get_username(profile)
     except Exception as e:
-        raise HTTPException(502, f"读取 X 时间线失败：{e}")
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
 
-    result = []
-    for tw in tweets:
-        d = tw.to_dict() if hasattr(tw, "to_dict") else tw
-        photos = media_from_tweet(d)
-        if not photos:
-            continue
-        tweet_id = d.get("tweet_id") or d.get("id") or ""
-        tweet_url = d.get("url") or (f"https://x.com/{username}/status/{tweet_id}" if tweet_id else f"https://x.com/{username}")
-        created = d.get("created_at") or d.get("time_ago") or ""
-        for idx, photo in enumerate(photos):
-            result.append({
-                "id": f"{tweet_id}-{idx}",
+    try:
+        # 使用当前 x-tweet-fetcher v3 的标准 Python API。
+        # 不强制指定 backend，让 Router 使用它自己的 backend 路由。
+        router = Router()
+
+        tweets = router.fetch_timeline(
+            username,
+            limit=limit
+        )
+
+    except Exception as e:
+
+        # 不再把上游失败伪装成“0 张图片”。
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "X 时间线获取失败。"
+                f"后端返回：{str(e)}"
+            )
+        )
+
+    items = []
+
+    for tweet in tweets:
+
+        data = obj_to_dict(tweet)
+
+        tweet_id = (
+            data.get("tweet_id")
+            or data.get("id")
+            or ""
+        )
+
+        tweet_url = (
+            data.get("url")
+            or data.get("tweet_url")
+        )
+
+        if not tweet_url and tweet_id:
+            tweet_url = (
+                f"https://x.com/"
+                f"{username}/status/{tweet_id}"
+            )
+
+        created_at = (
+            data.get("created_at")
+            or data.get("date")
+            or data.get("time_ago")
+            or ""
+        )
+
+        text = (
+            data.get("text")
+            or data.get("full_text")
+            or ""
+        )
+
+        media = extract_media(tweet)
+
+        for index, photo in enumerate(media):
+
+            image_url = photo.get("url")
+
+            if not image_url:
+                continue
+
+            items.append({
+                "id": f"{tweet_id}-{index}",
                 "tweet_id": tweet_id,
                 "tweet_url": tweet_url,
-                "created_at": created,
-                "text": d.get("text") or d.get("full_text") or "",
-                "image": photo["url"],
-                "thumb": photo["thumb"],
-                "width": photo["width"],
-                "height": photo["height"],
+                "created_at": created_at,
+                "text": text,
+                "image": image_url,
+                "thumb": photo.get("thumb") or image_url,
+                "width": photo.get("width"),
+                "height": photo.get("height"),
             })
-    return {"username": username, "count": len(result), "items": result}
+
+    return {
+        "username": username,
+        "count": len(items),
+        "items": items,
+    }
+
 
 @app.get("/api/download")
-async def download(url: str = Query(...)):
-    # Only proxy X media hosts to reduce abuse risk.
-    p = urlparse(url)
-    if p.scheme != "https" or p.netloc.lower() not in {"pbs.twimg.com", "video.twimg.com"}:
-        raise HTTPException(400, "只允许下载 X 的媒体地址")
-    async with httpx.AsyncClient(
-        follow_redirects=True,
-        timeout=30,
-        headers={"User-Agent": "Mozilla/5.0 X-Image-Finder/1.0"}
-    ) as client:
-        r = await client.get(url)
-    if r.status_code >= 400:
-        raise HTTPException(r.status_code, "X 原图读取失败，请打开原帖下载")
-    media_type = r.headers.get("content-type", "image/jpeg")
-    suffix = ".jpg"
-    if "png" in media_type: suffix = ".png"
-    elif "webp" in media_type: suffix = ".webp"
-    filename = "x-original" + suffix
+async def download(
+    url: str = Query(...)
+):
+
+    parsed = urlparse(url)
+
+    allowed_hosts = {
+        "pbs.twimg.com",
+        "video.twimg.com",
+    }
+
+    if (
+        parsed.scheme != "https"
+        or parsed.netloc.lower() not in allowed_hosts
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="只允许下载 X 官方媒体地址"
+        )
+
+    # 如果 URL 没有 format/orig 参数，
+    # 对常见 pbs.twimg.com 图片尝试请求原始尺寸。
+    if "pbs.twimg.com" in parsed.netloc:
+        if "format=" not in url:
+            separator = "&" if "?" in url else "?"
+            url += separator + "format=jpg&name=orig"
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 "
+            "(iPhone; CPU iPhone OS 18_0 like Mac OS X) "
+            "AppleWebKit/605.1.15"
+        )
+    }
+
+    try:
+        async with httpx.AsyncClient(
+            follow_redirects=True,
+            timeout=30,
+            headers=headers,
+        ) as client:
+
+            response = await client.get(url)
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"读取 X 原图失败：{e}"
+        )
+
+    if response.status_code >= 400:
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=(
+                "X 原图读取失败。"
+                "请点击“打开原帖”从 X 保存。"
+            )
+        )
+
+    content_type = response.headers.get(
+        "content-type",
+        "image/jpeg"
+    )
+
+    if "png" in content_type:
+        filename = "x-original.png"
+    elif "webp" in content_type:
+        filename = "x-original.webp"
+    else:
+        filename = "x-original.jpg"
+
     return StreamingResponse(
-        iter([r.content]),
-        media_type=media_type,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        iter([response.content]),
+        media_type=content_type,
+        headers={
+            "Content-Disposition":
+                f'attachment; filename="{filename}"'
+        }
     )
