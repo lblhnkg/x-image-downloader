@@ -873,7 +873,248 @@ async def download(
         },
     )
 
+# ---------------------------------------------------------
+# HLS / M3U8 视频下载
+# ---------------------------------------------------------
 
+import asyncio
+import os
+import subprocess
+from urllib.parse import urlparse
+
+from fastapi.responses import StreamingResponse
+
+
+HLS_ALLOWED_HOSTS = {
+    "video.twimg.com",
+    "video.twimg.com.",
+}
+
+
+def validate_hls_url(url: str):
+
+    try:
+
+        parsed = urlparse(url)
+
+    except Exception:
+
+        raise HTTPException(
+            status_code=400,
+            detail="视频地址格式错误"
+        )
+
+    if parsed.scheme != "https":
+
+        raise HTTPException(
+            status_code=400,
+            detail="视频地址必须使用 HTTPS"
+        )
+
+    if (
+        parsed.netloc.lower()
+        not in HLS_ALLOWED_HOSTS
+    ):
+
+        raise HTTPException(
+            status_code=400,
+            detail="不是有效的 X 视频地址"
+        )
+
+    return url
+
+
+def safe_video_filename(
+    value
+):
+
+    value = str(
+        value or "x-video"
+    )
+
+    value = re.sub(
+        r'[\\/:*?"<>|]+',
+        "_",
+        value
+    )
+
+    value = value.strip()
+
+    if not value:
+
+        value = "x-video"
+
+    if not value.lower().endswith(
+        ".mp4"
+    ):
+
+        value += ".mp4"
+
+    return value[:150]
+
+
+async def ffmpeg_stream(
+    url,
+    process
+):
+
+    try:
+
+        while True:
+
+            chunk = await asyncio.to_thread(
+                process.stdout.read,
+                1024 * 1024
+            )
+
+            if not chunk:
+
+                break
+
+            yield chunk
+
+        return_code = await asyncio.to_thread(
+            process.wait
+        )
+
+        if return_code != 0:
+
+            raise RuntimeError(
+                "FFmpeg 视频转换失败"
+            )
+
+    finally:
+
+        if process.poll() is None:
+
+            process.kill()
+
+
+@app.get(
+    "/api/video-download"
+)
+async def video_download(
+
+    url: str = Query(...),
+
+    filename: str = Query(
+        "x-video.mp4"
+    ),
+
+):
+
+    validate_hls_url(
+        url
+    )
+
+    filename = safe_video_filename(
+        filename
+    )
+
+    user_agent = (
+        "Mozilla/5.0 "
+        "(iPhone; CPU iPhone OS 18_0 like Mac OS X) "
+        "AppleWebKit/605.1.15 "
+        "(KHTML, like Gecko) "
+        "Version/18.0 Mobile/15E148 "
+        "Safari/604.1"
+    )
+
+    headers = (
+        "User-Agent: "
+        + user_agent
+        + "\r\n"
+        + "Referer: https://x.com/\r\n"
+    )
+
+    command = [
+
+        "ffmpeg",
+
+        "-hide_banner",
+
+        "-loglevel",
+        "error",
+
+        "-headers",
+        headers,
+
+        "-protocol_whitelist",
+        "file,http,https,tcp,tls,crypto",
+
+        "-i",
+        url,
+
+        "-map",
+        "0:v:0?",
+
+        "-map",
+        "0:a:0?",
+
+        "-c",
+        "copy",
+
+        "-bsf:a",
+        "aac_adtstoasc",
+
+        "-movflags",
+        "frag_keyframe+empty_moov",
+
+        "-f",
+        "mp4",
+
+        "pipe:1",
+
+    ]
+
+    try:
+
+        process = subprocess.Popen(
+
+            command,
+
+            stdout=subprocess.PIPE,
+
+            stderr=subprocess.PIPE,
+
+            bufsize=1024 * 1024,
+
+        )
+
+    except Exception as e:
+
+        raise HTTPException(
+
+            status_code=500,
+
+            detail=(
+                "无法启动 FFmpeg："
+                + str(e)
+            )
+
+        )
+
+    return StreamingResponse(
+
+        ffmpeg_stream(
+            url,
+            process
+        ),
+
+        media_type="video/mp4",
+
+        headers={
+
+            "Content-Disposition":
+                f'attachment; filename="{filename}"',
+
+            "Cache-Control":
+                "no-store",
+
+        },
+
+    )
+    
 # ---------------------------------------------------------
 # 首页
 # ---------------------------------------------------------
