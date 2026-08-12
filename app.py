@@ -1386,3 +1386,322 @@ async def health():
             "X Media Finder V3"
 
     }
+# ---------------------------------------------------------
+# X HLS / M3U8 -> MP4
+# v0.7.1
+# ---------------------------------------------------------
+
+import asyncio
+import os
+import subprocess
+import tempfile
+import uuid
+
+from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
+
+
+HLS_ALLOWED_HOSTS = {
+    "video.twimg.com",
+    "video.twimg.com.",
+}
+
+
+def validate_hls_url(url: str):
+
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="视频地址格式错误"
+        )
+
+    if parsed.scheme != "https":
+        raise HTTPException(
+            status_code=400,
+            detail="视频地址必须使用 HTTPS"
+        )
+
+    hostname = (
+        parsed.hostname or ""
+    ).lower()
+
+    if hostname not in HLS_ALLOWED_HOSTS:
+        raise HTTPException(
+            status_code=400,
+            detail="不是有效的 X 视频地址"
+        )
+
+    return url
+
+
+def cleanup_video_directory(directory):
+
+    try:
+
+        if not os.path.isdir(directory):
+            return
+
+        for name in os.listdir(directory):
+
+            path = os.path.join(
+                directory,
+                name
+            )
+
+            try:
+
+                if os.path.isfile(path):
+                    os.remove(path)
+
+            except Exception:
+                pass
+
+        try:
+            os.rmdir(directory)
+        except Exception:
+            pass
+
+    except Exception:
+        pass
+
+
+@app.get("/api/video-download")
+async def video_download(
+
+    url: str = Query(...),
+
+    filename: str = Query(
+        "x-video.mp4"
+    ),
+
+):
+
+    # -----------------------------------------
+    # 检查 M3U8 地址
+    # -----------------------------------------
+
+    validate_hls_url(url)
+
+    filename = safe_filename(filename)
+
+    if not filename:
+        filename = "x-video.mp4"
+
+    if not filename.lower().endswith(".mp4"):
+        filename += ".mp4"
+
+    # -----------------------------------------
+    # 创建临时目录
+    # -----------------------------------------
+
+    temp_dir = tempfile.mkdtemp(
+        prefix="x-video-"
+    )
+
+    output_path = os.path.join(
+        temp_dir,
+        str(uuid.uuid4()) + ".mp4"
+    )
+
+    # -----------------------------------------
+    # X 视频请求头
+    # -----------------------------------------
+
+    user_agent = (
+        "Mozilla/5.0 "
+        "(iPhone; CPU iPhone OS 18_0 like Mac OS X) "
+        "AppleWebKit/605.1.15 "
+        "(KHTML, like Gecko) "
+        "Version/18.0 Mobile/15E148 "
+        "Safari/604.1"
+    )
+
+    headers = (
+        "User-Agent: "
+        + user_agent
+        + "\r\n"
+        + "Referer: https://x.com/\r\n"
+    )
+
+    # -----------------------------------------
+    # FFmpeg
+    # -----------------------------------------
+
+    command = [
+
+        "ffmpeg",
+
+        "-hide_banner",
+
+        "-loglevel",
+        "error",
+
+        "-headers",
+        headers,
+
+        "-protocol_whitelist",
+        "file,http,https,tcp,tls,crypto",
+
+        "-allowed_extensions",
+        "ALL",
+
+        "-i",
+        url,
+
+        "-map",
+        "0:v:0?",
+
+        "-map",
+        "0:a:0?",
+
+        "-c",
+        "copy",
+
+        "-movflags",
+        "+faststart",
+
+        "-y",
+
+        output_path,
+
+    ]
+
+    try:
+
+        process = await asyncio.to_thread(
+
+            subprocess.run,
+
+            command,
+
+            stdout=subprocess.PIPE,
+
+            stderr=subprocess.PIPE,
+
+            timeout=180,
+
+        )
+
+    except subprocess.TimeoutExpired:
+
+        cleanup_video_directory(
+            temp_dir
+        )
+
+        raise HTTPException(
+            status_code=504,
+            detail="视频转换超时"
+        )
+
+    except Exception as e:
+
+        cleanup_video_directory(
+            temp_dir
+        )
+
+        raise HTTPException(
+
+            status_code=500,
+
+            detail=(
+                "FFmpeg 启动失败："
+                + str(e)
+            )
+
+        )
+
+    # -----------------------------------------
+    # FFmpeg 失败
+    # -----------------------------------------
+
+    if process.returncode != 0:
+
+        error_message = (
+            process.stderr
+            .decode(
+                "utf-8",
+                errors="ignore"
+            )
+            .strip()
+        )
+
+        cleanup_video_directory(
+            temp_dir
+        )
+
+        raise HTTPException(
+
+            status_code=500,
+
+            detail=(
+                "FFmpeg 转换失败："
+                + (
+                    error_message[-3000:]
+                    if error_message
+                    else "未知错误"
+                )
+            )
+
+        )
+
+    # -----------------------------------------
+    # 检查 MP4
+    # -----------------------------------------
+
+    if not os.path.exists(
+        output_path
+    ):
+
+        cleanup_video_directory(
+            temp_dir
+        )
+
+        raise HTTPException(
+
+            status_code=500,
+
+            detail="FFmpeg 没有生成 MP4"
+
+        )
+
+    file_size = os.path.getsize(
+        output_path
+    )
+
+    if file_size < 1024:
+
+        cleanup_video_directory(
+            temp_dir
+        )
+
+        raise HTTPException(
+
+            status_code=500,
+
+            detail="生成的 MP4 文件异常"
+
+        )
+
+    # -----------------------------------------
+    # 返回完整 MP4
+    # -----------------------------------------
+
+    return FileResponse(
+
+        path=output_path,
+
+        media_type="video/mp4",
+
+        filename=filename,
+
+        background=BackgroundTask(
+
+            cleanup_video_directory,
+
+            temp_dir
+
+        ),
+
+    )
