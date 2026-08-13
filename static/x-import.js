@@ -2,793 +2,1086 @@
     "use strict";
 
     /*
-     * X Image Downloader
-     * v3.2 X Import Assistant
+     * =========================================================
+     * X Media Finder
+     * X Import Assistant
      *
      * 作用：
-     * 1. 在 x.com 页面运行
-     * 2. 监听 X Web App 自己发出的 GraphQL 请求
-     * 3. 提取 Likes / Bookmarks 中出现的帖子
-     * 4. 只把公开的帖子/媒体信息发送给我们的下载器
+     *
+     * 1. 读取 V0.8 Userscript 保存的 LocalStorage
+     * 2. 显示上传按钮
+     * 3. 将 Likes / Bookmarks 数据上传到 Render
+     * 4. 使用 /api/import-media
      *
      * 注意：
-     * - 不读取密码
-     * - 不读取 auth_token
-     * - 不读取 Cookie
-     * - 不把登录凭证发送给服务器
+     * 本文件不再读取 X GraphQL。
+     * 本文件不再 Hook fetch / XHR。
+     * 本文件不读取 Cookie、auth_token 或密码。
+     * =========================================================
      */
 
-    const VERSION = "3.2.0";
+    const VERSION = "0.8";
 
-    const STORAGE_KEY = "x_image_downloader_import_state";
+    /*
+     * =========================================================
+     * 配置
+     * =========================================================
+     */
 
-    let mode = null;
-    let running = false;
-    let captured = new Map();
+    const API_BASE =
+        "https://x-v1.onrender.com";
+
+    /*
+     * 当前 V0.8 采集器使用的 LocalStorage。
+     *
+     * 你的采集器虽然版本已经是 0.8，
+     * 但目前正常工作的代码仍然使用这个键。
+     *
+     * 不改它，保证能够直接读取你现在已经采集的数据。
+     */
+
+    const STORAGE_KEY =
+        "xid_universal_media_v060";
+
+
+    /*
+     * =========================================================
+     * 基础状态
+     * =========================================================
+     */
+
+    let uploading = false;
+
+    let messageBox = null;
+
+    let uploadButton = null;
+
+
+    /*
+     * =========================================================
+     * 日志
+     * =========================================================
+     */
 
     function log(...args) {
+
         console.log(
-            "[X Image Downloader]",
+            "[X Media Finder]",
             ...args
         );
+
     }
 
-    function getApiBase() {
-        /*
-         * 当前脚本默认认为：
-         * x-import.js 是由你的 X 图片找图器提供。
-         *
-         * bookmarklet 加载它时，会把当前页面的数据
-         * 发送回你的站点。
-         */
 
-        const script =
-            document.currentScript;
+    /*
+     * =========================================================
+     * 当前页面模式
+     * =========================================================
+     */
+
+    function getPageMode() {
+
+        const path =
+            location.pathname;
 
         if (
-            script &&
-            script.src
+            path.includes("/bookmarks")
         ) {
-            try {
-                return new URL(
-                    script.src
-                ).origin;
-            } catch (_) {}
+
+            return "bookmarks";
+
         }
 
-        return "";
+        if (
+            path.includes("/likes")
+        ) {
+
+            return "likes";
+
+        }
+
+        return null;
+
     }
+
+
+    /*
+     * =========================================================
+     * 消息提示
+     * =========================================================
+     */
 
     function showMessage(
         message,
         type = "info"
     ) {
-        let box =
-            document.getElementById(
-                "xid-import-box"
-            );
 
-        if (!box) {
-            box =
+        if (!document.body) {
+            return;
+        }
+
+        if (!messageBox) {
+
+            messageBox =
                 document.createElement(
                     "div"
                 );
 
-            box.id =
-                "xid-import-box";
-
-            box.style.position =
-                "fixed";
-
-            box.style.left = "12px";
-            box.style.right = "12px";
-            box.style.bottom = "20px";
-
-            box.style.zIndex =
-                "2147483647";
-
-            box.style.padding =
-                "14px 16px";
-
-            box.style.borderRadius =
-                "14px";
-
-            box.style.background =
-                "rgba(20,20,20,.94)";
-
-            box.style.color =
-                "white";
-
-            box.style.fontSize =
-                "14px";
-
-            box.style.lineHeight =
-                "1.5";
-
-            box.style.fontFamily =
-                "-apple-system,BlinkMacSystemFont,sans-serif";
-
-            box.style.boxShadow =
-                "0 5px 30px rgba(0,0,0,.35)";
-
-            document.body.appendChild(
-                box
-            );
-        }
-
-        box.textContent =
-            message;
-
-        if (type === "error") {
-            box.style.background =
-                "rgba(180,30,30,.96)";
-        } else if (
-            type === "success"
-        ) {
-            box.style.background =
-                "rgba(20,120,70,.96)";
-        } else {
-            box.style.background =
-                "rgba(20,20,20,.94)";
-        }
-    }
-
-    function getModeFromUrl() {
-        const path =
-            location.pathname;
-
-        if (
-            path.includes(
-                "/bookmarks"
-            )
-        ) {
-            return "bookmarks";
-        }
-
-        if (
-            path.includes(
-                "/likes"
-            )
-        ) {
-            return "likes";
-        }
-
-        return null;
-    }
-
-    function extractTweetObjects(
-        value,
-        result = []
-    ) {
-        if (!value) {
-            return result;
-        }
-
-        if (
-            typeof value !==
-            "object"
-        ) {
-            return result;
-        }
-
-        if (
-            Array.isArray(value)
-        ) {
-            for (
-                const item of value
-            ) {
-                extractTweetObjects(
-                    item,
-                    result
-                );
-            }
-
-            return result;
-        }
-
-        /*
-         * X 不同版本可能使用：
-         *
-         * tweet
-         * tweet_results
-         * result
-         * legacy
-         *
-         * 所以这里不绑定单一结构。
-         */
-
-        if (
-            value.rest_id &&
-            (
-                value.legacy ||
-                value.core
-            )
-        ) {
-            result.push(value);
-        }
-
-        if (
-            value.__typename ===
-                "Tweet" &&
-            (
-                value.rest_id ||
-                value.legacy
-            )
-        ) {
-            result.push(value);
-        }
-
-        for (
-            const key of Object.keys(
-                value
-            )
-        ) {
-            try {
-                extractTweetObjects(
-                    value[key],
-                    result
-                );
-            } catch (_) {}
-        }
-
-        return result;
-    }
-
-    function normalizeTweet(
-        tweet
-    ) {
-        if (!tweet) {
-            return null;
-        }
-
-        const legacy =
-            tweet.legacy ||
-            tweet;
-
-        const id =
-            String(
-                tweet.rest_id ||
-                legacy.id_str ||
-                legacy.id ||
-                ""
-            );
-
-        if (!id) {
-            return null;
-        }
-
-        let username = "";
-
-        try {
-            username =
-                tweet.core
-                    ?.user_results
-                    ?.result
-                    ?.legacy
-                    ?.screen_name ||
-                tweet.core
-                    ?.user_results
-                    ?.result
-                    ?.core
-                    ?.screen_name ||
-                "";
-        } catch (_) {}
-
-        if (!username) {
-            try {
-                username =
-                    legacy.user
-                        ?.screen_name ||
-                    "";
-            } catch (_) {}
-        }
-
-        const text =
-            legacy.full_text ||
-            legacy.text ||
-            "";
-
-        const createdAt =
-            legacy.created_at ||
-            "";
-
-        const entities =
-            legacy.entities ||
-            {};
-
-        const media =
-            entities.media ||
-            [];
-
-        const photos = [];
-
-        for (
-            const item of media
-        ) {
-            if (
-                !item ||
-                !item.media_url_https
-            ) {
-                continue;
-            }
-
-            const type =
-                item.type || "";
-
-            if (
-                type === "photo"
-            ) {
-                photos.push({
-                    url:
-                        item.media_url_https,
-                    media_url:
-                        item.media_url_https,
-                    type: "photo",
-                    width:
-                        item.original_info
-                            ?.width ||
-                        null,
-                    height:
-                        item.original_info
-                            ?.height ||
-                        null,
-                    alt:
-                        item.ext_alt_text ||
-                        ""
-                });
-            }
-        }
-
-        return {
-            tweet_id: id,
-
-            tweet_url:
-                username
-                    ? `https://x.com/${username}/status/${id}`
-                    : `https://x.com/i/status/${id}`,
-
-            username,
-
-            text,
-
-            created_at:
-                createdAt,
-
-            photos
-        };
-    }
-
-    function collectFromJson(
-        json
-    ) {
-        const tweets =
-            extractTweetObjects(
-                json
-            );
-
-        let added = 0;
-
-        for (
-            const tweet of tweets
-        ) {
-            const normalized =
-                normalizeTweet(
-                    tweet
-                );
-
-            if (
-                !normalized
-            ) {
-                continue;
-            }
-
-            if (
-                captured.has(
-                    normalized.tweet_id
-                )
-            ) {
-                continue;
-            }
-
-            captured.set(
-                normalized.tweet_id,
-                normalized
-            );
-
-            added++;
-        }
-
-        if (added > 0) {
-            log(
-                "捕获新帖子：",
-                added,
-                "当前总数：",
-                captured.size
-            );
-
-            updateCounter();
-        }
-    }
-
-    function updateCounter() {
-        showMessage(
-            `正在读取 X ${mode === "likes" ? "喜欢" : "书签"}…… 已发现 ${captured.size} 条帖子`
-        );
-    }
-
-    function tryParseText(
-        text
-    ) {
-        if (
-            !text ||
-            typeof text !==
-                "string"
-        ) {
-            return;
-        }
-
-        const trimmed =
-            text.trim();
-
-        if (
-            !trimmed.startsWith(
-                "{"
-            ) &&
-            !trimmed.startsWith(
-                "["
-            )
-        ) {
-            return;
-        }
-
-        try {
-            const json =
-                JSON.parse(
-                    trimmed
-                );
-
-            collectFromJson(
-                json
-            );
-        } catch (_) {}
-    }
-
-    function installFetchHook() {
-        if (
-            window
-                .__XID_FETCH_HOOKED
-        ) {
-            return;
-        }
-
-        window
-            .__XID_FETCH_HOOKED =
-            true;
-
-        const originalFetch =
-            window.fetch;
-
-        window.fetch =
-            async function (
-                ...args
-            ) {
-                const response =
-                    await originalFetch.apply(
-                        this,
-                        args
-                    );
-
-                try {
-                    const requestUrl =
-                        typeof args[0] ===
-                        "string"
-                            ? args[0]
-                            : args[0]
-                                ?.url ||
-                              "";
-
-                    if (
-                        requestUrl.includes(
-                            "/graphql/"
-                        )
-                    ) {
-                        const clone =
-                            response.clone();
-
-                        clone
-                            .text()
-                            .then(
-                                text => {
-                                    tryParseText(
-                                        text
-                                    );
-                                }
-                            )
-                            .catch(
-                                () => {}
-                            );
-                    }
-                } catch (_) {}
-
-                return response;
-            };
-    }
-
-    function installXhrHook() {
-        if (
-            window
-                .__XID_XHR_HOOKED
-        ) {
-            return;
-        }
-
-        window
-            .__XID_XHR_HOOKED =
-            true;
-
-        const originalOpen =
-            XMLHttpRequest
-                .prototype
-                .open;
-
-        const originalSend =
-            XMLHttpRequest
-                .prototype
-                .send;
-
-        XMLHttpRequest
-            .prototype
-            .open =
-            function (
-                method,
-                url,
-                ...rest
-            ) {
-                this.__xid_url =
-                    String(
-                        url || ""
-                    );
-
-                return originalOpen.call(
-                    this,
-                    method,
-                    url,
-                    ...rest
-                );
-            };
-
-        XMLHttpRequest
-            .prototype
-            .send =
-            function (...args) {
-                try {
-                    this.addEventListener(
-                        "load",
-                        function () {
-                            try {
-                                const url =
-                                    this.__xid_url ||
-                                    "";
-
-                                if (
-                                    !url.includes(
-                                        "/graphql/"
-                                    )
-                                ) {
-                                    return;
-                                }
-
-                                tryParseText(
-                                    this.responseText
-                                );
-                            } catch (_) {}
-                        }
-                    );
-                } catch (_) {}
-
-                return originalSend.apply(
-                    this,
-                    args
-                );
-            };
-    }
-
-    async function sendToServer() {
-        const base =
-            getApiBase();
-
-        if (!base) {
-            throw new Error(
-                "无法确定 X 图片找图器地址"
-            );
-        }
-
-        const items =
-            Array.from(
-                captured.values()
-            );
-
-        const response =
-            await fetch(
-                `${base}/api/x-import`,
+            messageBox.id =
+                "xid-import-message";
+
+            Object.assign(
+                messageBox.style,
                 {
-                    method: "POST",
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+                    position:
+                        "fixed",
 
-                    body:
-                        JSON.stringify({
-                            mode,
-                            items
-                        })
+                    left:
+                        "12px",
+
+                    right:
+                        "12px",
+
+                    bottom:
+                        "20px",
+
+                    zIndex:
+                        "2147483647",
+
+                    padding:
+                        "14px 16px",
+
+                    borderRadius:
+                        "14px",
+
+                    color:
+                        "#fff",
+
+                    fontSize:
+                        "14px",
+
+                    lineHeight:
+                        "1.5",
+
+                    fontFamily:
+                        "-apple-system,BlinkMacSystemFont,sans-serif",
+
+                    boxShadow:
+                        "0 5px 30px rgba(0,0,0,.35)"
+
                 }
             );
 
-        if (
-            !response.ok
-        ) {
-            throw new Error(
-                `服务器返回 ${response.status}`
+            document.body.appendChild(
+                messageBox
             );
+
         }
 
-        return response.json();
+        messageBox.textContent =
+            message;
+
+        if (
+            type === "error"
+        ) {
+
+            messageBox.style.background =
+                "rgba(180,30,30,.96)";
+
+        } else if (
+            type === "success"
+        ) {
+
+            messageBox.style.background =
+                "rgba(20,120,70,.96)";
+
+        } else {
+
+            messageBox.style.background =
+                "rgba(20,20,20,.94)";
+
+        }
+
     }
 
+
+    /*
+     * =========================================================
+     * 读取 LocalStorage
+     * =========================================================
+     */
+
+    function loadRecords() {
+
+        let raw = null;
+
+        try {
+
+            raw =
+                localStorage.getItem(
+                    STORAGE_KEY
+                );
+
+        } catch (error) {
+
+            throw new Error(
+                "无法读取浏览器 LocalStorage"
+            );
+
+        }
+
+        if (!raw) {
+
+            return {};
+
+        }
+
+        try {
+
+            const parsed =
+                JSON.parse(raw);
+
+            if (
+                !parsed ||
+                typeof parsed !== "object" ||
+                Array.isArray(parsed)
+            ) {
+
+                throw new Error(
+                    "LocalStorage 数据格式错误"
+                );
+
+            }
+
+            return parsed;
+
+        } catch (error) {
+
+            throw new Error(
+                "LocalStorage 中的采集数据无法解析"
+            );
+
+        }
+
+    }
+
+
+    /*
+     * =========================================================
+     * 统计本地数据
+     * =========================================================
+     */
+
+    function getLocalStats(
+        records
+    ) {
+
+        const tweets =
+            Object.values(
+                records
+            );
+
+        let imageCount = 0;
+
+        let videoCount = 0;
+
+        let pendingVideoCount = 0;
+
+        let mediaCount = 0;
+
+        tweets.forEach(
+            function (tweet) {
+
+                const media =
+                    Array.isArray(
+                        tweet.media
+                    )
+                        ? tweet.media
+                        : [];
+
+                media.forEach(
+                    function (item) {
+
+                        mediaCount++;
+
+                        if (
+                            item.type ===
+                            "image"
+                        ) {
+
+                            imageCount++;
+
+                        }
+
+                        if (
+                            item.type ===
+                            "video"
+                        ) {
+
+                            if (
+                                item.url
+                            ) {
+
+                                videoCount++;
+
+                            } else {
+
+                                pendingVideoCount++;
+
+                            }
+
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+        return {
+
+            tweets:
+                tweets.length,
+
+            images:
+                imageCount,
+
+            videos:
+                videoCount,
+
+            pendingVideos:
+                pendingVideoCount,
+
+            media:
+                mediaCount
+
+        };
+
+    }
+
+
+    /*
+     * =========================================================
+     * 清理上传数据
+     *
+     * 只保留后端需要的数据。
+     * =========================================================
+     */
+
+    function buildItems(
+        records
+    ) {
+
+        const result = [];
+
+        Object.values(
+            records
+        ).forEach(
+            function (tweet) {
+
+                if (
+                    !tweet ||
+                    typeof tweet !== "object"
+                ) {
+
+                    return;
+
+                }
+
+                const tweetId =
+                    String(
+                        tweet.id ||
+                        tweet.tweetId ||
+                        ""
+                    );
+
+                const tweetUrl =
+                    tweet.url ||
+                    tweet.tweetUrl ||
+                    "";
+
+                const author =
+                    tweet.author ||
+                    "";
+
+                const source =
+                    tweet.source ===
+                    "bookmarks"
+                        ? "bookmarks"
+                        : "likes";
+
+                const rawMedia =
+                    Array.isArray(
+                        tweet.media
+                    )
+                        ? tweet.media
+                        : [];
+
+                const media = [];
+
+                rawMedia.forEach(
+                    function (item) {
+
+                        if (
+                            !item ||
+                            typeof item !==
+                            "object"
+                        ) {
+
+                            return;
+
+                        }
+
+                        const type =
+                            item.type;
+
+                        if (
+                            type !==
+                                "image" &&
+                            type !==
+                                "video"
+                        ) {
+
+                            return;
+
+                        }
+
+                        /*
+                         * Pending 视频没有真实 URL。
+                         *
+                         * 后端目前的媒体库设计要求媒体
+                         * 有实际 URL，所以这里不上传
+                         * pending 视频。
+                         *
+                         * 等采集器以后拿到真实 URL，
+                         * 再上传即可。
+                         */
+
+                        if (
+                            !item.url
+                        ) {
+
+                            return;
+
+                        }
+
+                        media.push({
+
+                            type:
+                                type,
+
+                            url:
+                                item.url,
+
+                            originalUrl:
+                                item.originalUrl ||
+                                item.url,
+
+                            thumbnail:
+                                item.thumbnail ||
+                                "",
+
+                            streamType:
+                                item.streamType ||
+                                "",
+
+                            width:
+                                Number(
+                                    item.width
+                                ) || 0,
+
+                            height:
+                                Number(
+                                    item.height
+                                ) || 0,
+
+                            bitrate:
+                                Number(
+                                    item.bitrate
+                                ) || 0
+
+                        });
+
+                    }
+                );
+
+                /*
+                 * 没有可上传媒体，
+                 * 不发送这个 Tweet。
+                 */
+
+                if (
+                    media.length === 0
+                ) {
+
+                    return;
+
+                }
+
+                result.push({
+
+                    tweetId:
+                        tweetId,
+
+                    tweetUrl:
+                        tweetUrl,
+
+                    author:
+                        author,
+
+                    source:
+                        source,
+
+                    media:
+                        media
+
+                });
+
+            }
+        );
+
+        return result;
+
+    }
+
+
+    /*
+     * =========================================================
+     * 上传
+     * =========================================================
+     */
+
+    async function uploadToServer() {
+
+        if (uploading) {
+
+            return;
+
+        }
+
+        uploading = true;
+
+        if (uploadButton) {
+
+            uploadButton.disabled =
+                true;
+
+            uploadButton.textContent =
+                "上传中…";
+
+            uploadButton.style.opacity =
+                "0.6";
+
+        }
+
+        try {
+
+            /*
+             * 读取本地数据
+             */
+
+            showMessage(
+                "正在读取本地采集数据……"
+            );
+
+            const records =
+                loadRecords();
+
+            const stats =
+                getLocalStats(
+                    records
+                );
+
+            if (
+                stats.tweets === 0
+            ) {
+
+                throw new Error(
+                    "本地还没有采集到任何帖子"
+                );
+
+            }
+
+            /*
+             * 转换成后端格式
+             */
+
+            const items =
+                buildItems(
+                    records
+                );
+
+            if (
+                items.length === 0
+            ) {
+
+                throw new Error(
+                    "没有可上传的媒体。可能目前只有待解析视频。"
+                );
+
+            }
+
+            let uploadMediaCount = 0;
+
+            items.forEach(
+                function (item) {
+
+                    uploadMediaCount +=
+                        item.media.length;
+
+                }
+            );
+
+            showMessage(
+                "正在上传 " +
+                items.length +
+                " 个帖子 / " +
+                uploadMediaCount +
+                " 个媒体……"
+            );
+
+            /*
+             * =================================================
+             * 核心：
+             *
+             * 直接调用真正存在的：
+             *
+             * POST /api/import-media
+             * =================================================
+             */
+
+            const response =
+                await fetch(
+                    API_BASE +
+                    "/api/import-media",
+                    {
+
+                        method:
+                            "POST",
+
+                        headers: {
+
+                            "Content-Type":
+                                "application/json"
+
+                        },
+
+                        body:
+                            JSON.stringify({
+
+                                items:
+                                    items
+
+                            })
+
+                    }
+                );
+
+            /*
+             * 尝试读取服务器返回内容。
+             */
+
+            let data = null;
+
+            try {
+
+                data =
+                    await response.json();
+
+            } catch (_) {
+
+                data = null;
+
+            }
+
+            /*
+             * HTTP 错误
+             */
+
+            if (
+                !response.ok
+            ) {
+
+                let detail =
+                    "服务器返回 HTTP " +
+                    response.status;
+
+                if (
+                    data &&
+                    data.detail
+                ) {
+
+                    detail +=
+                        "：" +
+                        data.detail;
+
+                }
+
+                throw new Error(
+                    detail
+                );
+
+            }
+
+            /*
+             * 后端正常返回，
+             * 但 ok 不正确。
+             */
+
+            if (
+                !data ||
+                data.ok !== true
+            ) {
+
+                throw new Error(
+                    "服务器返回的数据格式异常"
+                );
+
+            }
+
+            /*
+             * 成功
+             */
+
+            const added =
+                Number(
+                    data.added
+                ) || 0;
+
+            const duplicates =
+                Number(
+                    data.duplicates
+                ) || 0;
+
+            const updated =
+                Number(
+                    data.updated
+                ) || 0;
+
+            const imported =
+                Number(
+                    data.imported
+                ) || 0;
+
+            showMessage(
+
+                "上传完成！\n" +
+
+                "本次提交：" +
+                imported +
+                " 个媒体\n" +
+
+                "新增：" +
+                added +
+                "\n" +
+
+                "重复：" +
+                duplicates +
+                "\n" +
+
+                "更新：" +
+                updated +
+                "\n" +
+
+                "媒体库总数：" +
+                (
+                    Number(
+                        data.total
+                    ) || 0
+                ),
+
+                "success"
+
+            );
+
+            log(
+                "上传成功",
+                data
+            );
+
+        } catch (error) {
+
+            console.error(
+                "[X Media Finder] 上传失败：",
+                error
+            );
+
+            showMessage(
+
+                "上传失败：\n" +
+                (
+                    error &&
+                    error.message
+                        ? error.message
+                        : String(error)
+                ),
+
+                "error"
+
+            );
+
+        } finally {
+
+            uploading =
+                false;
+
+            if (uploadButton) {
+
+                uploadButton.disabled =
+                    false;
+
+                uploadButton.textContent =
+                    "☁ 上传到媒体库";
+
+                uploadButton.style.opacity =
+                    "1";
+
+            }
+
+        }
+
+    }
+
+
+    /*
+     * =========================================================
+     * 创建上传按钮
+     * =========================================================
+     */
+
     function createButton() {
+
         if (
             document.getElementById(
                 "xid-import-button"
             )
         ) {
+
             return;
+
         }
 
-        const button =
+        uploadButton =
             document.createElement(
                 "button"
             );
 
-        button.id =
+        uploadButton.id =
             "xid-import-button";
 
-        button.textContent =
-            "导入到 X 图片找图器";
+        uploadButton.textContent =
+            "☁ 上传到媒体库";
 
-        button.style.position =
-            "fixed";
+        Object.assign(
+            uploadButton.style,
+            {
 
-        button.style.right =
-            "14px";
+                position:
+                    "fixed",
 
-        button.style.bottom =
-            "95px";
+                right:
+                    "14px",
 
-        button.style.zIndex =
-            "2147483647";
+                bottom:
+                    "95px",
 
-        button.style.border =
-            "0";
+                zIndex:
+                    "2147483647",
 
-        button.style.borderRadius =
-            "999px";
+                border:
+                    "0",
 
-        button.style.padding =
-            "12px 16px";
+                borderRadius:
+                    "999px",
 
-        button.style.background =
-            "#111";
+                padding:
+                    "12px 16px",
 
-        button.style.color =
-            "#fff";
+                background:
+                    "#111",
 
-        button.style.fontSize =
-            "14px";
+                color:
+                    "#fff",
 
-        button.style.fontWeight =
-            "600";
+                fontSize:
+                    "14px",
 
-        button.style.boxShadow =
-            "0 4px 18px rgba(0,0,0,.3)";
+                fontWeight:
+                    "600",
 
-        button.addEventListener(
-            "click",
-            async () => {
-                if (
-                    running
-                ) {
-                    return;
-                }
+                boxShadow:
+                    "0 4px 18px rgba(0,0,0,.3)",
 
-                running = true;
+                cursor:
+                    "pointer"
 
-                try {
-                    showMessage(
-                        `正在读取 X ${mode === "likes" ? "喜欢" : "书签"}……`
-                    );
-
-                    /*
-                     * 重新加载当前页面。
-                     *
-                     * fetch/XHR hook 会在页面重新加载后失效，
-                     * 所以这里不立即 reload。
-                     *
-                     * 用户继续向下滚动，
-                     * X 会加载新的 GraphQL 数据，
-                     * 我们会自动捕获。
-                     */
-
-                    await new Promise(
-                        resolve =>
-                            setTimeout(
-                                resolve,
-                                800
-                            )
-                    );
-
-                    const result =
-                        await sendToServer();
-
-                    showMessage(
-                        `已导入 ${result.count || 0} 条帖子，其中图片 ${result.photo_count || 0} 张`,
-                        "success"
-                    );
-                } catch (
-                    error
-                ) {
-                    console.error(
-                        error
-                    );
-
-                    showMessage(
-                        "导入失败：" +
-                            error.message,
-                        "error"
-                    );
-                } finally {
-                    running =
-                        false;
-                }
             }
         );
 
-        document.body.appendChild(
-            button
+        uploadButton.addEventListener(
+            "click",
+            uploadToServer
         );
+
+        document.body.appendChild(
+            uploadButton
+        );
+
     }
 
-    function start() {
-        mode =
-            getModeFromUrl();
 
-        if (!mode) {
-            alert(
-                "请先打开 X 的「喜欢」或「书签」页面，再运行 X 图片找图器导入助手。"
+    /*
+     * =========================================================
+     * 页面状态提示
+     * =========================================================
+     */
+
+    function showLocalStatus() {
+
+        try {
+
+            const records =
+                loadRecords();
+
+            const stats =
+                getLocalStats(
+                    records
+                );
+
+            const mode =
+                getPageMode();
+
+            const modeName =
+                mode === "likes"
+                    ? "❤️ Likes"
+                    : mode === "bookmarks"
+                        ? "🔖 Bookmarks"
+                        : "X";
+
+            showMessage(
+
+                "X Media Finder 已连接\n" +
+
+                modeName +
+                "\n" +
+
+                "本地帖子：" +
+                stats.tweets +
+                "\n" +
+
+                "图片：" +
+                stats.images +
+                "\n" +
+
+                "视频：" +
+                stats.videos +
+                (
+                    stats.pendingVideos
+                        ? "\n待解析视频：" +
+                          stats.pendingVideos
+                        : ""
+                ) +
+                "\n" +
+
+                "可上传媒体：" +
+                stats.media,
+
+                "info"
+
+            );
+
+        } catch (error) {
+
+            showMessage(
+                "无法读取采集数据：" +
+                error.message,
+                "error"
+            );
+
+        }
+
+    }
+
+
+    /*
+     * =========================================================
+     * 初始化
+     * =========================================================
+     */
+
+    function start() {
+
+        /*
+         * 只在 X 页面运行。
+         */
+
+        if (
+            location.hostname !==
+                "x.com" &&
+            location.hostname !==
+                "www.x.com" &&
+            location.hostname !==
+                "twitter.com" &&
+            location.hostname !==
+                "www.twitter.com"
+        ) {
+
+            return;
+
+        }
+
+        /*
+         * 页面可能还没有 body。
+         */
+
+        if (!document.body) {
+
+            setTimeout(
+                start,
+                500
             );
 
             return;
+
         }
-
-        installFetchHook();
-
-        installXhrHook();
 
         createButton();
 
-        showMessage(
-            `X 图片找图器已连接：${mode === "likes" ? "❤️ 喜欢" : "🔖 书签"}。请继续向下滚动 X，数据会自动捕获。`
-        );
+        showLocalStatus();
 
         log(
-            "v" +
-                VERSION +
-                " started",
-            mode
+            "X Import Assistant v" +
+            VERSION +
+            " started"
         );
+
     }
 
-    start();
+
+    /*
+     * =========================================================
+     * 启动
+     * =========================================================
+     */
+
+    if (
+        document.readyState ===
+        "loading"
+    ) {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            start,
+            {
+                once: true
+            }
+        );
+
+    } else {
+
+        start();
+
+    }
+
 })();
