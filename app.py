@@ -7,23 +7,12 @@ import tempfile
 import uuid
 
 from datetime import datetime, timezone
-from urllib.parse import urlparse, unquote, quote
+from urllib.parse import urlparse, parse_qs, quote
 
 import httpx
 
-from fastapi import (
-    FastAPI,
-    HTTPException,
-    Query,
-    Body,
-)
-
-from fastapi.responses import (
-    FileResponse,
-    StreamingResponse,
-    Response,
-)
-
+from fastapi import FastAPI, HTTPException, Query, Body
+from fastapi.responses import FileResponse, StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.background import BackgroundTask
 
@@ -31,7 +20,18 @@ from starlette.background import BackgroundTask
 # =========================================================
 # X Media Finder
 # 完整重写版
+#
+# 本版本重点修复：
+# 1. Likes / Bookmarks 图片显示“媒体暂时无法加载”
+# 2. /api/media-proxy 丢失 X 图片 query 参数的问题
+# 3. pbs.twimg.com 图片代理
+# 4. thumbnail 图片代理
+# 5. 原图 originalUrl 保留完整
+# 6. /api/download 兼容代理地址
+# 7. 视频缩略图代理
+# 8. 保留搜索博主、Likes、Bookmarks、导入媒体等功能
 # =========================================================
+
 
 app = FastAPI(
     title="X Media Finder"
@@ -55,13 +55,16 @@ FX_API = "https://api.fxtwitter.com"
 
 MEDIA_LIBRARY_FILE = "media_library.json"
 
+
 USER_AGENT = (
     "Mozilla/5.0 "
     "(iPhone; CPU iPhone OS 18_0 like Mac OS X) "
     "AppleWebKit/605.1.15 "
+    "(KHTML, like Gecko) "
     "Version/18.0 Mobile/15E148 "
     "Safari/604.1"
 )
+
 
 MEDIA_ALLOWED_HOSTS = {
     "pbs.twimg.com",
@@ -70,6 +73,7 @@ MEDIA_ALLOWED_HOSTS = {
     "video.twimg.com.",
 }
 
+
 HLS_ALLOWED_HOSTS = {
     "video.twimg.com",
     "video.twimg.com.",
@@ -77,25 +81,65 @@ HLS_ALLOWED_HOSTS = {
 
 
 # =========================================================
+# HTTP 请求头
+# =========================================================
+
+def media_headers(url=""):
+    """
+    X 的媒体服务器对请求头比较敏感。
+
+    这里统一使用浏览器式请求头。
+    """
+
+    parsed = urlparse(url or "")
+
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Accept": (
+            "image/avif,image/webp,image/apng,"
+            "image/svg+xml,image/*,*/*;q=0.8"
+        ),
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        "Referer": "https://x.com/",
+        "Origin": "https://x.com",
+        "Connection": "keep-alive",
+    }
+
+    if parsed.hostname in {
+        "video.twimg.com",
+        "video.twimg.com.",
+    }:
+        headers["Accept"] = "*/*"
+
+    return headers
+
+
+# =========================================================
 # 媒体库
 # =========================================================
 
 def load_media_library():
-    if not os.path.exists(MEDIA_LIBRARY_FILE):
+
+    if not os.path.exists(
+        MEDIA_LIBRARY_FILE
+    ):
         return {}
 
     try:
+
         with open(
             MEDIA_LIBRARY_FILE,
             "r",
             encoding="utf-8"
         ) as f:
+
             data = json.load(f)
 
         if isinstance(data, dict):
             return data
 
     except Exception as e:
+
         print(
             "[MEDIA] load error:",
             e
@@ -105,12 +149,14 @@ def load_media_library():
 
 
 def save_media_library(library):
+
     temp_file = (
         MEDIA_LIBRARY_FILE +
         ".tmp"
     )
 
     try:
+
         with open(
             temp_file,
             "w",
@@ -139,12 +185,14 @@ def save_media_library(library):
         )
 
         try:
+
             if os.path.exists(
                 temp_file
             ):
                 os.remove(
                     temp_file
                 )
+
         except Exception:
             pass
 
@@ -158,31 +206,40 @@ media_library = load_media_library()
 # 基础工具
 # =========================================================
 
-def get_username(profile: str) -> str:
+def get_username(profile: str):
 
-    profile = profile.strip()
+    profile = (
+        profile or ""
+    ).strip()
 
     if not profile:
+
         raise ValueError(
             "请输入 X 博主主页链接"
         )
 
     if not profile.startswith(
-        (
-            "http://",
-            "https://"
-        )
+        ("http://", "https://")
     ):
-        profile = (
-            "https://" +
+
+        if profile.startswith("@"):
+
+            return profile[1:]
+
+        return re.sub(
+            r"[^A-Za-z0-9_]",
+            "",
             profile
         )
 
     try:
+
         parsed = urlparse(
             profile
         )
+
     except Exception:
+
         raise ValueError(
             "主页地址格式错误"
         )
@@ -197,6 +254,7 @@ def get_username(profile: str) -> str:
         "twitter.com",
         "www.twitter.com",
     }:
+
         raise ValueError(
             "请输入类似 "
             "https://x.com/username "
@@ -210,24 +268,12 @@ def get_username(profile: str) -> str:
     ]
 
     if not parts:
+
         raise ValueError(
             "无法识别 X 用户名"
         )
 
     username = parts[0]
-
-    if username.lower() in {
-        "home",
-        "explore",
-        "search",
-        "i",
-        "notifications",
-        "messages",
-        "settings",
-    }:
-        raise ValueError(
-            "这不是有效的 X 博主主页"
-        )
 
     username = re.sub(
         r"[^A-Za-z0-9_]",
@@ -236,6 +282,7 @@ def get_username(profile: str) -> str:
     )
 
     if not username:
+
         raise ValueError(
             "用户名无效"
         )
@@ -248,16 +295,33 @@ def parse_x_date(value):
     if not value:
         return None
 
-    try:
-        return datetime.strptime(
-            value,
-            "%a %b %d %H:%M:%S %z %Y"
-        ).astimezone(
-            timezone.utc
-        )
+    formats = [
+        "%a %b %d %H:%M:%S %z %Y",
+        "%a %b %d %H:%M:%S %Y",
+    ]
 
-    except Exception:
-        return None
+    for fmt in formats:
+
+        try:
+
+            dt = datetime.strptime(
+                value,
+                fmt
+            )
+
+            if dt.tzinfo is None:
+                dt = dt.replace(
+                    tzinfo=timezone.utc
+                )
+
+            return dt.astimezone(
+                timezone.utc
+            )
+
+        except Exception:
+            pass
+
+    return None
 
 
 def date_from_string(
@@ -269,6 +333,7 @@ def date_from_string(
         return None
 
     try:
+
         dt = datetime.strptime(
             value,
             "%Y-%m-%d"
@@ -277,6 +342,7 @@ def date_from_string(
         )
 
         if end_of_day:
+
             dt = dt.replace(
                 hour=23,
                 minute=59,
@@ -287,6 +353,7 @@ def date_from_string(
         return dt
 
     except Exception:
+
         raise ValueError(
             f"日期格式错误：{value}"
         )
@@ -294,10 +361,8 @@ def date_from_string(
 
 def safe_filename(value):
 
-    value = unquote(
-        str(
-            value or ""
-        )
+    value = str(
+        value or ""
     )
 
     value = re.sub(
@@ -313,21 +378,23 @@ def safe_filename(value):
 # URL 安全检查
 # =========================================================
 
-def validate_media_url(
-    url: str
-):
+def validate_media_url(url):
 
     try:
+
         parsed = urlparse(
             url
         )
+
     except Exception:
+
         raise HTTPException(
             status_code=400,
             detail="媒体地址格式错误"
         )
 
     if parsed.scheme != "https":
+
         raise HTTPException(
             status_code=400,
             detail="媒体地址必须使用 HTTPS"
@@ -338,6 +405,7 @@ def validate_media_url(
     ).lower()
 
     if hostname not in MEDIA_ALLOWED_HOSTS:
+
         raise HTTPException(
             status_code=400,
             detail="不是有效的 X 媒体地址"
@@ -346,21 +414,23 @@ def validate_media_url(
     return url
 
 
-def validate_hls_url(
-    url: str
-):
+def validate_hls_url(url):
 
     try:
+
         parsed = urlparse(
             url
         )
+
     except Exception:
+
         raise HTTPException(
             status_code=400,
             detail="视频地址格式错误"
         )
 
     if parsed.scheme != "https":
+
         raise HTTPException(
             status_code=400,
             detail="视频地址必须使用 HTTPS"
@@ -371,9 +441,81 @@ def validate_hls_url(
     ).lower()
 
     if hostname not in HLS_ALLOWED_HOSTS:
+
         raise HTTPException(
             status_code=400,
             detail="不是有效的 X 视频地址"
+        )
+
+    return url
+
+
+# =========================================================
+# X 图片 URL 修复
+# =========================================================
+
+def normalize_x_media_url(url):
+
+    """
+    关键修复。
+
+    X 的图片 URL 经常是：
+
+    https://pbs.twimg.com/media/xxxx
+
+    但真正可稳定读取的原图地址是：
+
+    https://pbs.twimg.com/media/xxxx?format=jpg&name=orig
+
+    这里绝对不能把 query 丢掉。
+
+    如果 URL 本身已经有 query：
+        完整保留。
+
+    如果没有 query：
+        对 pbs.twimg.com 图片自动补：
+        ?format=jpg&name=orig
+    """
+
+    if not url:
+        return ""
+
+    url = str(url).strip()
+
+    if not url:
+        return ""
+
+    parsed = urlparse(
+        url
+    )
+
+    host = (
+        parsed.hostname or ""
+    ).lower()
+
+    if host not in {
+        "pbs.twimg.com",
+        "pbs.twimg.com.",
+    }:
+
+        return url
+
+    query = parse_qs(
+        parsed.query
+    )
+
+    if query:
+        return url
+
+    path = (
+        parsed.path or ""
+    ).lower()
+
+    if "/media/" in path:
+
+        return (
+            url +
+            "?format=jpg&name=orig"
         )
 
     return url
@@ -390,6 +532,10 @@ def make_proxy_url(
     if not media_url:
         return ""
 
+    media_url = normalize_x_media_url(
+        media_url
+    )
+
     return (
         "/api/media-proxy?url=" +
         quote(
@@ -399,9 +545,7 @@ def make_proxy_url(
     )
 
 
-def resolve_proxy_url(
-    url
-):
+def resolve_proxy_url(url):
 
     if not url:
         return url
@@ -410,13 +554,16 @@ def resolve_proxy_url(
         url
     )
 
-    if parsed.path != "/api/media-proxy":
+    if (
+        parsed.path !=
+        "/api/media-proxy"
+    ):
+
         return url
 
-    from urllib.parse import parse_qs
-
     query = parse_qs(
-        parsed.query
+        parsed.query,
+        keep_blank_values=True
     )
 
     values = query.get(
@@ -426,7 +573,13 @@ def resolve_proxy_url(
     if not values:
         return url
 
-    return values[0]
+    real_url = values[0]
+
+    real_url = normalize_x_media_url(
+        real_url
+    )
+
+    return real_url
 
 
 # =========================================================
@@ -447,6 +600,7 @@ async def fetch_media_page(
     }
 
     if cursor:
+
         params["cursor"] = cursor
 
     url = (
@@ -456,7 +610,9 @@ async def fetch_media_page(
 
     headers = {
         "User-Agent":
-            USER_AGENT
+            USER_AGENT,
+        "Accept":
+            "application/json",
     }
 
     try:
@@ -464,7 +620,7 @@ async def fetch_media_page(
         async with httpx.AsyncClient(
             timeout=30,
             follow_redirects=True,
-            headers=headers,
+            headers=headers
         ) as client:
 
             response = await client.get(
@@ -478,8 +634,7 @@ async def fetch_media_page(
             status_code=502,
             detail=(
                 "无法连接图片数据源："
-                +
-                str(e)
+                + str(e)
             )
         )
 
@@ -489,14 +644,14 @@ async def fetch_media_page(
             status_code=502,
             detail=(
                 "图片数据源返回 HTTP "
-                +
-                str(
+                + str(
                     response.status_code
                 )
             )
         )
 
     try:
+
         data = response.json()
 
     except Exception:
@@ -514,8 +669,7 @@ async def fetch_media_page(
             status_code=502,
             detail=(
                 "图片数据源返回错误："
-                +
-                str(data)
+                + str(data)
             )
         )
 
@@ -532,7 +686,7 @@ async def fetch_media_page(
 
 
 # =========================================================
-# 判断帖子来源
+# 帖子来源
 # =========================================================
 
 def get_post_source(
@@ -542,27 +696,25 @@ def get_post_source(
     if tweet.get(
         "reposted_by"
     ):
+
         return "repost"
 
-    quote_fields = [
+    for field in [
         "quote",
         "quoted_tweet",
         "quote_status",
         "quoted_status",
-    ]
+    ]:
 
-    for field in quote_fields:
+        if tweet.get(field):
 
-        if tweet.get(
-            field
-        ):
             return "quote"
 
     return "original"
 
 
 # =========================================================
-# 提取照片
+# 提取图片
 # =========================================================
 
 def extract_photos(
@@ -606,18 +758,19 @@ def extract_photos(
         if not url:
             continue
 
+        url = normalize_x_media_url(
+            url
+        )
+
         result.append({
 
             "id": str(
-                photo.get(
-                    "id"
-                )
+                photo.get("id")
                 or
                 f"{tweet.get('id')}-{index}"
             ),
 
-            "url":
-                url,
+            "url": url,
 
             "width":
                 photo.get(
@@ -717,6 +870,7 @@ def extract_videos(
                 and
                 container == "mp4"
             ):
+
                 mp4_formats.append(
                     fmt
                 )
@@ -746,12 +900,16 @@ def extract_videos(
             or ""
         )
 
+        if thumbnail:
+
+            thumbnail = normalize_x_media_url(
+                thumbnail
+            )
+
         result.append({
 
             "id": str(
-                video.get(
-                    "id"
-                )
+                video.get("id")
                 or
                 (
                     f"{tweet.get('id')}"
@@ -934,26 +1092,31 @@ async def search(
                 and
                 created_at > end_dt
             ):
+
                 continue
 
-            post_source = (
-                get_post_source(
-                    tweet
-                )
+            post_source = get_post_source(
+                tweet
             )
 
             if (
-                source_type == "original"
+                source_type ==
+                "original"
                 and
-                post_source != "original"
+                post_source !=
+                "original"
             ):
+
                 continue
 
             if (
-                source_type == "repost"
+                source_type ==
+                "repost"
                 and
-                post_source == "original"
+                post_source ==
+                "original"
             ):
+
                 continue
 
             tweet_url = (
@@ -1102,6 +1265,7 @@ async def search(
             and
             reached_start
         ):
+
             break
 
         next_cursor = None
@@ -1120,10 +1284,7 @@ async def search(
         if not next_cursor:
             break
 
-        if (
-            next_cursor
-            in seen_cursors
-        ):
+        if next_cursor in seen_cursors:
             break
 
         seen_cursors.add(
@@ -1159,7 +1320,7 @@ async def search(
 
 
 # =========================================================
-# 媒体库工具
+# 媒体库 ID
 # =========================================================
 
 def make_media_id(
@@ -1168,11 +1329,11 @@ def make_media_id(
 
     media_url = (
         item.get(
-            "url"
+            "originalUrl"
         )
         or
         item.get(
-            "media_url"
+            "url"
         )
         or ""
     )
@@ -1214,6 +1375,10 @@ def make_media_id(
     )
 
 
+# =========================================================
+# 导入媒体
+# =========================================================
+
 def normalize_import_item(
     item
 ):
@@ -1222,6 +1387,7 @@ def normalize_import_item(
         item,
         dict
     ):
+
         return None
 
     tweet_id = str(
@@ -1248,10 +1414,7 @@ def normalize_import_item(
             "tweet_url"
         )
         or
-        item.get(
-            "url"
-        )
-        or ""
+        ""
     )
 
     author = (
@@ -1286,6 +1449,7 @@ def normalize_import_item(
         raw_media,
         list
     ):
+
         raw_media = []
 
     result = []
@@ -1309,18 +1473,12 @@ def normalize_import_item(
             "image",
             "video"
         }:
+
             continue
 
         media_url = (
             media.get(
                 "url"
-            )
-            or ""
-        )
-
-        thumbnail = (
-            media.get(
-                "thumbnail"
             )
             or ""
         )
@@ -1336,6 +1494,40 @@ def normalize_import_item(
             or
             media_url
         )
+
+        thumbnail = (
+            media.get(
+                "thumbnail"
+            )
+            or ""
+        )
+
+        # -------------------------------------------------
+        # 关键：
+        # 永远保存完整 originalUrl
+        # 图片如果只有 pbs.twimg.com/media/xxx
+        # 自动补 ?format=jpg&name=orig
+        # -------------------------------------------------
+
+        if media_type == "image":
+
+            media_url = normalize_x_media_url(
+                media_url
+            )
+
+            original_url = normalize_x_media_url(
+                original_url
+            )
+
+            if thumbnail:
+
+                thumbnail = normalize_x_media_url(
+                    thumbnail
+                )
+
+            else:
+
+                thumbnail = media_url
 
         result.append({
 
@@ -1400,10 +1592,6 @@ def normalize_import_item(
     }
 
 
-# =========================================================
-# 导入媒体
-# =========================================================
-
 @app.post(
     "/api/import-media"
 )
@@ -1443,11 +1631,8 @@ async def import_media(
         )
 
     imported = 0
-
     added = 0
-
     updated = 0
-
     duplicates = 0
 
     for raw_item in items:
@@ -1531,31 +1716,36 @@ async def import_media(
                 changed = False
 
                 for key in [
-
                     "tweet_id",
                     "tweet_url",
                     "author",
                     "source",
+                    "url",
                     "thumbnail",
                     "originalUrl",
                     "streamType",
                     "width",
                     "height",
                     "bitrate",
-
                 ]:
 
+                    new_value = record.get(
+                        key
+                    )
+
                     if (
-                        record.get(key)
+                        new_value
                         and
-                        not old.get(key)
+                        old.get(key)
+                        != new_value
                     ):
 
-                        old[key] = record[key]
+                        old[key] = new_value
 
                         changed = True
 
                 if changed:
+
                     updated += 1
 
                 continue
@@ -1680,18 +1870,6 @@ async def get_media(
         reverse=True
     )
 
-    # -----------------------------------------------------
-    # 关键修复
-    #
-    # 原来的:
-    #     url = pbs.twimg.com/...
-    #
-    # 现在:
-    #     url = /api/media-proxy?url=...
-    #
-    # 浏览器不再直接请求 X 图片服务器。
-    # -----------------------------------------------------
-
     output = []
 
     for original_item in items:
@@ -1700,7 +1878,15 @@ async def get_media(
             original_item
         )
 
+        # -------------------------------------------------
+        # 永远保留真正原始地址
+        # -------------------------------------------------
+
         original_media_url = (
+            item.get(
+                "originalUrl"
+            )
+            or
             item.get(
                 "url"
             )
@@ -1714,21 +1900,39 @@ async def get_media(
             or ""
         )
 
+        if item.get(
+            "type"
+        ) == "image":
+
+            original_media_url = normalize_x_media_url(
+                original_media_url
+            )
+
+            if original_thumbnail:
+
+                original_thumbnail = normalize_x_media_url(
+                    original_thumbnail
+                )
+
+            else:
+
+                original_thumbnail = (
+                    original_media_url
+                )
+
         item[
             "originalUrl"
-        ] = (
-            item.get(
-                "originalUrl"
-            )
-            or
-            original_media_url
-        )
+        ] = original_media_url
 
         item[
             "sourceUrl"
         ] = original_media_url
 
-        # 图片使用代理
+        # -------------------------------------------------
+        # 图片：
+        # url 必须使用代理
+        # -------------------------------------------------
+
         if (
             item.get(
                 "type"
@@ -1743,7 +1947,26 @@ async def get_media(
                 original_media_url
             )
 
-        # 视频缩略图使用代理
+        # -------------------------------------------------
+        # 视频：
+        # 保留视频 URL
+        # -------------------------------------------------
+
+        elif (
+            item.get(
+                "type"
+            ) == "video"
+        ):
+
+            item[
+                "url"
+            ] = original_media_url
+
+        # -------------------------------------------------
+        # thumbnail：
+        # 必须同样通过代理
+        # -------------------------------------------------
+
         if original_thumbnail:
 
             item[
@@ -1781,30 +2004,56 @@ async def media_proxy(
     url: str = Query(...)
 ):
 
-    # 如果前端传的是代理地址，
-    # 先还原真实 X 地址。
+    # -----------------------------------------------------
+    # 第一步：
+    # 如果传入的是代理地址，恢复真实地址
+    # -----------------------------------------------------
+
     url = resolve_proxy_url(
         url
     )
+
+    # -----------------------------------------------------
+    # 第二步：
+    # 对 pbs.twimg.com/media/xxx
+    # 自动恢复完整原图参数
+    # -----------------------------------------------------
+
+    url = normalize_x_media_url(
+        url
+    )
+
+    # -----------------------------------------------------
+    # 第三步：
+    # 安全检查
+    # -----------------------------------------------------
 
     validate_media_url(
         url
     )
 
-    headers = {
+    print(
+        "[MEDIA PROXY]",
+        url
+    )
 
-        "User-Agent":
-            USER_AGENT,
+    headers = media_headers(
+        url
+    )
 
-        "Referer":
-            "https://x.com/",
+    last_error = None
 
-    }
+    # -----------------------------------------------------
+    # 第一次：完整 URL
+    # -----------------------------------------------------
 
     try:
 
         async with httpx.AsyncClient(
-            timeout=60,
+            timeout=httpx.Timeout(
+                60.0,
+                connect=15.0
+            ),
             follow_redirects=True,
             headers=headers
         ) as client:
@@ -1815,19 +2064,89 @@ async def media_proxy(
 
     except Exception as e:
 
+        last_error = e
+
+        response = None
+
+    # -----------------------------------------------------
+    # 如果完整 URL 失败：
+    # 对图片再尝试一次普通地址
+    # -----------------------------------------------------
+
+    if (
+        response is None
+        or
+        response.status_code >= 400
+    ):
+
+        parsed = urlparse(
+            url
+        )
+
+        hostname = (
+            parsed.hostname or ""
+        ).lower()
+
+        if (
+            hostname in {
+                "pbs.twimg.com",
+                "pbs.twimg.com.",
+            }
+            and
+            "format=" in parsed.query
+        ):
+
+            fallback_url = (
+                f"{parsed.scheme}://"
+                f"{parsed.netloc}"
+                f"{parsed.path}"
+            )
+
+            try:
+
+                async with httpx.AsyncClient(
+                    timeout=httpx.Timeout(
+                        60.0,
+                        connect=15.0
+                    ),
+                    follow_redirects=True,
+                    headers=headers
+                ) as client:
+
+                    fallback_response = (
+                        await client.get(
+                            fallback_url
+                        )
+                    )
+
+                if (
+                    fallback_response.status_code
+                    < 400
+                ):
+
+                    response = (
+                        fallback_response
+                    )
+
+            except Exception as e:
+
+                last_error = e
+
+    if response is None:
+
         raise HTTPException(
             status_code=502,
             detail=(
                 "媒体代理获取失败："
                 +
-                str(e)
+                str(last_error)
             )
         )
 
     if response.status_code >= 400:
 
         raise HTTPException(
-            status_code=response.status_code,
+            status_code=502,
             detail=(
                 "X 媒体服务器返回 HTTP "
                 +
@@ -1842,13 +2161,62 @@ async def media_proxy(
             "content-type",
             ""
         )
+        .split(";")[0]
+        .strip()
+        .lower()
     )
 
-    if not content_type:
+    # -----------------------------------------------------
+    # X 有时 Content-Type 不规范
+    # 根据 URL 自动补图片类型
+    # -----------------------------------------------------
 
-        content_type = (
-            "application/octet-stream"
+    if (
+        not content_type
+        or
+        content_type ==
+        "application/octet-stream"
+    ):
+
+        path = (
+            urlparse(
+                url
+            ).path.lower()
         )
+
+        if path.endswith(
+            ".png"
+        ):
+
+            content_type = (
+                "image/png"
+            )
+
+        elif path.endswith(
+            ".webp"
+        ):
+
+            content_type = (
+                "image/webp"
+            )
+
+        elif path.endswith(
+            ".gif"
+        ):
+
+            content_type = (
+                "image/gif"
+            )
+
+        else:
+
+            content_type = (
+                "image/jpeg"
+            )
+
+    # -----------------------------------------------------
+    # 直接返回二进制图片
+    # -----------------------------------------------------
 
     return Response(
 
@@ -1864,7 +2232,13 @@ async def media_proxy(
             "Access-Control-Allow-Origin":
                 "*",
 
-        },
+            "Access-Control-Allow-Headers":
+                "*",
+
+            "Cross-Origin-Resource-Policy":
+                "cross-origin",
+
+        }
 
     )
 
@@ -2005,10 +2379,14 @@ async def download(
 ):
 
     # -----------------------------------------------------
-    # 兼容前端传入的 /api/media-proxy 地址
+    # 兼容代理 URL
     # -----------------------------------------------------
 
     url = resolve_proxy_url(
+        url
+    )
+
+    url = normalize_x_media_url(
         url
     )
 
@@ -2016,22 +2394,19 @@ async def download(
         url
     )
 
-    headers = {
-
-        "User-Agent":
-            USER_AGENT,
-
-        "Referer":
-            "https://x.com/",
-
-    }
+    headers = media_headers(
+        url
+    )
 
     try:
 
         async with httpx.AsyncClient(
-            timeout=90,
+            timeout=httpx.Timeout(
+                120.0,
+                connect=20.0
+            ),
             follow_redirects=True,
-            headers=headers,
+            headers=headers
         ) as client:
 
             response = await client.get(
@@ -2052,7 +2427,7 @@ async def download(
     if response.status_code >= 400:
 
         raise HTTPException(
-            status_code=response.status_code,
+            status_code=502,
             detail=(
                 "X 媒体服务器拒绝下载，"
                 "请尝试打开原帖。"
@@ -2063,7 +2438,10 @@ async def download(
         response.headers.get(
             "content-type",
             ""
-        ).lower()
+        )
+        .split(";")[0]
+        .strip()
+        .lower()
     )
 
     if "mp4" in content_type:
@@ -2095,6 +2473,7 @@ async def download(
     )
 
     if not filename:
+
         filename = "x-media"
 
     if not filename.lower().endswith(
@@ -2123,7 +2502,7 @@ async def download(
                     f'filename="{filename}"'
                 )
 
-        },
+        }
 
     )
 
@@ -2208,7 +2587,10 @@ async def video_download(
     )
 
     if not filename:
-        filename = "x-video.mp4"
+
+        filename = (
+            "x-video.mp4"
+        )
 
     if not filename.lower().endswith(
         ".mp4"
@@ -2225,16 +2607,16 @@ async def video_download(
         f"{uuid.uuid4()}.mp4"
     )
 
-    user_agent = USER_AGENT
-
     headers = (
         "User-Agent: "
         +
-        user_agent
+        USER_AGENT
         +
         "\r\n"
         +
         "Referer: https://x.com/\r\n"
+        +
+        "Origin: https://x.com\r\n"
     )
 
     command = [
@@ -2244,30 +2626,39 @@ async def video_download(
         "-hide_banner",
 
         "-loglevel",
+
         "error",
 
         "-headers",
+
         headers,
 
         "-protocol_whitelist",
+
         "file,http,https,tcp,tls,crypto",
 
         "-allowed_extensions",
+
         "ALL",
 
         "-i",
+
         url,
 
         "-map",
+
         "0:v:0?",
 
         "-map",
+
         "0:a:0?",
 
         "-c",
+
         "copy",
 
         "-movflags",
+
         "+faststart",
 
         "-y",
@@ -2391,7 +2782,7 @@ async def video_download(
 
             temp_dir
 
-        ),
+        )
 
     )
 
@@ -2434,3 +2825,23 @@ async def health():
             ),
 
     }
+
+
+# =========================================================
+# 启动
+# =========================================================
+
+if __name__ == "__main__":
+
+    import uvicorn
+
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=int(
+            os.environ.get(
+                "PORT",
+                "8000"
+            )
+        )
+    )
