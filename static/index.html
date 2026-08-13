@@ -22,13 +22,9 @@
 }
 
 body {
-
     margin: 0;
-
     background: #f5f5f7;
-
     color: #111;
-
     font-family:
         -apple-system,
         BlinkMacSystemFont,
@@ -40,23 +36,17 @@ body {
 
 button,
 input {
-
     font-family: inherit;
 }
 
 button {
-
     cursor: pointer;
 }
 
 .container {
-
     width: 100%;
-
     max-width: 950px;
-
     margin: auto;
-
     padding:
         calc(18px + env(safe-area-inset-top))
         14px
@@ -64,89 +54,52 @@ button {
 }
 
 h1 {
-
     margin: 0 0 5px;
-
     font-size: 25px;
-
     letter-spacing: -.5px;
 }
 
 .subtitle {
-
     color: #777;
-
     font-size: 13px;
-
     margin-bottom: 17px;
 }
 
-
-/* =====================================================
-   通用卡片
-===================================================== */
-
 .card {
-
     background: #fff;
-
     border-radius: 16px;
-
     padding: 16px;
-
     margin-bottom: 14px;
-
     box-shadow:
         0 2px 10px rgba(0,0,0,.04);
 }
 
 .hidden {
-
     display: none !important;
 }
 
 label {
-
     display: block;
-
     color: #666;
-
     font-size: 13px;
-
     margin-bottom: 7px;
 }
 
-
-/* =====================================================
-   一级模式菜单
-===================================================== */
-
 .mode-grid {
-
     display: grid;
-
     grid-template-columns:
         repeat(3, minmax(0, 1fr));
-
     gap: 10px;
-
     margin-bottom: 14px;
 }
 
 .mode-button {
-
     min-height: 92px;
-
     border: 1px solid #ddd;
-
     border-radius: 15px;
-
     background: #fff;
-
     text-align: left;
-
     padding: 13px;
-
     transition:
         transform .12s,
         background .12s,
@@ -154,795 +107,495 @@ label {
 }
 
 .mode-button:active {
-
     transform: scale(.98);
 }
 
 .mode-button.active {
-
     background: #111;
-
     color: #fff;
-
     border-color: #111;
 }
 
 .mode-icon {
-
     display: block;
-
     font-size: 24px;
-
     margin-bottom: 7px;
 }
 
 .mode-title {
-
     display: block;
-
     font-size: 14px;
-
     font-weight: 700;
 }
 
 .mode-desc {
-
     display: block;
-
     margin-top: 4px;
-
     font-size: 11px;
-
     color: #888;
 }
 
 .mode-button.active .mode-desc {
-
     color: #bbb;
 }
 
-
-/* =====================================================
-   搜索博主
-===================================================== */
-
 .profile-row {
-
     display: flex;
-
     gap: 8px;
 }
 
 .profile-input-wrap {
-
     flex: 1;
 }
 
 input[type="text"],
 input[type="date"] {
-
     width: 100%;
-
     height: 46px;
-
     border: 1px solid #ddd;
-
     border-radius: 11px;
-
     padding: 0 12px;
-
     font-size: 16px;
-
     background: #fff;
-
     outline: none;
 }
 
 input:focus {
-
     border-color: #111;
 }
 
 .favorite-add {
-
     height: 46px;
-
     min-width: 78px;
-
     border: 1px solid #ddd;
-
     background: #fff;
-
     border-radius: 11px;
-
     font-size: 13px;
-
     white-space: nowrap;
 }
 
-
-/* =====================================================
-   收藏博主
-===================================================== */
-
 .favorite-entry {
-
     margin-top: 10px;
 }
 
 .favorite-main-button {
-
     width: 100%;
-
     height: 42px;
-
     border: 1px solid #ddd;
-
     background: #fafafa;
-
     border-radius: 11px;
-
     font-size: 14px;
-
     text-align: left;
-
     padding: 0 13px;
 }
 
 .favorites-panel {
-
     margin-top: 10px;
-
     border: 1px solid #eee;
-
     border-radius: 12px;
-
     overflow: hidden;
 }
 
 .favorite-empty {
-
     padding: 18px 12px;
-
     color: #999;
-
     font-size: 13px;
-
     text-align: center;
 }
 
 .favorite-item {
-
     display: flex;
-
     align-items: center;
-
     gap: 10px;
-
     padding: 11px 10px;
-
     border-bottom: 1px solid #eee;
 }
 
 .favorite-item:last-child {
-
     border-bottom: 0;
 }
 
 .favorite-info {
-
     flex: 1;
-
     min-width: 0;
 }
 
 .favorite-name {
-
     font-size: 14px;
-
     font-weight: 600;
-
     white-space: nowrap;
-
     overflow: hidden;
-
     text-overflow: ellipsis;
 }
 
 .favorite-handle {
-
     color: #888;
-
     font-size: 12px;
-
     margin-top: 2px;
 }
 
 .favorite-actions {
-
     display: flex;
-
     gap: 5px;
 }
 
 .favorite-use,
 .favorite-delete {
-
     height: 32px;
-
     border-radius: 8px;
-
     padding: 0 8px;
-
     font-size: 11px;
-
     border: 1px solid #ddd;
-
     background: #fff;
 }
 
 .favorite-use {
-
     background: #111;
-
     color: #fff;
-
     border-color: #111;
 }
 
-
-/* =====================================================
-   时间 / 筛选
-===================================================== */
-
 .section {
-
     margin-top: 15px;
 }
 
 .option-row {
-
     display: flex;
-
     gap: 7px;
-
     flex-wrap: wrap;
 }
 
 .option {
-
     border: 1px solid #ddd;
-
     background: #fafafa;
-
     border-radius: 20px;
-
     padding: 8px 12px;
-
     font-size: 13px;
 }
 
 .option.active {
-
     background: #111;
-
     color: #fff;
-
     border-color: #111;
 }
 
 .date-row {
-
     display: grid;
-
     grid-template-columns:
         1fr 1fr;
-
     gap: 10px;
 }
 
 .custom-dates {
-
     margin-top: 11px;
 }
 
-
-/* =====================================================
-   主按钮
-===================================================== */
-
 .primary {
-
     width: 100%;
-
     height: 48px;
-
     border: 0;
-
     border-radius: 12px;
-
     background: #111;
-
     color: #fff;
-
     font-size: 16px;
-
     font-weight: 600;
-
     margin-top: 17px;
 }
 
 .primary:disabled {
-
     opacity: .45;
 }
 
-
-/* =====================================================
-   媒体库工具栏
-===================================================== */
-
 .library-header {
-
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
-
     gap: 10px;
-
     margin-bottom: 12px;
 }
 
 .library-title {
-
     font-size: 17px;
-
     font-weight: 700;
 }
 
 .library-count {
-
     color: #777;
-
     font-size: 12px;
-
     margin-top: 3px;
 }
 
 .refresh-button {
-
     border: 1px solid #ddd;
-
     background: #fff;
-
     border-radius: 9px;
-
     padding: 8px 11px;
-
     font-size: 12px;
 }
 
-
-/* =====================================================
-   状态
-===================================================== */
-
 .status {
-
     font-size: 14px;
-
     line-height: 1.6;
 }
 
 .error {
-
     color: #d00;
-
     white-space: pre-wrap;
 }
 
 .loader {
-
     text-align: center;
-
     padding: 20px;
-
     color: #777;
 }
 
-
-/* =====================================================
-   结果
-===================================================== */
-
 .result-header {
-
     display: flex;
-
     justify-content: space-between;
-
     align-items: center;
-
     margin-bottom: 13px;
 }
 
 .result-title {
-
     font-size: 16px;
-
     font-weight: 700;
 }
 
 .result-count {
-
     color: #777;
-
     font-size: 12px;
-
     margin-top: 4px;
 }
 
-
-/* =====================================================
-   关键：正常 Grid
-   左 → 右
-   上 → 下
-===================================================== */
-
 .gallery {
-
     display: grid;
-
     grid-template-columns:
         repeat(2, minmax(0, 1fr));
-
     gap: 9px;
-
     align-items: start;
 }
 
-
-/* =====================================================
-   媒体卡片
-===================================================== */
-
 .item {
-
     min-width: 0;
-
     background: #fff;
-
     border: 1px solid #eee;
-
     border-radius: 12px;
-
     overflow: hidden;
 }
 
 .media-wrap {
-
     position: relative;
-
     width: 100%;
-
     background: #eee;
-
     overflow: hidden;
 }
 
 .media-wrap img {
-
     display: block;
-
     width: 100%;
-
     aspect-ratio: 1 / 1;
-
     object-fit: cover;
-
     cursor: pointer;
 }
 
+.media-error {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eee;
+    color: #999;
+    font-size: 13px;
+    text-align: center;
+    padding: 12px;
+}
+
 .video-badge {
-
     position: absolute;
-
     left: 7px;
-
     top: 7px;
-
     background: rgba(0,0,0,.75);
-
     color: #fff;
-
     border-radius: 20px;
-
     padding: 5px 8px;
-
     font-size: 10px;
 }
 
 .source-badge {
-
     position: absolute;
-
     right: 7px;
-
     top: 7px;
-
     background: rgba(0,0,0,.75);
-
     color: #fff;
-
     border-radius: 20px;
-
     padding: 5px 8px;
-
     font-size: 10px;
 }
 
 .library-badge {
-
     position: absolute;
-
     right: 7px;
-
     top: 7px;
-
     background: rgba(0,0,0,.75);
-
     color: #fff;
-
     border-radius: 20px;
-
     padding: 5px 8px;
-
     font-size: 10px;
 }
 
 .item-info {
-
     padding: 8px;
 }
 
 .item-author {
-
     font-size: 11px;
-
     font-weight: 600;
-
     white-space: nowrap;
-
     overflow: hidden;
-
     text-overflow: ellipsis;
-
     margin-bottom: 3px;
 }
 
 .item-date {
-
     color: #888;
-
     font-size: 10px;
 }
 
 .item-actions {
-
     display: grid;
-
     grid-template-columns:
         1fr 1fr 1fr;
-
     gap: 4px;
-
     margin-top: 7px;
 }
 
 .small-btn {
-
     height: 32px;
-
     border: 1px solid #ddd;
-
     background: #fff;
-
     border-radius: 7px;
-
     font-size: 10px;
-
     padding: 0 2px;
-
     white-space: nowrap;
 }
 
-
-/* =====================================================
-   Modal
-===================================================== */
-
 .modal {
-
     position: fixed;
-
     inset: 0;
-
     z-index: 1000;
-
     background: rgba(0,0,0,.95);
-
     display: flex;
-
     flex-direction: column;
 }
 
 .modal-top {
-
     min-height: 58px;
-
     padding:
         env(safe-area-inset-top)
         12px
         0
         12px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
 }
 
 .modal-button {
-
     border: 0;
-
     background: rgba(255,255,255,.12);
-
     color: #fff;
-
     border-radius: 20px;
-
     padding: 8px 13px;
 }
 
 .modal-content {
-
     flex: 1;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     padding: 10px;
-
     overflow: auto;
 }
 
 .modal-content img {
-
     max-width: 100%;
-
     max-height: 100%;
-
     object-fit: contain;
 }
 
 .modal-content video {
-
     max-width: 100%;
-
     max-height: 100%;
 }
 
 .modal-bottom {
-
     padding:
         10px
         12px
         calc(12px + env(safe-area-inset-bottom));
-
     display: flex;
-
     gap: 8px;
 }
 
 .modal-bottom button {
-
     flex: 1;
-
     height: 45px;
-
     border: 0;
-
     border-radius: 10px;
-
     font-size: 14px;
 }
 
 .download {
-
     background: #fff;
-
     color: #111;
 }
 
 .original {
-
     background: rgba(255,255,255,.15);
-
     color: #fff;
 }
 
-
-/* =====================================================
-   大屏
-===================================================== */
-
 @media (min-width: 700px) {
-
     .gallery {
-
         grid-template-columns:
             repeat(4, minmax(0, 1fr));
     }
-
 }
 
-
-/* =====================================================
-   小屏
-===================================================== */
-
 @media (max-width: 560px) {
-
     .mode-grid {
-
         grid-template-columns:
             1fr;
     }
 
     .mode-button {
-
         min-height: 70px;
     }
 
     .mode-icon {
-
         display: inline;
-
         margin-right: 6px;
-
         font-size: 20px;
     }
-
 }
 
 @media (max-width: 380px) {
-
     .item-actions {
-
         grid-template-columns:
             1fr 1fr;
     }
 
     .item-actions
     .small-btn:last-child {
-
         grid-column:
             1 / -1;
     }
-
 }
 
 </style>
 
 </head>
-
 
 <body>
 
@@ -954,88 +607,43 @@ input:focus {
     搜索博主媒体，或浏览采集器上传的 Likes / Bookmarks
 </div>
 
-
-<!-- =====================================================
-     一级入口
-===================================================== -->
-
 <div class="mode-grid">
 
     <button
         id="modeSearch"
         class="mode-button active"
     >
-
-        <span class="mode-icon">
-            🔎
-        </span>
-
-        <span class="mode-title">
-            搜索博主下载
-        </span>
-
-        <span class="mode-desc">
-            搜索指定博主的媒体
-        </span>
-
+        <span class="mode-icon">🔎</span>
+        <span class="mode-title">搜索博主下载</span>
+        <span class="mode-desc">搜索指定博主的媒体</span>
     </button>
-
 
     <button
         id="modeLikes"
         class="mode-button"
     >
-
-        <span class="mode-icon">
-            ❤️
-        </span>
-
-        <span class="mode-title">
-            我的喜欢
-        </span>
-
-        <span class="mode-desc">
-            查看采集器上传的 Likes
-        </span>
-
+        <span class="mode-icon">❤️</span>
+        <span class="mode-title">我的喜欢</span>
+        <span class="mode-desc">查看采集器上传的 Likes</span>
     </button>
-
 
     <button
         id="modeBookmarks"
         class="mode-button"
     >
-
-        <span class="mode-icon">
-            🔖
-        </span>
-
-        <span class="mode-title">
-            我的书签
-        </span>
-
-        <span class="mode-desc">
-            查看采集器上传的 Bookmarks
-        </span>
-
+        <span class="mode-icon">🔖</span>
+        <span class="mode-title">我的书签</span>
+        <span class="mode-desc">查看采集器上传的 Bookmarks</span>
     </button>
 
 </div>
-
-
-<!-- =====================================================
-     搜索博主区域
-===================================================== -->
 
 <div
     id="searchPanel"
     class="card"
 >
 
-    <label>
-        博主
-    </label>
-
+    <label>博主</label>
 
     <div class="profile-row">
 
@@ -1052,7 +660,6 @@ input:focus {
 
         </div>
 
-
         <button
             id="favoriteAdd"
             class="favorite-add"
@@ -1061,9 +668,6 @@ input:focus {
         </button>
 
     </div>
-
-
-    <!-- 博主收藏 -->
 
     <div class="favorite-entry">
 
@@ -1074,7 +678,6 @@ input:focus {
             ⭐ 我的收藏
         </button>
 
-
         <div
             id="favoritesPanel"
             class="favorites-panel hidden"
@@ -1082,14 +685,9 @@ input:focus {
 
     </div>
 
-
-    <!-- 时间 -->
-
     <div class="section">
 
-        <label>
-            时间范围
-        </label>
+        <label>时间范围</label>
 
         <div class="option-row">
 
@@ -1137,9 +735,6 @@ input:focus {
 
     </div>
 
-
-    <!-- 自定义日期 -->
-
     <div
         id="customDates"
         class="custom-dates hidden"
@@ -1149,9 +744,7 @@ input:focus {
 
             <div>
 
-                <label>
-                    开始日期
-                </label>
+                <label>开始日期</label>
 
                 <input
                     id="startDate"
@@ -1160,12 +753,9 @@ input:focus {
 
             </div>
 
-
             <div>
 
-                <label>
-                    结束日期
-                </label>
+                <label>结束日期</label>
 
                 <input
                     id="endDate"
@@ -1178,14 +768,9 @@ input:focus {
 
     </div>
 
-
-    <!-- 媒体 -->
-
     <div class="section">
 
-        <label>
-            媒体类型
-        </label>
+        <label>媒体类型</label>
 
         <div class="option-row">
 
@@ -1217,16 +802,9 @@ input:focus {
 
     </div>
 
-
-    <!-- =================================================
-         只有搜索博主才有帖子来源
-    ================================================= -->
-
     <div class="section">
 
-        <label>
-            帖子来源
-        </label>
+        <label>帖子来源</label>
 
         <div class="option-row">
 
@@ -1258,7 +836,6 @@ input:focus {
 
     </div>
 
-
     <button
         id="searchButton"
         class="primary"
@@ -1267,11 +844,6 @@ input:focus {
     </button>
 
 </div>
-
-
-<!-- =====================================================
-     Likes / Bookmarks 筛选区域
-===================================================== -->
 
 <div
     id="libraryPanel"
@@ -1298,7 +870,6 @@ input:focus {
 
         </div>
 
-
         <button
             id="refreshLibrary"
             class="refresh-button"
@@ -1308,12 +879,9 @@ input:focus {
 
     </div>
 
-
     <div class="section">
 
-        <label>
-            媒体类型
-        </label>
+        <label>媒体类型</label>
 
         <div class="option-row">
 
@@ -1347,11 +915,6 @@ input:focus {
 
 </div>
 
-
-<!-- =====================================================
-     状态
-===================================================== -->
-
 <div
     id="statusCard"
     class="card hidden"
@@ -1363,11 +926,6 @@ input:focus {
     ></div>
 
 </div>
-
-
-<!-- =====================================================
-     结果
-===================================================== -->
 
 <div
     id="resultCard"
@@ -1394,7 +952,6 @@ input:focus {
 
     </div>
 
-
     <div
         id="gallery"
         class="gallery"
@@ -1402,13 +959,7 @@ input:focus {
 
 </div>
 
-
 </div>
-
-
-<!-- =====================================================
-     Modal
-===================================================== -->
 
 <div
     id="modal"
@@ -1426,12 +977,10 @@ input:focus {
 
     </div>
 
-
     <div
         id="modalContent"
         class="modal-content"
     ></div>
-
 
     <div class="modal-bottom">
 
@@ -1453,171 +1002,203 @@ input:focus {
 
 </div>
 
-
 <script>
-
 
 /* =====================================================
    DOM
 ===================================================== */
 
 const profileInput =
-    document.getElementById(
-        "profile"
-    );
+    document.getElementById("profile");
 
 const favoriteAdd =
-    document.getElementById(
-        "favoriteAdd"
-    );
+    document.getElementById("favoriteAdd");
 
 const favoriteToggle =
-    document.getElementById(
-        "favoriteToggle"
-    );
+    document.getElementById("favoriteToggle");
 
 const favoritesPanel =
-    document.getElementById(
-        "favoritesPanel"
-    );
+    document.getElementById("favoritesPanel");
 
 const searchButton =
-    document.getElementById(
-        "searchButton"
-    );
+    document.getElementById("searchButton");
 
 const searchPanel =
-    document.getElementById(
-        "searchPanel"
-    );
+    document.getElementById("searchPanel");
 
 const libraryPanel =
-    document.getElementById(
-        "libraryPanel"
-    );
+    document.getElementById("libraryPanel");
 
 const libraryTitle =
-    document.getElementById(
-        "libraryTitle"
-    );
+    document.getElementById("libraryTitle");
 
 const libraryCount =
-    document.getElementById(
-        "libraryCount"
-    );
+    document.getElementById("libraryCount");
 
 const refreshLibrary =
-    document.getElementById(
-        "refreshLibrary"
-    );
+    document.getElementById("refreshLibrary");
 
 const statusCard =
-    document.getElementById(
-        "statusCard"
-    );
+    document.getElementById("statusCard");
 
 const status =
-    document.getElementById(
-        "status"
-    );
+    document.getElementById("status");
 
 const resultCard =
-    document.getElementById(
-        "resultCard"
-    );
+    document.getElementById("resultCard");
 
 const resultTitle =
-    document.getElementById(
-        "resultTitle"
-    );
+    document.getElementById("resultTitle");
 
 const resultCount =
-    document.getElementById(
-        "resultCount"
-    );
+    document.getElementById("resultCount");
 
 const gallery =
-    document.getElementById(
-        "gallery"
-    );
+    document.getElementById("gallery");
 
 const customDates =
-    document.getElementById(
-        "customDates"
-    );
+    document.getElementById("customDates");
 
 const startDate =
-    document.getElementById(
-        "startDate"
-    );
+    document.getElementById("startDate");
 
 const endDate =
-    document.getElementById(
-        "endDate"
-    );
+    document.getElementById("endDate");
 
 const modal =
-    document.getElementById(
-        "modal"
-    );
+    document.getElementById("modal");
 
 const modalContent =
-    document.getElementById(
-        "modalContent"
-    );
+    document.getElementById("modalContent");
 
 const closeModal =
-    document.getElementById(
-        "closeModal"
-    );
+    document.getElementById("closeModal");
 
 const downloadButton =
-    document.getElementById(
-        "downloadButton"
-    );
+    document.getElementById("downloadButton");
 
 const originalButton =
-    document.getElementById(
-        "originalButton"
-    );
+    document.getElementById("originalButton");
 
 const modeSearch =
-    document.getElementById(
-        "modeSearch"
-    );
+    document.getElementById("modeSearch");
 
 const modeLikes =
-    document.getElementById(
-        "modeLikes"
-    );
+    document.getElementById("modeLikes");
 
 const modeBookmarks =
-    document.getElementById(
-        "modeBookmarks"
-    );
+    document.getElementById("modeBookmarks");
 
 
 /* =====================================================
    状态
 ===================================================== */
 
-let currentMode =
-    "search";
+let currentMode = "search";
 
-let range =
-    "all";
+let range = "all";
 
-let mediaType =
-    "photo";
+let mediaType = "photo";
 
-let sourceType =
-    "all";
+let sourceType = "all";
 
-let libraryMediaType =
-    "all";
+let libraryMediaType = "all";
 
-let currentItem =
-    null;
+let currentItem = null;
+
+
+/* =====================================================
+   API 辅助
+===================================================== */
+
+function buildDownloadUrl(
+    url,
+    filename
+) {
+
+    if (!url) {
+        return "";
+    }
+
+    return (
+        "/api/download?url=" +
+        encodeURIComponent(url) +
+        "&filename=" +
+        encodeURIComponent(
+            filename || "x-media"
+        )
+    );
+
+}
+
+
+function buildVideoDownloadUrl(
+    url,
+    filename
+) {
+
+    if (!url) {
+        return "";
+    }
+
+    return (
+        "/api/video-download?url=" +
+        encodeURIComponent(url) +
+        "&filename=" +
+        encodeURIComponent(
+            filename || "x-video.mp4"
+        )
+    );
+
+}
+
+
+/*
+ * 图片预览：
+ *
+ * 当前后端没有独立的 media-proxy，
+ * 所以这里优先使用后端 /api/download。
+ *
+ * 如果后端返回的是 attachment，
+ * 浏览器会触发下载而不是图片显示。
+ *
+ * 因此这里增加第二级回退：
+ * thumbnail -> 原始 URL。
+ */
+
+function getLibraryPreviewUrl(
+    item
+) {
+
+    const thumbnail =
+        item.thumbnail ||
+        "";
+
+    const url =
+        item.url ||
+        item.originalUrl ||
+        "";
+
+
+    /*
+     * 采集器如果已经保存了 thumbnail，
+     * 优先使用 thumbnail。
+     */
+
+    if (thumbnail) {
+
+        return thumbnail;
+
+    }
+
+
+    /*
+     * 没有缩略图时再使用原媒体 URL。
+     */
+
+    return url;
+
+}
 
 
 /* =====================================================
@@ -1638,7 +1219,6 @@ function getFavorites() {
             );
 
         if (!data) {
-
             return [];
         }
 
@@ -1652,6 +1232,7 @@ function getFavorites() {
     } catch (e) {
 
         return [];
+
     }
 
 }
@@ -1683,30 +1264,23 @@ function normalizeUsername(
         input.trim();
 
     if (!value) {
-
         return null;
     }
 
-
     if (
-        value.includes("x.com/")
-        ||
+        value.includes("x.com/") ||
         value.includes("twitter.com/")
     ) {
 
         if (
-            !value.startsWith(
-                "http://"
-            )
-            &&
-            !value.startsWith(
-                "https://"
-            )
+            !value.startsWith("http://") &&
+            !value.startsWith("https://")
         ) {
 
             value =
                 "https://" +
                 value;
+
         }
 
         try {
@@ -1719,21 +1293,17 @@ function normalizeUsername(
                     .split("/")
                     .filter(Boolean);
 
-            if (
-                parts.length
-            ) {
-
-                value =
-                    parts[0];
+            if (parts.length) {
+                value = parts[0];
             }
 
         } catch (e) {
 
             return null;
+
         }
 
     }
-
 
     value =
         value.replace(
@@ -1775,6 +1345,7 @@ function updateFavoriteButton() {
             "☆ 收藏";
 
         return;
+
     }
 
     const favorites =
@@ -1824,6 +1395,7 @@ favoriteAdd.addEventListener(
             );
 
             return;
+
         }
 
         const favorites =
@@ -1839,9 +1411,7 @@ favoriteAdd.addEventListener(
                         .toLowerCase()
             );
 
-        if (
-            index >= 0
-        ) {
+        if (index >= 0) {
 
             favorites.splice(
                 index,
@@ -1903,9 +1473,7 @@ function renderFavorites() {
     favoritesPanel.innerHTML =
         "";
 
-    if (
-        !favorites.length
-    ) {
+    if (!favorites.length) {
 
         favoritesPanel.innerHTML =
             `
@@ -1915,8 +1483,8 @@ function renderFavorites() {
             `;
 
         return;
-    }
 
+    }
 
     favorites.forEach(
         (
@@ -1968,13 +1536,8 @@ function renderFavorites() {
                 favorite.username;
 
 
-            info.appendChild(
-                name
-            );
-
-            info.appendChild(
-                handle
-            );
+            info.appendChild(name);
+            info.appendChild(handle);
 
 
             const actions =
@@ -2044,9 +1607,7 @@ function renderFavorites() {
                         1
                     );
 
-                    saveFavorites(
-                        list
-                    );
+                    saveFavorites(list);
 
                     renderFavorites();
 
@@ -2056,25 +1617,13 @@ function renderFavorites() {
             );
 
 
-            actions.appendChild(
-                use
-            );
+            actions.appendChild(use);
+            actions.appendChild(remove);
 
-            actions.appendChild(
-                remove
-            );
+            item.appendChild(info);
+            item.appendChild(actions);
 
-            item.appendChild(
-                info
-            );
-
-            item.appendChild(
-                actions
-            );
-
-            favoritesPanel.appendChild(
-                item
-            );
+            favoritesPanel.appendChild(item);
 
         }
     );
@@ -2088,37 +1637,17 @@ function renderFavorites() {
 
 modeSearch.addEventListener(
     "click",
-    () => {
-
-        setMode(
-            "search"
-        );
-
-    }
+    () => setMode("search")
 );
-
 
 modeLikes.addEventListener(
     "click",
-    () => {
-
-        setMode(
-            "likes"
-        );
-
-    }
+    () => setMode("likes")
 );
-
 
 modeBookmarks.addEventListener(
     "click",
-    () => {
-
-        setMode(
-            "bookmarks"
-        );
-
-    }
+    () => setMode("bookmarks")
 );
 
 
@@ -2128,7 +1657,6 @@ function setMode(
 
     currentMode =
         mode;
-
 
     modeSearch.classList.toggle(
         "active",
@@ -2146,9 +1674,7 @@ function setMode(
     );
 
 
-    if (
-        mode === "search"
-    ) {
+    if (mode === "search") {
 
         searchPanel.classList.remove(
             "hidden"
@@ -2167,6 +1693,7 @@ function setMode(
         );
 
         return;
+
     }
 
 
@@ -2190,6 +1717,7 @@ function setMode(
     libraryMediaType =
         "all";
 
+
     document
         .querySelectorAll(
             '.option[data-group="libraryMedia"]'
@@ -2199,8 +1727,7 @@ function setMode(
 
                 button.classList.toggle(
                     "active",
-                    button.dataset.value ===
-                    "all"
+                    button.dataset.value === "all"
                 );
 
             }
@@ -2220,10 +1747,7 @@ function setMode(
 
 function updateLibraryTitle() {
 
-    if (
-        currentMode ===
-        "likes"
-    ) {
+    if (currentMode === "likes") {
 
         libraryTitle.textContent =
             "❤️ 我的喜欢";
@@ -2243,9 +1767,7 @@ function updateLibraryTitle() {
 ===================================================== */
 
 document
-    .querySelectorAll(
-        ".option"
-    )
+    .querySelectorAll(".option")
     .forEach(
         button => {
 
@@ -2277,27 +1799,20 @@ document
                     );
 
 
-                    if (
-                        group ===
-                        "range"
-                    ) {
+                    if (group === "range") {
 
                         range =
                             value;
 
                         customDates.classList.toggle(
                             "hidden",
-                            value !==
-                            "custom"
+                            value !== "custom"
                         );
 
                     }
 
 
-                    if (
-                        group ===
-                        "media"
-                    ) {
+                    if (group === "media") {
 
                         mediaType =
                             value;
@@ -2305,10 +1820,7 @@ document
                     }
 
 
-                    if (
-                        group ===
-                        "source"
-                    ) {
+                    if (group === "source") {
 
                         sourceType =
                             value;
@@ -2316,10 +1828,7 @@ document
                     }
 
 
-                    if (
-                        group ===
-                        "libraryMedia"
-                    ) {
+                    if (group === "libraryMedia") {
 
                         libraryMediaType =
                             value;
@@ -2371,10 +1880,7 @@ function formatDate(
 
 function getDates() {
 
-    if (
-        range ===
-        "all"
-    ) {
+    if (range === "all") {
 
         return {
             start: null,
@@ -2384,13 +1890,9 @@ function getDates() {
     }
 
 
-    if (
-        range ===
-        "custom"
-    ) {
+    if (range === "custom") {
 
         return {
-
             start:
                 startDate.value ||
                 null,
@@ -2398,7 +1900,6 @@ function getDates() {
             end:
                 endDate.value ||
                 null
-
         };
 
     }
@@ -2408,9 +1909,7 @@ function getDates() {
         new Date();
 
     const start =
-        new Date(
-            now
-        );
+        new Date(now);
 
     start.setDate(
         start.getDate()
@@ -2422,14 +1921,10 @@ function getDates() {
     return {
 
         start:
-            formatDate(
-                start
-            ),
+            formatDate(start),
 
         end:
-            formatDate(
-                now
-            )
+            formatDate(now)
 
     };
 
@@ -2450,13 +1945,8 @@ profileInput.addEventListener(
     "keydown",
     event => {
 
-        if (
-            event.key ===
-            "Enter"
-        ) {
-
+        if (event.key === "Enter") {
             search();
-
         }
 
     }
@@ -2469,9 +1959,7 @@ async function search() {
         profileInput.value.trim();
 
     const username =
-        normalizeUsername(
-            raw
-        );
+        normalizeUsername(raw);
 
 
     if (!username) {
@@ -2486,6 +1974,7 @@ async function search() {
         );
 
         return;
+
     }
 
 
@@ -2500,8 +1989,7 @@ async function search() {
     if (
         dates.start &&
         dates.end &&
-        dates.start >
-        dates.end
+        dates.start > dates.end
     ) {
 
         showError(
@@ -2509,6 +1997,7 @@ async function search() {
         );
 
         return;
+
     }
 
 
@@ -2549,16 +2038,13 @@ async function search() {
             profile
         );
 
-
         params.set(
             "media_type",
             mediaType
         );
 
-
         /*
-         * 只有搜索博主模式
-         * 才发送 source_type
+         * 搜索博主才发送 source_type。
          */
 
         params.set(
@@ -2567,9 +2053,7 @@ async function search() {
         );
 
 
-        if (
-            dates.start
-        ) {
+        if (dates.start) {
 
             params.set(
                 "start_date",
@@ -2579,9 +2063,7 @@ async function search() {
         }
 
 
-        if (
-            dates.end
-        ) {
+        if (dates.end) {
 
             params.set(
                 "end_date",
@@ -2601,9 +2083,7 @@ async function search() {
             await response.json();
 
 
-        if (
-            !response.ok
-        ) {
+        if (!response.ok) {
 
             throw new Error(
                 data.detail ||
@@ -2613,9 +2093,7 @@ async function search() {
         }
 
 
-        renderSearchResults(
-            data
-        );
+        renderSearchResults(data);
 
 
     } catch (error) {
@@ -2652,14 +2130,12 @@ refreshLibrary.addEventListener(
 async function loadLibrary() {
 
     if (
-        currentMode !==
-        "likes"
-        &&
-        currentMode !==
-        "bookmarks"
+        currentMode !== "likes" &&
+        currentMode !== "bookmarks"
     ) {
 
         return;
+
     }
 
 
@@ -2717,9 +2193,7 @@ async function loadLibrary() {
             await response.json();
 
 
-        if (
-            !response.ok
-        ) {
+        if (!response.ok) {
 
             throw new Error(
                 data.detail ||
@@ -2729,9 +2203,7 @@ async function loadLibrary() {
         }
 
 
-        if (
-            !data.ok
-        ) {
+        if (!data.ok) {
 
             throw new Error(
                 data.detail ||
@@ -2741,9 +2213,7 @@ async function loadLibrary() {
         }
 
 
-        renderLibraryResults(
-            data
-        );
+        renderLibraryResults(data);
 
 
     } catch (error) {
@@ -2830,6 +2300,7 @@ function renderSearchResults(
             `;
 
         return;
+
     }
 
 
@@ -2837,9 +2308,7 @@ function renderSearchResults(
         item => {
 
             gallery.appendChild(
-                createSearchItem(
-                    item
-                )
+                createSearchItem(item)
             );
 
         }
@@ -2866,8 +2335,7 @@ function renderLibraryResults(
 
 
     const title =
-        currentMode ===
-        "likes"
+        currentMode === "likes"
             ? "❤️ 我的喜欢"
             : "🔖 我的书签";
 
@@ -2904,6 +2372,7 @@ function renderLibraryResults(
             `;
 
         return;
+
     }
 
 
@@ -2911,9 +2380,7 @@ function renderLibraryResults(
         item => {
 
             gallery.appendChild(
-                createLibraryItem(
-                    item
-                )
+                createLibraryItem(item)
             );
 
         }
@@ -2931,7 +2398,6 @@ function formatDateFromX(
 ) {
 
     if (!value) {
-
         return "";
     }
 
@@ -2943,7 +2409,6 @@ function formatDateFromX(
 
 
     if (!match) {
-
         return value;
     }
 
@@ -2967,13 +2432,10 @@ function formatDateFromX(
 
 
     const month =
-        months[
-            match[1]
-        ];
+        months[match[1]];
 
 
     if (!month) {
-
         return value;
     }
 
@@ -2981,12 +2443,7 @@ function formatDateFromX(
     return (
         `${match[3]}-` +
         `${month}-` +
-        `${String(
-            match[2]
-        ).padStart(
-            2,
-            "0"
-        )}`
+        `${String(match[2]).padStart(2,"0")}`
     );
 
 }
@@ -3002,21 +2459,17 @@ function getFilename(
 
     let date =
         formatDateFromX(
-            item.created_at
-            ||
+            item.created_at ||
             item.createdAt
         );
 
 
     if (!date) {
-
-        date =
-            "x-media";
+        date = "x-media";
     }
 
 
-    let suffix =
-        "";
+    let suffix = "";
 
 
     if (
@@ -3039,55 +2492,40 @@ function getFilename(
         item.type;
 
 
-    if (
-        type ===
-        "video"
-    ) {
+    if (type === "video") {
 
         extension =
             ".mp4";
 
-    }
+    } else {
 
-    else if (
-        (
+        const url =
+            item.originalUrl ||
             item.media_url ||
-            item.url
-        )
-        &&
-        (
-            item.media_url ||
-            item.url
-        )
-            .toLowerCase()
-            .includes(
-                ".png"
-            )
-    ) {
+            item.url ||
+            "";
 
-        extension =
-            ".png";
 
-    }
+        const lower =
+            url.toLowerCase();
 
-    else if (
-        (
-            item.media_url ||
-            item.url
-        )
-        &&
-        (
-            item.media_url ||
-            item.url
-        )
-            .toLowerCase()
-            .includes(
-                ".webp"
-            )
-    ) {
 
-        extension =
-            ".webp";
+        if (lower.includes(".png")) {
+
+            extension =
+                ".png";
+
+        } else if (lower.includes(".webp")) {
+
+            extension =
+                ".webp";
+
+        } else if (lower.includes(".gif")) {
+
+            extension =
+                ".gif";
+
+        }
 
     }
 
@@ -3108,33 +2546,24 @@ function createSearchItem(
 ) {
 
     const wrapper =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     wrapper.className =
         "item";
 
 
     const mediaWrap =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     mediaWrap.className =
         "media-wrap";
 
 
     const img =
-        document.createElement(
-            "img"
-        );
+        document.createElement("img");
 
 
-    if (
-        item.media_type ===
-        "video"
-    ) {
+    if (item.media_type === "video") {
 
         img.src =
             item.thumbnail ||
@@ -3143,7 +2572,8 @@ function createSearchItem(
     } else {
 
         img.src =
-            item.media_url;
+            item.media_url ||
+            "";
 
     }
 
@@ -3157,29 +2587,32 @@ function createSearchItem(
         "";
 
 
+    img.onerror =
+        () => {
+
+            replaceBrokenMedia(
+                img,
+                mediaWrap
+            );
+
+        };
+
+
     img.addEventListener(
         "click",
-        () =>
-            openModal(
-                item
-            )
+        () => openModal(item)
     );
 
 
-    mediaWrap.appendChild(
-        img
-    );
+    mediaWrap.appendChild(img);
 
 
     if (
-        item.media_type ===
-        "video"
+        item.media_type === "video"
     ) {
 
         const badge =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
         badge.className =
             "video-badge";
@@ -3187,41 +2620,28 @@ function createSearchItem(
         badge.textContent =
             "▶ 视频";
 
-        mediaWrap.appendChild(
-            badge
-        );
+        mediaWrap.appendChild(badge);
 
     }
 
 
-    /*
-     * 搜索博主模式：
-     * 显示原创 / 转帖 / 引用
-     */
-
     if (
         item.source &&
-        item.source !==
-        "original"
+        item.source !== "original"
     ) {
 
         const source =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
         source.className =
             "source-badge";
 
         source.textContent =
-            item.source ===
-            "repost"
+            item.source === "repost"
                 ? "转帖"
                 : "引用";
 
-        mediaWrap.appendChild(
-            source
-        );
+        mediaWrap.appendChild(source);
 
     }
 
@@ -3232,18 +2652,14 @@ function createSearchItem(
 
 
     const info =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     info.className =
         "item-info";
 
 
     const date =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     date.className =
         "item-date";
@@ -3254,68 +2670,48 @@ function createSearchItem(
         );
 
 
-    info.appendChild(
-        date
-    );
+    info.appendChild(date);
 
 
     const actions =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     actions.className =
         "item-actions";
 
 
     const view =
-        document.createElement(
-            "button"
-        );
+        document.createElement("button");
 
     view.className =
         "small-btn";
 
     view.textContent =
-        item.media_type ===
-        "video"
+        item.media_type === "video"
             ? "▶ 播放"
             : "查看大图";
 
-
     view.onclick =
-        () =>
-            openModal(
-                item
-            );
+        () => openModal(item);
 
 
     const download =
-        document.createElement(
-            "button"
-        );
+        document.createElement("button");
 
     download.className =
         "small-btn";
 
     download.textContent =
-        item.media_type ===
-        "video"
+        item.media_type === "video"
             ? "⬇ 下载视频"
             : "⬇ 下载原图";
 
-
     download.onclick =
-        () =>
-            downloadItem(
-                item
-            );
+        () => downloadItem(item);
 
 
     const post =
-        document.createElement(
-            "button"
-        );
+        document.createElement("button");
 
     post.className =
         "small-btn";
@@ -3327,9 +2723,7 @@ function createSearchItem(
     post.onclick =
         () => {
 
-            if (
-                item.tweet_url
-            ) {
+            if (item.tweet_url) {
 
                 window.open(
                     item.tweet_url,
@@ -3341,28 +2735,13 @@ function createSearchItem(
         };
 
 
-    actions.appendChild(
-        view
-    );
+    actions.appendChild(view);
+    actions.appendChild(download);
+    actions.appendChild(post);
 
-    actions.appendChild(
-        download
-    );
+    info.appendChild(actions);
 
-    actions.appendChild(
-        post
-    );
-
-
-    info.appendChild(
-        actions
-    );
-
-
-    wrapper.appendChild(
-        info
-    );
-
+    wrapper.appendChild(info);
 
     return wrapper;
 
@@ -3378,48 +2757,55 @@ function createLibraryItem(
 ) {
 
     const wrapper =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     wrapper.className =
         "item";
 
 
     const mediaWrap =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     mediaWrap.className =
         "media-wrap";
 
 
-    const img =
-        document.createElement(
-            "img"
-        );
-
-
     const isVideo =
-        item.type ===
-        "video";
+        item.type === "video" ||
+        item.media_type === "video";
 
 
     const mediaUrl =
         item.url ||
+        item.originalUrl ||
         "";
 
 
     const thumbnail =
         item.thumbnail ||
-        mediaUrl;
+        "";
+
+
+    /*
+     * 图片：
+     *
+     * 优先 thumbnail。
+     *
+     * 没有 thumbnail 才使用 url。
+     */
+
+    const displayUrl =
+        isVideo
+            ? thumbnail || mediaUrl
+            : thumbnail || mediaUrl;
+
+
+    const img =
+        document.createElement("img");
 
 
     img.src =
-        isVideo
-            ? thumbnail
-            : mediaUrl;
+        displayUrl;
 
 
     img.loading =
@@ -3430,30 +2816,38 @@ function createLibraryItem(
         "";
 
 
+    /*
+     * 防止蓝色问号。
+     */
+
+    img.onerror =
+        () => {
+
+            replaceBrokenMedia(
+                img,
+                mediaWrap
+            );
+
+        };
+
+
+    const normalized =
+        normalizeLibraryItem(item);
+
+
     img.addEventListener(
         "click",
-        () =>
-            openModal(
-                normalizeLibraryItem(
-                    item
-                )
-            )
+        () => openModal(normalized)
     );
 
 
-    mediaWrap.appendChild(
-        img
-    );
+    mediaWrap.appendChild(img);
 
 
-    if (
-        isVideo
-    ) {
+    if (isVideo) {
 
         const badge =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
         badge.className =
             "video-badge";
@@ -3461,29 +2855,24 @@ function createLibraryItem(
         badge.textContent =
             "▶ 视频";
 
-        mediaWrap.appendChild(
-            badge
-        );
+        mediaWrap.appendChild(badge);
 
     }
 
 
     /*
-     * Likes / Bookmarks
-     * 不显示原创 / 转帖
+     * Likes / Bookmarks：
+     * 永远不显示原创 / 转帖。
      */
 
     const libraryBadge =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     libraryBadge.className =
         "library-badge";
 
     libraryBadge.textContent =
-        currentMode ===
-        "likes"
+        currentMode === "likes"
             ? "❤️ 喜欢"
             : "🔖 书签";
 
@@ -3498,22 +2887,16 @@ function createLibraryItem(
 
 
     const info =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     info.className =
         "item-info";
 
 
-    if (
-        item.author
-    ) {
+    if (item.author) {
 
         const author =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
         author.className =
             "item-author";
@@ -3522,17 +2905,13 @@ function createLibraryItem(
             "@" +
             item.author;
 
-        info.appendChild(
-            author
-        );
+        info.appendChild(author);
 
     }
 
 
     const date =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     date.className =
         "item-date";
@@ -3542,31 +2921,18 @@ function createLibraryItem(
             item.createdAt
         );
 
-
-    info.appendChild(
-        date
-    );
+    info.appendChild(date);
 
 
     const actions =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     actions.className =
         "item-actions";
 
 
-    const normalized =
-        normalizeLibraryItem(
-            item
-        );
-
-
     const view =
-        document.createElement(
-            "button"
-        );
+        document.createElement("button");
 
     view.className =
         "small-btn";
@@ -3578,16 +2944,11 @@ function createLibraryItem(
 
 
     view.onclick =
-        () =>
-            openModal(
-                normalized
-            );
+        () => openModal(normalized);
 
 
     const download =
-        document.createElement(
-            "button"
-        );
+        document.createElement("button");
 
     download.className =
         "small-btn";
@@ -3599,16 +2960,11 @@ function createLibraryItem(
 
 
     download.onclick =
-        () =>
-            downloadItem(
-                normalized
-            );
+        () => downloadItem(normalized);
 
 
     const post =
-        document.createElement(
-            "button"
-        );
+        document.createElement("button");
 
     post.className =
         "small-btn";
@@ -3620,9 +2976,7 @@ function createLibraryItem(
     post.onclick =
         () => {
 
-            if (
-                item.tweet_url
-            ) {
+            if (item.tweet_url) {
 
                 window.open(
                     item.tweet_url,
@@ -3634,30 +2988,80 @@ function createLibraryItem(
         };
 
 
-    actions.appendChild(
-        view
-    );
+    actions.appendChild(view);
+    actions.appendChild(download);
+    actions.appendChild(post);
 
-    actions.appendChild(
-        download
-    );
+    info.appendChild(actions);
 
-    actions.appendChild(
-        post
-    );
-
-
-    info.appendChild(
-        actions
-    );
-
-
-    wrapper.appendChild(
-        info
-    );
-
+    wrapper.appendChild(info);
 
     return wrapper;
+
+}
+
+
+/* =====================================================
+   图片加载失败处理
+===================================================== */
+
+function replaceBrokenMedia(
+    img,
+    mediaWrap
+) {
+
+    if (
+        !img ||
+        !mediaWrap
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+     * 防止 onerror 无限循环。
+     */
+
+    img.onerror =
+        null;
+
+
+    img.style.display =
+        "none";
+
+
+    /*
+     * 如果已经存在错误提示，
+     * 不重复添加。
+     */
+
+    if (
+        mediaWrap.querySelector(
+            ".media-error"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    const error =
+        document.createElement("div");
+
+    error.className =
+        "media-error";
+
+    error.textContent =
+        "媒体暂时无法加载";
+
+
+    mediaWrap.insertBefore(
+        error,
+        img
+    );
 
 }
 
@@ -3670,23 +3074,39 @@ function normalizeLibraryItem(
     item
 ) {
 
+    const isVideo =
+        item.type === "video" ||
+        item.media_type === "video";
+
+
+    const mediaUrl =
+        item.url ||
+        item.originalUrl ||
+        "";
+
+
+    const thumbnail =
+        item.thumbnail ||
+        "";
+
+
     return {
 
         media_type:
-            item.type,
+            isVideo
+                ? "video"
+                : "photo",
 
         media_url:
-            item.url,
+            mediaUrl,
 
         video_url:
-            item.type ===
-            "video"
-                ? item.url
+            isVideo
+                ? mediaUrl
                 : "",
 
         thumbnail:
-            item.thumbnail ||
-            "",
+            thumbnail,
 
         tweet_url:
             item.tweet_url ||
@@ -3702,12 +3122,15 @@ function normalizeLibraryItem(
 
         originalUrl:
             item.originalUrl ||
-            item.url ||
+            mediaUrl ||
             "",
 
         libraryId:
             item.id ||
-            ""
+            "",
+
+        libraryItem:
+            true
 
     };
 
@@ -3723,7 +3146,6 @@ function formatLibraryDate(
 ) {
 
     if (!value) {
-
         return "";
     }
 
@@ -3731,9 +3153,8 @@ function formatLibraryDate(
     try {
 
         const date =
-            new Date(
-                value
-            );
+            new Date(value);
+
 
         if (
             Number.isNaN(
@@ -3742,6 +3163,7 @@ function formatLibraryDate(
         ) {
 
             return "";
+
         }
 
 
@@ -3750,22 +3172,17 @@ function formatLibraryDate(
             "-" +
             String(
                 date.getMonth() + 1
-            ).padStart(
-                2,
-                "0"
-            ) +
+            ).padStart(2,"0") +
             "-" +
             String(
                 date.getDate()
-            ).padStart(
-                2,
-                "0"
-            )
+            ).padStart(2,"0")
         );
 
     } catch (e) {
 
         return "";
+
     }
 
 }
@@ -3782,6 +3199,7 @@ function downloadItem(
     const url =
         item.media_url ||
         item.url ||
+        item.originalUrl ||
         "";
 
 
@@ -3792,28 +3210,53 @@ function downloadItem(
         );
 
         return;
+
     }
 
 
+    const isVideo =
+        item.media_type === "video" ||
+        item.type === "video";
+
+
     const filename =
-        getFilename(
-            item
-        );
+        getFilename(item);
 
 
-    const downloadUrl =
-        "/api/download?url=" +
-        encodeURIComponent(
-            url
-        ) +
-        "&filename=" +
-        encodeURIComponent(
-            filename
-        );
+    /*
+     * 视频：
+     * 使用后端现有的视频转换接口。
+     */
 
+    if (isVideo) {
+
+        const videoFilename =
+            filename.endsWith(".mp4")
+                ? filename
+                : filename + ".mp4";
+
+
+        window.location.href =
+            buildVideoDownloadUrl(
+                url,
+                videoFilename
+            );
+
+        return;
+
+    }
+
+
+    /*
+     * 图片：
+     * 使用后端现有下载接口。
+     */
 
     window.location.href =
-        downloadUrl;
+        buildDownloadUrl(
+            url,
+            filename
+        );
 
 }
 
@@ -3834,21 +3277,40 @@ function openModal(
         "";
 
 
-    if (
-        item.media_type ===
-        "video"
-    ) {
+    const isVideo =
+        item.media_type === "video" ||
+        item.type === "video";
+
+
+    if (isVideo) {
+
+        /*
+         * 视频优先使用 video_url。
+         *
+         * 如果采集器保存的是 M3U8，
+         * 浏览器原生 video 可能无法直接播放。
+         *
+         * 此时仍然保留原始 URL，
+         * 下载按钮走 /api/video-download。
+         */
 
         const video =
-            document.createElement(
-                "video"
-            );
+            document.createElement("video");
 
 
         video.src =
             item.video_url ||
             item.media_url ||
+            item.url ||
             "";
+
+
+        if (item.thumbnail) {
+
+            video.poster =
+                item.thumbnail;
+
+        }
 
 
         video.controls =
@@ -3859,6 +3321,35 @@ function openModal(
 
         video.playsInline =
             true;
+
+
+        video.onerror =
+            () => {
+
+                const message =
+                    document.createElement("div");
+
+                message.style.color =
+                    "#fff";
+
+                message.style.textAlign =
+                    "center";
+
+                message.style.padding =
+                    "20px";
+
+                message.textContent =
+                    "这个视频格式无法直接在浏览器播放，请使用“下载视频”。";
+
+
+                modalContent.innerHTML =
+                    "";
+
+                modalContent.appendChild(
+                    message
+                );
+
+            };
 
 
         modalContent.appendChild(
@@ -3873,12 +3364,15 @@ function openModal(
     } else {
 
         const img =
-            document.createElement(
-                "img"
-            );
+            document.createElement("img");
 
+
+        /*
+         * Modal 中优先使用 originalUrl。
+         */
 
         img.src =
+            item.originalUrl ||
             item.media_url ||
             item.url ||
             "";
@@ -3887,6 +3381,46 @@ function openModal(
         img.alt =
             item.alt ||
             "";
+
+
+        img.onerror =
+            () => {
+
+                /*
+                 * 如果原图打不开，
+                 * 尝试缩略图。
+                 */
+
+                if (
+                    item.thumbnail &&
+                    img.src !== item.thumbnail
+                ) {
+
+                    img.onerror =
+                        () => {
+
+                            replaceBrokenMedia(
+                                img,
+                                modalContent
+                            );
+
+                        };
+
+
+                    img.src =
+                        item.thumbnail;
+
+                    return;
+
+                }
+
+
+                replaceBrokenMedia(
+                    img,
+                    modalContent
+                );
+
+            };
 
 
         modalContent.appendChild(
@@ -3907,6 +3441,10 @@ function openModal(
 }
 
 
+/* =====================================================
+   Modal 关闭
+===================================================== */
+
 closeModal.addEventListener(
     "click",
     closeModalWindow
@@ -3918,8 +3456,7 @@ modal.addEventListener(
     event => {
 
         if (
-            event.target ===
-            modal
+            event.target === modal
         ) {
 
             closeModalWindow();
@@ -3953,10 +3490,7 @@ downloadButton.addEventListener(
     "click",
     () => {
 
-        if (
-            !currentItem
-        ) {
-
+        if (!currentItem) {
             return;
         }
 
@@ -3982,6 +3516,7 @@ originalButton.addEventListener(
         ) {
 
             return;
+
         }
 
 
@@ -4001,7 +3536,7 @@ originalButton.addEventListener(
 
 
 /* =====================================================
-   ESC 关闭 Modal
+   ESC
 ===================================================== */
 
 document.addEventListener(
@@ -4009,8 +3544,7 @@ document.addEventListener(
     event => {
 
         if (
-            event.key ===
-            "Escape"
+            event.key === "Escape"
         ) {
 
             closeModalWindow();
@@ -4022,16 +3556,14 @@ document.addEventListener(
 
 
 /* =====================================================
-   初始
+   初始化
 ===================================================== */
 
 renderFavorites();
 
 updateFavoriteButton();
 
-setMode(
-    "search"
-);
+setMode("search");
 
 </script>
 
