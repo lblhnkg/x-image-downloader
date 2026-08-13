@@ -2713,6 +2713,2013 @@ renderFavorites();
 
 updateFavoriteButton();
 
+/* =========================================================
+   V0.8 MEDIA LIBRARY
+   ❤️ Likes / 🔖 Bookmarks
+   不修改原来的「搜索博主」逻辑
+========================================================= */
+
+(function () {
+    "use strict";
+
+    /* =====================================================
+       状态
+    ===================================================== */
+
+    let xidMode = "search";
+
+    let xidLibraryMediaType = "all";
+    let xidLibraryDownloaded = "all";
+    let xidLibraryRange = "all";
+
+    let xidLibraryItems = [];
+
+    let xidLibraryCard = null;
+    let xidLibraryGallery = null;
+    let xidLibraryStatus = null;
+
+    /* =====================================================
+       CSS
+    ===================================================== */
+
+    const style = document.createElement("style");
+
+    style.textContent = `
+        /* 顶部模式菜单 */
+
+        .xid-mode-tabs {
+            display: grid;
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+
+            gap: 7px;
+
+            margin-bottom: 14px;
+        }
+
+        .xid-mode-tab {
+            height: 44px;
+
+            border: 1px solid #ddd;
+            border-radius: 11px;
+
+            background: #fff;
+
+            color: #444;
+
+            font-size: 13px;
+            font-weight: 600;
+
+            padding: 0 6px;
+
+            cursor: pointer;
+        }
+
+        .xid-mode-tab.active {
+            background: #111;
+            color: #fff;
+            border-color: #111;
+        }
+
+        /* 媒体库筛选卡 */
+
+        .xid-library-card {
+            background: white;
+
+            border-radius: 16px;
+
+            padding: 16px;
+
+            margin-bottom: 14px;
+
+            box-shadow:
+                0 2px 10px rgba(0,0,0,.04);
+        }
+
+        .xid-library-section {
+            margin-top: 15px;
+        }
+
+        .xid-library-section:first-child {
+            margin-top: 0;
+        }
+
+        .xid-library-label {
+            display: block;
+
+            color: #666;
+
+            font-size: 13px;
+
+            margin-bottom: 7px;
+        }
+
+        .xid-library-options {
+            display: flex;
+
+            gap: 7px;
+
+            flex-wrap: wrap;
+        }
+
+        .xid-library-option {
+            border: 1px solid #ddd;
+
+            background: #fafafa;
+
+            border-radius: 20px;
+
+            padding: 8px 12px;
+
+            font-size: 13px;
+
+            color: #111;
+
+            cursor: pointer;
+        }
+
+        .xid-library-option.active {
+            background: #111;
+
+            color: white;
+
+            border-color: #111;
+        }
+
+        .xid-library-primary {
+            width: 100%;
+
+            height: 48px;
+
+            border: 0;
+
+            border-radius: 12px;
+
+            background: #111;
+
+            color: white;
+
+            font-size: 16px;
+
+            font-weight: 600;
+
+            margin-top: 17px;
+
+            cursor: pointer;
+        }
+
+        .xid-library-primary:disabled {
+            opacity: .45;
+        }
+
+        .xid-library-status {
+            margin-top: 12px;
+
+            font-size: 13px;
+
+            color: #777;
+
+            line-height: 1.6;
+
+            white-space: pre-wrap;
+        }
+
+        .xid-library-status.error {
+            color: #d00;
+        }
+
+        /* 已下载标记 */
+
+        .xid-downloaded-badge {
+            position: absolute;
+
+            left: 7px;
+            bottom: 7px;
+
+            background: rgba(0,0,0,.75);
+
+            color: #fff;
+
+            border-radius: 20px;
+
+            padding: 5px 8px;
+
+            font-size: 10px;
+        }
+
+        /* Likes / Bookmarks 模式下不显示来源 */
+
+        .xid-library-item .source-badge {
+            display: none !important;
+        }
+
+        @media (max-width: 380px) {
+
+            .xid-mode-tab {
+                font-size: 11px;
+            }
+
+        }
+    `;
+
+    document.head.appendChild(style);
+
+
+    /* =====================================================
+       找到原搜索卡片
+    ===================================================== */
+
+    const originalSearchCard =
+        document.querySelector(
+            ".card"
+        );
+
+
+    /* =====================================================
+       创建顶部模式菜单
+    ===================================================== */
+
+    const modeTabs =
+        document.createElement(
+            "div"
+        );
+
+    modeTabs.className =
+        "xid-mode-tabs";
+
+    const searchTab =
+        createModeTab(
+            "🔍 搜索博主",
+            "search"
+        );
+
+    const likesTab =
+        createModeTab(
+            "❤️ 我的喜欢",
+            "likes"
+        );
+
+    const bookmarksTab =
+        createModeTab(
+            "🔖 我的书签",
+            "bookmarks"
+        );
+
+    modeTabs.appendChild(
+        searchTab
+    );
+
+    modeTabs.appendChild(
+        likesTab
+    );
+
+    modeTabs.appendChild(
+        bookmarksTab
+    );
+
+
+    /* =====================================================
+       插入到页面顶部
+    ===================================================== */
+
+    const container =
+        document.querySelector(
+            ".container"
+        );
+
+    const subtitle =
+        document.querySelector(
+            ".subtitle"
+        );
+
+    if (
+        container &&
+        subtitle
+    ) {
+
+        subtitle.after(
+            modeTabs
+        );
+
+    }
+
+
+    /* =====================================================
+       创建模式按钮
+    ===================================================== */
+
+    function createModeTab(
+        text,
+        mode
+    ) {
+
+        const button =
+            document.createElement(
+                "button"
+            );
+
+        button.className =
+            "xid-mode-tab";
+
+        button.textContent =
+            text;
+
+        if (
+            mode ===
+            "search"
+        ) {
+
+            button.classList.add(
+                "active"
+            );
+
+        }
+
+        button.addEventListener(
+            "click",
+            function () {
+
+                switchMode(
+                    mode
+                );
+
+            }
+        );
+
+        return button;
+
+    }
+
+
+    /* =====================================================
+       创建 Likes / Bookmarks 卡片
+    ===================================================== */
+
+    xidLibraryCard =
+        document.createElement(
+            "div"
+        );
+
+    xidLibraryCard.className =
+        "xid-library-card hidden";
+
+
+    xidLibraryCard.innerHTML = `
+
+        <div class="xid-library-section">
+
+            <label class="xid-library-label">
+                媒体类型
+            </label>
+
+            <div class="xid-library-options">
+
+                <button
+                    class="xid-library-option active"
+                    data-library-group="media"
+                    data-library-value="all"
+                >
+                    🖼️+🎬 全部
+                </button>
+
+                <button
+                    class="xid-library-option"
+                    data-library-group="media"
+                    data-library-value="image"
+                >
+                    🖼️ 图片
+                </button>
+
+                <button
+                    class="xid-library-option"
+                    data-library-group="media"
+                    data-library-value="video"
+                >
+                    🎬 视频
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="xid-library-section">
+
+            <label class="xid-library-label">
+                下载状态
+            </label>
+
+            <div class="xid-library-options">
+
+                <button
+                    class="xid-library-option active"
+                    data-library-group="downloaded"
+                    data-library-value="all"
+                >
+                    全部
+                </button>
+
+                <button
+                    class="xid-library-option"
+                    data-library-group="downloaded"
+                    data-library-value="no"
+                >
+                    未下载
+                </button>
+
+                <button
+                    class="xid-library-option"
+                    data-library-group="downloaded"
+                    data-library-value="yes"
+                >
+                    已下载
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="xid-library-section">
+
+            <label class="xid-library-label">
+                时间范围
+            </label>
+
+            <div class="xid-library-options">
+
+                <button
+                    class="xid-library-option active"
+                    data-library-group="range"
+                    data-library-value="all"
+                >
+                    全部
+                </button>
+
+                <button
+                    class="xid-library-option"
+                    data-library-group="range"
+                    data-library-value="7"
+                >
+                    最近7天
+                </button>
+
+                <button
+                    class="xid-library-option"
+                    data-library-group="range"
+                    data-library-value="30"
+                >
+                    最近30天
+                </button>
+
+                <button
+                    class="xid-library-option"
+                    data-library-group="range"
+                    data-library-value="365"
+                >
+                    最近1年
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <button
+            id="xid-library-load"
+            class="xid-library-primary"
+        >
+            加载媒体
+        </button>
+
+
+        <div
+            id="xid-library-status"
+            class="xid-library-status"
+        ></div>
+
+    `;
+
+
+    if (
+        originalSearchCard
+    ) {
+
+        originalSearchCard.before(
+            xidLibraryCard
+        );
+
+    }
+
+
+    xidLibraryGallery =
+        document.createElement(
+            "div"
+        );
+
+    xidLibraryGallery.className =
+        "card hidden";
+
+    xidLibraryGallery.innerHTML = `
+
+        <div class="result-header">
+
+            <div>
+
+                <div
+                    id="xid-library-result-title"
+                    class="result-title"
+                >
+                    媒体库
+                </div>
+
+                <div
+                    id="xid-library-result-count"
+                    class="result-count"
+                ></div>
+
+            </div>
+
+        </div>
+
+        <div
+            id="xid-library-gallery"
+            class="gallery"
+        ></div>
+
+    `;
+
+
+    if (
+        originalSearchCard
+    ) {
+
+        originalSearchCard.after(
+            xidLibraryGallery
+        );
+
+    }
+
+
+    xidLibraryGallery =
+        document.querySelector(
+            ".card .gallery"
+        ) &&
+        document.querySelector(
+            ".card .gallery"
+        ).closest(
+            ".card"
+        );
+
+
+    const xidLibraryGalleryInner =
+        document.getElementById(
+            "xid-library-gallery"
+        );
+
+    xidLibraryStatus =
+        document.getElementById(
+            "xid-library-status"
+        );
+
+    const xidLibraryLoad =
+        document.getElementById(
+            "xid-library-load"
+        );
+
+
+    /* =====================================================
+       新媒体库筛选按钮
+    ===================================================== */
+
+    xidLibraryCard
+        .querySelectorAll(
+            ".xid-library-option"
+        )
+        .forEach(
+            function (button) {
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        const group =
+                            button.dataset
+                                .libraryGroup;
+
+                        const value =
+                            button.dataset
+                                .libraryValue;
+
+                        xidLibraryCard
+                            .querySelectorAll(
+                                `.xid-library-option[data-library-group="${group}"]`
+                            )
+                            .forEach(
+                                function (other) {
+
+                                    other.classList.remove(
+                                        "active"
+                                    );
+
+                                }
+                            );
+
+                        button.classList.add(
+                            "active"
+                        );
+
+
+                        if (
+                            group ===
+                            "media"
+                        ) {
+
+                            xidLibraryMediaType =
+                                value;
+
+                        }
+
+
+                        if (
+                            group ===
+                            "downloaded"
+                        ) {
+
+                            xidLibraryDownloaded =
+                                value;
+
+                        }
+
+
+                        if (
+                            group ===
+                            "range"
+                        ) {
+
+                            xidLibraryRange =
+                                value;
+
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+
+    /* =====================================================
+       加载按钮
+    ===================================================== */
+
+    xidLibraryLoad.addEventListener(
+        "click",
+        loadXidLibrary
+    );
+
+
+    /* =====================================================
+       切换模式
+    ===================================================== */
+
+    function switchMode(
+        mode
+    ) {
+
+        xidMode =
+            mode;
+
+
+        searchTab.classList.toggle(
+            "active",
+            mode ===
+            "search"
+        );
+
+        likesTab.classList.toggle(
+            "active",
+            mode ===
+            "likes"
+        );
+
+        bookmarksTab.classList.toggle(
+            "active",
+            mode ===
+            "bookmarks"
+        );
+
+
+        if (
+            mode ===
+            "search"
+        ) {
+
+            if (
+                originalSearchCard
+            ) {
+
+                originalSearchCard
+                    .classList
+                    .remove(
+                        "hidden"
+                    );
+
+            }
+
+            xidLibraryCard
+                .classList
+                .add(
+                    "hidden"
+                );
+
+            xidLibraryGallery
+                .classList
+                .add(
+                    "hidden"
+                );
+
+            return;
+
+        }
+
+
+        /* Likes / Bookmarks */
+
+        if (
+            originalSearchCard
+        ) {
+
+            originalSearchCard
+                .classList
+                .add(
+                    "hidden"
+                );
+
+        }
+
+
+        xidLibraryCard
+            .classList
+            .remove(
+                "hidden"
+            );
+
+        xidLibraryGallery
+            .classList
+            .remove(
+                "hidden"
+            );
+
+
+        const title =
+            mode ===
+            "likes"
+                ? "❤️ 我的喜欢"
+                : "🔖 我的书签";
+
+        document.getElementById(
+            "xid-library-result-title"
+        ).textContent =
+            title;
+
+    }
+
+
+    /* =====================================================
+       加载服务器媒体库
+    ===================================================== */
+
+    async function loadXidLibrary() {
+
+        if (
+            xidMode ===
+            "search"
+        ) {
+
+            return;
+
+        }
+
+
+        const source =
+            xidMode;
+
+
+        xidLibraryLoad.disabled =
+            true;
+
+        xidLibraryLoad.textContent =
+            "正在加载…";
+
+
+        xidLibraryStatus.className =
+            "xid-library-status";
+
+        xidLibraryStatus.textContent =
+            (
+                source ===
+                "likes"
+                    ? "正在加载我的喜欢…"
+                    : "正在加载我的书签…"
+            );
+
+
+        xidLibraryGalleryInner.innerHTML =
+            "";
+
+
+        try {
+
+            const params =
+                new URLSearchParams();
+
+
+            params.set(
+                "source",
+                source
+            );
+
+
+            params.set(
+                "media_type",
+                xidLibraryMediaType
+            );
+
+
+            params.set(
+                "downloaded",
+                xidLibraryDownloaded
+            );
+
+
+            const response =
+                await fetch(
+                    `/api/media?${params.toString()}`
+                );
+
+
+            let data = null;
+
+
+            try {
+
+                data =
+                    await response.json();
+
+            } catch (_) {
+
+                throw new Error(
+                    "服务器返回的不是有效 JSON"
+                );
+
+            }
+
+
+            if (
+                !response.ok
+            ) {
+
+                throw new Error(
+                    data &&
+                    data.detail
+                        ? data.detail
+                        : `HTTP ${response.status}`
+                );
+
+            }
+
+
+            if (
+                !data ||
+                data.ok !== true
+            ) {
+
+                throw new Error(
+                    data &&
+                    data.detail
+                        ? data.detail
+                        : "媒体库读取失败"
+                );
+
+            }
+
+
+            let items =
+                Array.isArray(
+                    data.items
+                )
+                    ? data.items
+                    : [];
+
+
+            /*
+             * 时间筛选
+             *
+             * 后端当前 /api/media
+             * 没有日期参数。
+             *
+             * 因此这里在浏览器端过滤。
+             */
+
+            items =
+                filterLibraryByDate(
+                    items
+                );
+
+
+            xidLibraryItems =
+                items;
+
+
+            renderXidLibrary(
+                items
+            );
+
+
+            xidLibraryStatus.textContent =
+                `服务器返回 ${data.count || 0} 个媒体。\n` +
+                `当前筛选显示 ${items.length} 个。`;
+
+
+        } catch (
+            error
+        ) {
+
+            console.error(
+                "[XID] media library error:",
+                error
+            );
+
+
+            xidLibraryStatus.className =
+                "xid-library-status error";
+
+
+            xidLibraryStatus.textContent =
+                "媒体库加载失败：\n" +
+                (
+                    error &&
+                    error.message
+                        ? error.message
+                        : String(error)
+                );
+
+        } finally {
+
+            xidLibraryLoad.disabled =
+                false;
+
+            xidLibraryLoad.textContent =
+                "加载媒体";
+
+        }
+
+    }
+
+
+    /* =====================================================
+       日期过滤
+    ===================================================== */
+
+    function filterLibraryByDate(
+        items
+    ) {
+
+        if (
+            xidLibraryRange ===
+            "all"
+        ) {
+
+            return items;
+
+        }
+
+
+        const days =
+            Number(
+                xidLibraryRange
+            );
+
+
+        if (
+            !days ||
+            days <= 0
+        ) {
+
+            return items;
+
+        }
+
+
+        const now =
+            Date.now();
+
+
+        const cutoff =
+            now -
+            days *
+            24 *
+            60 *
+            60 *
+            1000;
+
+
+        return items.filter(
+            function (item) {
+
+                const value =
+                    item.createdAt;
+
+
+                if (!value) {
+
+                    return true;
+
+                }
+
+
+                const time =
+                    Date.parse(
+                        value
+                    );
+
+
+                if (
+                    Number.isNaN(
+                        time
+                    )
+                ) {
+
+                    return true;
+
+                }
+
+
+                return (
+                    time >=
+                    cutoff
+                );
+
+            }
+        );
+
+    }
+
+
+    /* =====================================================
+       媒体库渲染
+    ===================================================== */
+
+    function renderXidLibrary(
+        items
+    ) {
+
+        xidLibraryGalleryInner.innerHTML =
+            "";
+
+
+        const count =
+            document.getElementById(
+                "xid-library-result-count"
+            );
+
+
+        count.textContent =
+            `找到 ${items.length} 个媒体`;
+
+
+        if (
+            !items.length
+        ) {
+
+            xidLibraryGalleryInner.innerHTML = `
+
+                <div
+                    class="loader"
+                    style="grid-column:1/-1;"
+                >
+                    当前条件下没有媒体。
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+
+        items.forEach(
+            function (item) {
+
+                xidLibraryGalleryInner.appendChild(
+                    createLibraryItem(
+                        item
+                    )
+                );
+
+            }
+        );
+
+    }
+
+
+    /* =====================================================
+       统一媒体字段
+    ===================================================== */
+
+    function normalizeLibraryItem(
+        item
+    ) {
+
+        return {
+
+            id:
+                item.id || "",
+
+            type:
+                item.type ||
+                item.media_type ||
+                "image",
+
+            url:
+                item.url ||
+                item.media_url ||
+                "",
+
+            originalUrl:
+                item.originalUrl ||
+                item.original_url ||
+                item.url ||
+                item.media_url ||
+                "",
+
+            thumbnail:
+                item.thumbnail ||
+                item.url ||
+                item.media_url ||
+                "",
+
+            streamType:
+                item.streamType ||
+                "",
+
+            tweet_url:
+                item.tweet_url ||
+                "",
+
+            tweet_id:
+                item.tweet_id ||
+                "",
+
+            author:
+                item.author ||
+                "",
+
+            source:
+                item.source ||
+                "",
+
+            createdAt:
+                item.createdAt ||
+                "",
+
+            downloaded:
+                item.downloaded === true
+
+        };
+
+    }
+
+
+    /* =====================================================
+       创建 Likes / Bookmarks 媒体卡片
+    ===================================================== */
+
+    function createLibraryItem(
+        rawItem
+    ) {
+
+        const item =
+            normalizeLibraryItem(
+                rawItem
+            );
+
+
+        const wrapper =
+            document.createElement(
+                "div"
+            );
+
+        wrapper.className =
+            "item xid-library-item";
+
+
+        const mediaWrap =
+            document.createElement(
+                "div"
+            );
+
+        mediaWrap.className =
+            "media-wrap";
+
+
+        const img =
+            document.createElement(
+                "img"
+            );
+
+
+        if (
+            item.type ===
+            "video"
+        ) {
+
+            img.src =
+                item.thumbnail ||
+                "";
+
+        } else {
+
+            img.src =
+                item.thumbnail ||
+                item.url ||
+                "";
+
+        }
+
+
+        img.loading =
+            "lazy";
+
+
+        img.alt =
+            item.author
+                ? `@${item.author}`
+                : "";
+
+
+        img.addEventListener(
+            "click",
+            function () {
+
+                openLibraryModal(
+                    item
+                );
+
+            }
+        );
+
+
+        mediaWrap.appendChild(
+            img
+        );
+
+
+        if (
+            item.type ===
+            "video"
+        ) {
+
+            const badge =
+                document.createElement(
+                    "div"
+                );
+
+            badge.className =
+                "video-badge";
+
+            badge.textContent =
+                "▶ 视频";
+
+            mediaWrap.appendChild(
+                badge
+            );
+
+        }
+
+
+        if (
+            item.downloaded
+        ) {
+
+            const badge =
+                document.createElement(
+                    "div"
+                );
+
+            badge.className =
+                "xid-downloaded-badge";
+
+            badge.textContent =
+                "✓ 已下载";
+
+            mediaWrap.appendChild(
+                badge
+            );
+
+        }
+
+
+        const info =
+            document.createElement(
+                "div"
+            );
+
+        info.className =
+            "item-info";
+
+
+        const date =
+            document.createElement(
+                "div"
+            );
+
+        date.className =
+            "item-date";
+
+        date.textContent =
+            formatLibraryDate(
+                item.createdAt
+            );
+
+
+        info.appendChild(
+            date
+        );
+
+
+        const author =
+            document.createElement(
+                "div"
+            );
+
+        author.className =
+            "item-date";
+
+        author.style.marginTop =
+            "3px";
+
+        author.textContent =
+            item.author
+                ? `@${item.author}`
+                : "";
+
+
+        info.appendChild(
+            author
+        );
+
+
+        const actions =
+            document.createElement(
+                "div"
+            );
+
+        actions.className =
+            "item-actions";
+
+
+        const view =
+            document.createElement(
+                "button"
+            );
+
+        view.className =
+            "small-btn";
+
+        view.textContent =
+            item.type ===
+            "video"
+                ? "▶ 播放"
+                : "查看大图";
+
+
+        view.addEventListener(
+            "click",
+            function () {
+
+                openLibraryModal(
+                    item
+                );
+
+            }
+        );
+
+
+        const download =
+            document.createElement(
+                "button"
+            );
+
+        download.className =
+            "small-btn";
+
+        download.textContent =
+            item.type ===
+            "video"
+                ? "⬇ 下载视频"
+                : "⬇ 下载原图";
+
+
+        download.addEventListener(
+            "click",
+            function () {
+
+                downloadLibraryItem(
+                    item
+                );
+
+            }
+        );
+
+
+        const post =
+            document.createElement(
+                "button"
+            );
+
+        post.className =
+            "small-btn";
+
+        post.textContent =
+            "原帖";
+
+
+        post.addEventListener(
+            "click",
+            function () {
+
+                if (
+                    item.tweet_url
+                ) {
+
+                    window.open(
+                        item.tweet_url,
+                        "_blank"
+                    );
+
+                }
+
+            }
+        );
+
+
+        actions.appendChild(
+            view
+        );
+
+        actions.appendChild(
+            download
+        );
+
+        actions.appendChild(
+            post
+        );
+
+
+        info.appendChild(
+            actions
+        );
+
+
+        wrapper.appendChild(
+            mediaWrap
+        );
+
+        wrapper.appendChild(
+            info
+        );
+
+
+        return wrapper;
+
+    }
+
+
+    /* =====================================================
+       日期显示
+    ===================================================== */
+
+    function formatLibraryDate(
+        value
+    ) {
+
+        if (!value) {
+
+            return "";
+
+        }
+
+
+        const date =
+            new Date(
+                value
+            );
+
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
+            return value;
+
+        }
+
+
+        return date.toLocaleString(
+            "zh-CN",
+            {
+                year:
+                    "numeric",
+
+                month:
+                    "2-digit",
+
+                day:
+                    "2-digit",
+
+                hour:
+                    "2-digit",
+
+                minute:
+                    "2-digit"
+            }
+        );
+
+    }
+
+
+    /* =====================================================
+       下载文件名
+    ===================================================== */
+
+    function getLibraryFilename(
+        item
+    ) {
+
+        const date =
+            item.createdAt
+                ? item.createdAt
+                    .slice(
+                        0,
+                        10
+                    )
+                : "x-media";
+
+
+        if (
+            item.type ===
+            "video"
+        ) {
+
+            return (
+                `${date}-${item.id || "video"}.mp4`
+            );
+
+        }
+
+
+        let extension =
+            ".jpg";
+
+
+        const url =
+            (
+                item.originalUrl ||
+                item.url ||
+                ""
+            ).toLowerCase();
+
+
+        if (
+            url.includes(
+                ".png"
+            )
+        ) {
+
+            extension =
+                ".png";
+
+        } else if (
+            url.includes(
+                ".webp"
+            )
+        ) {
+
+            extension =
+                ".webp";
+        }
+
+
+        return (
+            `${date}-${item.id || "image"}${extension}`
+        );
+
+    }
+
+
+    /* =====================================================
+       标记服务器已下载
+    ===================================================== */
+
+    async function markLibraryDownloaded(
+        item
+    ) {
+
+        if (
+            !item.id
+        ) {
+
+            return;
+
+        }
+
+
+        try {
+
+            await fetch(
+                `/api/media/${encodeURIComponent(item.id)}/downloaded`,
+                {
+                    method:
+                        "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            downloaded:
+                                true
+                        })
+                }
+            );
+
+
+            item.downloaded =
+                true;
+
+
+        } catch (
+            error
+        ) {
+
+            console.warn(
+                "[XID] mark downloaded failed:",
+                error
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       下载媒体
+    ===================================================== */
+
+    async function downloadLibraryItem(
+        item
+    ) {
+
+        const normalized =
+            normalizeLibraryItem(
+                item
+            );
+
+
+        const filename =
+            getLibraryFilename(
+                normalized
+            );
+
+
+        try {
+
+            /*
+             * HLS 视频：
+             * 必须交给 FFmpeg 转 MP4。
+             */
+
+            if (
+                normalized.type ===
+                "video" &&
+                (
+                    normalized.streamType ===
+                    "hls" ||
+                    normalized.url
+                        .includes(
+                            ".m3u8"
+                        )
+                )
+            ) {
+
+                xidLibraryStatus.className =
+                    "xid-library-status";
+
+                xidLibraryStatus.textContent =
+                    "正在请求服务器转换视频为 MP4…";
+
+
+                const url =
+                    "/api/video-download?url=" +
+                    encodeURIComponent(
+                        normalized.url
+                    ) +
+                    "&filename=" +
+                    encodeURIComponent(
+                        filename
+                    );
+
+
+                window.location.href =
+                    url;
+
+
+                /*
+                 * 浏览器已经开始下载。
+                 * 这里记录服务器状态。
+                 */
+
+                await markLibraryDownloaded(
+                    normalized
+                );
+
+
+                return;
+
+            }
+
+
+            /*
+             * 普通图片 / MP4
+             */
+
+            const mediaUrl =
+                normalized.originalUrl ||
+                normalized.url;
+
+
+            if (
+                !mediaUrl
+            ) {
+
+                throw new Error(
+                    "媒体地址为空"
+                );
+
+            }
+
+
+            const url =
+                "/api/download?url=" +
+                encodeURIComponent(
+                    mediaUrl
+                ) +
+                "&filename=" +
+                encodeURIComponent(
+                    filename
+                );
+
+
+            window.location.href =
+                url;
+
+
+            await markLibraryDownloaded(
+                normalized
+            );
+
+
+        } catch (
+            error
+        ) {
+
+            console.error(
+                "[XID] library download error:",
+                error
+            );
+
+
+            xidLibraryStatus.className =
+                "xid-library-status error";
+
+
+            xidLibraryStatus.textContent =
+                "下载失败：\n" +
+                (
+                    error &&
+                    error.message
+                        ? error.message
+                        : String(error)
+                );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       媒体库 Modal
+    ===================================================== */
+
+    function openLibraryModal(
+        rawItem
+    ) {
+
+        const item =
+            normalizeLibraryItem(
+                rawItem
+            );
+
+
+        currentItem =
+            item;
+
+
+        modalContent.innerHTML =
+            "";
+
+
+        if (
+            item.type ===
+            "video"
+        ) {
+
+            const video =
+                document.createElement(
+                    "video"
+                );
+
+
+            /*
+             * HLS 可以直接交给支持 HLS 的浏览器。
+             *
+             * 下载仍然走 /api/video-download。
+             */
+
+            video.src =
+                item.url ||
+                "";
+
+
+            video.controls =
+                true;
+
+            video.autoplay =
+                true;
+
+            video.playsInline =
+                true;
+
+
+            video.style.maxWidth =
+                "100%";
+
+            video.style.maxHeight =
+                "100%";
+
+
+            modalContent.appendChild(
+                video
+            );
+
+
+            downloadButton.textContent =
+                "⬇ 下载 MP4";
+
+
+        } else {
+
+            const img =
+                document.createElement(
+                    "img"
+                );
+
+
+            img.src =
+                item.originalUrl ||
+                item.url ||
+                "";
+
+
+            img.alt =
+                item.author
+                    ? `@${item.author}`
+                    : "";
+
+
+            modalContent.appendChild(
+                img
+            );
+
+
+            downloadButton.textContent =
+                "⬇ 下载原图";
+
+        }
+
+
+        originalButton.textContent =
+            "🔗 打开原帖";
+
+
+        modal.classList.remove(
+            "hidden"
+        );
+
+    }
+
+
+    /* =====================================================
+       覆盖原下载按钮
+       ===================================================== */
+
+    downloadButton.addEventListener(
+        "click",
+        function (event) {
+
+            if (
+                xidMode ===
+                "search"
+            ) {
+
+                return;
+
+            }
+
+
+            event.stopImmediatePropagation();
+
+
+            if (
+                currentItem
+            ) {
+
+                downloadLibraryItem(
+                    currentItem
+                );
+
+            }
+
+        },
+        true
+    );
+
+
+    /* =====================================================
+       模式下原帖按钮
+    ===================================================== */
+
+    originalButton.addEventListener(
+        "click",
+        function (event) {
+
+            if (
+                xidMode ===
+                "search"
+            ) {
+
+                return;
+
+            }
+
+
+            event.stopImmediatePropagation();
+
+
+            if (
+                currentItem &&
+                currentItem.tweet_url
+            ) {
+
+                window.open(
+                    currentItem.tweet_url,
+                    "_blank"
+                );
+
+            }
+
+        },
+        true
+    );
+
+
+    /* =====================================================
+       初始状态
+    ===================================================== */
+
+    switchMode(
+        "search"
+    );
+
+
+})();
+
 </script>
 
 </body>
