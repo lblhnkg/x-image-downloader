@@ -1,3 +1,183 @@
+# ============================================================
+# X Media Proxy
+# 用于网页端显示 Likes / Bookmarks 中的 X 图片和视频
+# ============================================================
+
+from urllib.parse import urlparse
+from fastapi import Query, HTTPException
+from fastapi.responses import Response
+import httpx
+
+
+MEDIA_PROXY_ALLOWED_HOSTS = {
+    "pbs.twimg.com",
+    "pbs.twimg.com.",
+    "video.twimg.com",
+    "video.twimg.com.",
+}
+
+
+def _validate_x_media_url(url: str) -> str:
+
+    if not url:
+        raise HTTPException(
+            status_code=400,
+            detail="媒体地址不能为空"
+        )
+
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="媒体地址格式错误"
+        )
+
+    if parsed.scheme.lower() != "https":
+        raise HTTPException(
+            status_code=400,
+            detail="媒体地址必须使用 HTTPS"
+        )
+
+    hostname = (
+        parsed.hostname or ""
+    ).lower()
+
+    if hostname not in MEDIA_PROXY_ALLOWED_HOSTS:
+        raise HTTPException(
+            status_code=403,
+            detail="不允许代理此媒体地址"
+        )
+
+    return url
+
+
+@app.get("/api/media-proxy")
+async def media_proxy(
+    url: str = Query(...)
+):
+
+    target_url = _validate_x_media_url(
+        url
+    )
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 "
+            "(iPhone; CPU iPhone OS 18_0 like Mac OS X) "
+            "AppleWebKit/605.1.15 "
+            "(KHTML, like Gecko) "
+            "Version/18.0 Mobile/15E148 "
+            "Safari/604.1"
+        ),
+
+        "Referer": "https://x.com/",
+
+        "Accept": (
+            "image/avif,image/webp,image/apng,"
+            "image/svg+xml,image/*,*/*;q=0.8"
+        ),
+    }
+
+    try:
+
+        async with httpx.AsyncClient(
+            timeout=60.0,
+            follow_redirects=True,
+            headers=headers,
+        ) as client:
+
+            response = await client.get(
+                target_url
+            )
+
+    except httpx.TimeoutException:
+
+        raise HTTPException(
+            status_code=504,
+            detail="X 媒体服务器请求超时"
+        )
+
+    except httpx.RequestError as e:
+
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "无法连接 X 媒体服务器："
+                + str(e)
+            )
+        )
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "媒体代理发生错误："
+                + str(e)
+            )
+        )
+
+    if response.status_code >= 400:
+
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=(
+                "X 媒体服务器返回 HTTP "
+                + str(response.status_code)
+            )
+        )
+
+    content_type = (
+        response.headers.get(
+            "content-type"
+        )
+        or "application/octet-stream"
+    )
+
+    # 防止把错误页面当成图片返回
+    if (
+        not content_type.startswith("image/")
+        and
+        not content_type.startswith("video/")
+        and
+        content_type != "application/octet-stream"
+    ):
+
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "X 返回的不是有效媒体文件："
+                + content_type
+            )
+        )
+
+    output_headers = {
+        "Cache-Control":
+            "public, max-age=3600",
+
+        "Access-Control-Allow-Origin":
+            "*",
+
+        "Content-Disposition":
+            "inline",
+    }
+
+    content_length = response.headers.get(
+        "content-length"
+    )
+
+    if content_length:
+        output_headers[
+            "Content-Length"
+        ] = content_length
+
+    return Response(
+        content=response.content,
+        media_type=content_type,
+        headers=output_headers,
+    )
+
 import re
 import os
 import json
