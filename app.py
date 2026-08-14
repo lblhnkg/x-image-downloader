@@ -11,7 +11,7 @@ from urllib.parse import urlparse, parse_qs, quote
 
 import httpx
 
-from fastapi import FastAPI, HTTPException, Query, Body
+from fastapi import FastAPI, HTTPException, Query, Body, Request
 from fastapi.responses import FileResponse, StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.background import BackgroundTask
@@ -630,7 +630,11 @@ async def get_media(
         if item.get("type") == "image" and original_media_url:
             item["url"] = make_proxy_url(original_media_url)
         elif item.get("type") == "video":
-            item["url"] = original_media_url
+            # 视频也走代理，方便在线播放
+            if original_media_url:
+                item["url"] = make_proxy_url(original_media_url)
+            else:
+                item["url"] = original_media_url
 
         if original_thumbnail:
             item["thumbnail"] = make_proxy_url(original_thumbnail)
@@ -641,11 +645,11 @@ async def get_media(
 
 
 # =========================================================
-# 媒体代理
+# 媒体代理（支持视频流 + Range 请求）
 # =========================================================
 
 @app.get("/api/media-proxy")
-async def media_proxy(url: str = Query(...)):
+async def media_proxy(request: Request, url: str = Query(...)):
     url = resolve_proxy_url(url)
     url = normalize_x_media_url(url)
     validate_media_url(url)
@@ -661,14 +665,20 @@ async def media_proxy(url: str = Query(...)):
         "Connection": "keep-alive",
     }
 
+    # 转发 Range 请求（支持视频拖动进度条）
+    range_header = request.headers.get("range")
+    if range_header:
+        headers["Range"] = range_header
+
     try:
         async with httpx.AsyncClient(
-            timeout=httpx.Timeout(60.0, connect=15.0),
+            timeout=httpx.Timeout(120.0, connect=15.0),
             follow_redirects=True,
             headers=headers
         ) as client:
-            response = await client.get(url, stream=True)
-            response.raise_for_status()
+            response = await client.get(url)
+
+            # 判断 content-type
             content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
             if not content_type or content_type == "application/octet-stream":
                 path = urlparse(url).path.lower()
@@ -678,17 +688,37 @@ async def media_proxy(url: str = Query(...)):
                     content_type = "image/webp"
                 elif path.endswith(".gif"):
                     content_type = "image/gif"
+                elif ".mp4" in path or "video" in content_type:
+                    content_type = "video/mp4"
                 else:
                     content_type = "image/jpeg"
-            return StreamingResponse(
-                response.aiter_bytes(),
-                media_type=content_type,
-                headers={
-                    "Cache-Control": "public, max-age=86400",
-                    "Access-Control-Allow-Origin": "*",
-                    "Cross-Origin-Resource-Policy": "cross-origin",
-                }
-            )
+
+            # 如果是视频，添加 Content-Range 支持
+            if content_type and "video" in content_type:
+                return Response(
+                    content=response.content,
+                    media_type=content_type,
+                    headers={
+                        "Cache-Control": "public, max-age=86400",
+                        "Access-Control-Allow-Origin": "*",
+                        "Cross-Origin-Resource-Policy": "cross-origin",
+                        "Accept-Ranges": "bytes",
+                        "Content-Length": str(len(response.content)),
+                    }
+                )
+            else:
+                return Response(
+                    content=response.content,
+                    media_type=content_type,
+                    headers={
+                        "Cache-Control": "public, max-age=86400",
+                        "Access-Control-Allow-Origin": "*",
+                        "Cross-Origin-Resource-Policy": "cross-origin",
+                    }
+                )
+
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=502, detail=f"X 服务器返回错误：{e.response.status_code}")
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"媒体代理获取失败：{str(e)}")
 
@@ -804,7 +834,7 @@ def cleanup_video_directory(directory):
 
 
 # =========================================================
-# 视频下载
+# 视频下载（MP4 转换）
 # =========================================================
 
 @app.get("/api/video-download")
