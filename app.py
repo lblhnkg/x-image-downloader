@@ -52,7 +52,11 @@ database = Database(DATABASE_URL)
 # =========================================================
 
 async def init_db():
-    if DATABASE_URL.startswith("postgresql"):
+    # 检查是否是 PostgreSQL
+    is_postgres = DATABASE_URL.startswith("postgresql")
+    
+    if is_postgres:
+        # PostgreSQL: 使用不同的表结构
         await database.execute("""
             CREATE TABLE IF NOT EXISTS media (
                 id TEXT PRIMARY KEY,
@@ -61,6 +65,7 @@ async def init_db():
         """)
         await database.execute("CREATE INDEX IF NOT EXISTS idx_source ON media(data)")
     else:
+        # SQLite
         await database.execute("""
             CREATE TABLE IF NOT EXISTS media (
                 id TEXT PRIMARY KEY,
@@ -75,6 +80,7 @@ async def startup():
     await database.connect()
     await init_db()
     print("[DB] 数据库连接成功")
+    print(f"[DB] 数据库类型: {'PostgreSQL' if DATABASE_URL.startswith('postgresql') else 'SQLite'}")
 
 
 @app.on_event("shutdown")
@@ -102,27 +108,40 @@ async def load_all_media():
 
 
 async def save_media_item(media_id, data):
-    """保存单条记录，增加重试和详细错误日志"""
-    # 序列化数据，确保所有字段类型正确
+    """保存单条记录，PostgreSQL 兼容"""
     try:
         serialized = json.dumps(data, ensure_ascii=False)
     except Exception as e:
         print(f"[DB ERROR] 序列化失败 {media_id}: {e}")
         return False, f"序列化失败: {e}"
 
-    # 重试逻辑
+    is_postgres = DATABASE_URL.startswith("postgresql")
+    
     for attempt in range(3):
         try:
-            await database.execute(
-                "REPLACE INTO media (id, data) VALUES (:id, :data)",
-                {"id": media_id, "data": serialized}
-            )
+            if is_postgres:
+                # PostgreSQL: 使用 INSERT ... ON CONFLICT DO UPDATE
+                await database.execute(
+                    """
+                    INSERT INTO media (id, data)
+                    VALUES (:id, :data)
+                    ON CONFLICT (id) DO UPDATE
+                    SET data = EXCLUDED.data
+                    """,
+                    {"id": media_id, "data": serialized}
+                )
+            else:
+                # SQLite: 使用 REPLACE INTO
+                await database.execute(
+                    "REPLACE INTO media (id, data) VALUES (:id, :data)",
+                    {"id": media_id, "data": serialized}
+                )
             return True, None
         except Exception as e:
             print(f"[DB ERROR] 写入失败 (尝试 {attempt+1}/3) {media_id}: {e}")
-            if attempt == 2:  # 最后一次尝试失败
+            if attempt == 2:
                 return False, str(e)
-            await asyncio.sleep(0.5)  # 短暂等待后重试
+            await asyncio.sleep(0.5)
     return False, "未知错误"
 
 
@@ -558,9 +577,9 @@ def normalize_import_item(item):
             "originalUrl": original_url,
             "thumbnail": thumbnail,
             "streamType": media.get("streamType") or "",
-            "width": media.get("width") or 0,
-            "height": media.get("height") or 0,
-            "bitrate": media.get("bitrate") or 0,
+            "width": int(media.get("width")) if media.get("width") else 0,
+            "height": int(media.get("height")) if media.get("height") else 0,
+            "bitrate": int(media.get("bitrate")) if media.get("bitrate") else 0,
             "index": idx
         })
 
