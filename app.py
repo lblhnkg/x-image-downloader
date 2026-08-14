@@ -38,9 +38,17 @@ async def shutdown():
     await database.disconnect()
     print("[DB] 数据库已断开")
 
+# ============================================================
 # 注册路由
+# ============================================================
+
+# X API（/api/*）
 app.include_router(x_router)
+
+# MissAV API（/missav/*）
 app.include_router(missav_router)
+
+# Bilibili API（/bilibili/*）
 app.include_router(bilibili_router)
 
 # ============================================================
