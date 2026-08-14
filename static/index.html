@@ -759,8 +759,1061 @@
         }
 
         .date-row input[type="date"] {
-            background:
-    <script>
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 0 6px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            outline: none;
+            font-family: inherit;
+            transition: border-color 0.25s ease;
+        }
+
+        .date-row input[type="date"]:focus {
+            border-bottom-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .date-row input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.6);
+        }
+
+        /* =====================================================
+           主按钮
+        ===================================================== */
+        .primary-btn {
+            width: 100%;
+            padding: 14px 0;
+            background: #fff;
+            color: #0a0a0a;
+            border: 0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            margin-top: 18px;
+        }
+
+        .primary-btn:hover {
+            opacity: 0.85;
+            transform: scale(0.98);
+        }
+
+        .primary-btn:active {
+            transform: scale(0.96);
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.3;
+            cursor: default;
+            transform: none;
+        }
+
+        /* =====================================================
+           状态 & 结果
+        ===================================================== */
+        .status-box {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 300;
+            line-height: 1.6;
+            min-height: 20px;
+        }
+
+        .status-box.error {
+            color: #ff6b6b;
+            border-color: rgba(255, 107, 107, 0.15);
+            background: rgba(255, 107, 107, 0.04);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+            margin-bottom: 12px;
+        }
+
+        .result-title {
+            font-size: 15px;
+            font-weight: 450;
+            color: #fff;
+        }
+
+        .result-count {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.25);
+            font-weight: 300;
+        }
+
+        /* =====================================================
+           画廊 Grid
+        ===================================================== */
+        .gallery {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .item {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .item.selected {
+            border-color: #007aff;
+            background: rgba(0, 122, 255, 0.08);
+        }
+
+        /* =====================================================
+           选择框 - 核心修复
+        ===================================================== */
+        .select-check {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 10;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #fff;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            pointer-events: none;
+        }
+
+        .item.in-select-mode .select-check {
+            display: flex;
+        }
+
+        .item.selected .select-check {
+            background: #007aff;
+            border-color: #007aff;
+        }
+
+        .item.selected .select-check::after {
+            content: "✓";
+            font-weight: 600;
+        }
+
+        .media-wrap {
+            position: relative;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            overflow: hidden;
+        }
+
+        .media-wrap img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        .item.in-select-mode .media-wrap img {
+            cursor: default;
+        }
+
+        .media-error {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 12px;
+            text-align: center;
+            padding: 12px;
+            font-weight: 300;
+        }
+
+        .video-badge {
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 10px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .source-badge {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 10px;
+            font-weight: 300;
+            letter-spacing: 0.3px;
+        }
+
+        .library-badge {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 10px;
+            font-weight: 300;
+            letter-spacing: 0.3px;
+        }
+
+        .item-info {
+            padding: 8px 10px;
+        }
+
+        .item-author {
+            font-size: 11px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.5);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-date {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.2);
+            margin-top: 2px;
+            font-weight: 300;
+        }
+
+        /* =====================================================
+           卡片按钮 - 三个等宽
+        ===================================================== */
+        .item-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .item-actions button {
+            padding: 5px 0;
+            border-radius: 6px;
+            font-size: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            border: 0;
+            transition: all 0.2s ease;
+        }
+
+        .item.in-select-mode .item-actions button {
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        .item-actions .btn-view {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .item-actions .btn-view:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .item-actions .btn-download {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .item-actions .btn-download:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .item-actions .btn-original {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .item-actions .btn-original:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* =====================================================
+           底部工具栏（选择模式）
+        ===================================================== */
+        .selection-toolbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(20, 20, 22, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 12px 20px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .selection-toolbar.active {
+            display: flex;
+        }
+
+        .selection-toolbar .toolbar-left {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .selection-toolbar .toolbar-btn {
+            background: transparent;
+            border: 0;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 15px;
+            font-weight: 450;
+            padding: 8px 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: color 0.2s ease;
+        }
+
+        .selection-toolbar .toolbar-btn:hover {
+            color: #fff;
+        }
+
+        .selection-toolbar .toolbar-btn.danger {
+            background: #fff;
+            color: #ff3b30;
+            padding: 8px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .selection-toolbar .toolbar-btn.danger:hover {
+            opacity: 0.85;
+        }
+
+        .selection-toolbar .toolbar-btn.danger:active {
+            transform: scale(0.96);
+        }
+
+        .selection-toolbar .selected-count {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 13px;
+            font-weight: 300;
+        }
+
+        /* =====================================================
+           自定义删除确认弹窗
+        ===================================================== */
+        .delete-confirm-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .delete-confirm-overlay.active {
+            display: flex;
+        }
+
+        .delete-confirm-box {
+            background: #1c1c1e;
+            border-radius: 14px;
+            padding: 28px 24px 20px;
+            max-width: 340px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .delete-confirm-box .confirm-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            display: block;
+            color: #ff3b30;
+        }
+
+        .delete-confirm-box .confirm-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .delete-confirm-box .confirm-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        .delete-confirm-box .confirm-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .delete-confirm-box .confirm-actions button {
+            flex: 1;
+            padding: 12px 0;
+            border: 0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-cancel {
+            background: transparent;
+            color: #007aff;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-cancel:hover {
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-delete {
+            background: #fff;
+            color: #ff3b30;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-delete:hover {
+            opacity: 0.85;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-delete:active {
+            transform: scale(0.96);
+        }
+
+        /* =====================================================
+           Modal
+        ===================================================== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+        }
+
+        .modal-overlay.hidden {
+            display: none !important;
+        }
+
+        .modal-top {
+            min-height: 54px;
+            padding: 10px 16px 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .modal-close {
+            background: rgba(255, 255, 255, 0.08);
+            border: 0;
+            color: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+            padding: 6px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            font-weight: 300;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        .modal-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 16px;
+            overflow: auto;
+        }
+
+        .modal-content img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .modal-content video {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .modal-bottom {
+            padding: 10px 16px 16px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-bottom button {
+            flex: 1;
+            padding: 12px 0;
+            border: 0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 450;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .modal-bottom .modal-download {
+            background: #fff;
+            color: #0a0a0a;
+        }
+
+        .modal-bottom .modal-download:hover {
+            opacity: 0.85;
+        }
+
+        .modal-bottom .modal-original {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .modal-bottom .modal-original:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        /* =====================================================
+           响应式
+        ===================================================== */
+        @media (max-width: 420px) {
+            .app-container {
+                padding: 28px 18px 22px;
+                border-radius: 24px;
+            }
+            .app-title {
+                font-size: 22px;
+            }
+            .menu-card {
+                padding: 18px 18px;
+            }
+            .menu-card-title {
+                font-size: 16px;
+            }
+            .submenu-card {
+                padding: 14px 16px;
+            }
+            .gallery {
+                gap: 6px;
+            }
+            .item-actions {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+            .item-actions button {
+                font-size: 9px;
+                padding: 4px 0;
+            }
+            .selection-toolbar {
+                padding: 10px 16px;
+                padding-bottom: calc(10px + env(safe-area-inset-bottom));
+            }
+            .selection-toolbar .toolbar-btn {
+                font-size: 13px;
+            }
+            .selection-toolbar .toolbar-btn.danger {
+                padding: 6px 14px;
+                font-size: 13px;
+            }
+            .storage-stats {
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .app-container {
+                padding: 20px 12px 16px;
+                border-radius: 20px;
+            }
+            .login-input-group input {
+                font-size: 15px;
+            }
+            .item-actions {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+            .item-actions button {
+                font-size: 8px;
+                padding: 3px 0;
+            }
+        }
+
+        /* =====================================================
+           访客模式提示弹窗
+        ===================================================== */
+        .guest-tip-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .guest-tip-overlay.hidden {
+            display: none !important;
+        }
+
+        .guest-tip-box {
+            background: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 30px 28px 24px;
+            max-width: 380px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .guest-tip-box .tip-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .guest-tip-box .tip-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .guest-tip-box .tip-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+            line-height: 1.7;
+            font-weight: 300;
+        }
+
+        .guest-tip-box .tip-btn {
+            margin-top: 18px;
+            padding: 10px 32px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 0;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .guest-tip-box .tip-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* =====================================================
+           敬请期待弹窗
+        ===================================================== */
+        .coming-soon-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .coming-soon-overlay.hidden {
+            display: none !important;
+        }
+
+        .coming-soon-box {
+            background: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 30px 28px 24px;
+            max-width: 360px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .coming-soon-box .cs-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .coming-soon-box .cs-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.35);
+            line-height: 1.6;
+            font-weight: 300;
+        }
+
+        .coming-soon-box .cs-btn {
+            margin-top: 18px;
+            padding: 10px 32px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 0;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .coming-soon-box .cs-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container" id="app">
+
+        <!-- =====================================================
+        页面：登录
+        ===================================================== -->
+        <div class="page active" id="pageLogin">
+            <div class="app-title">万能媒体下载器</div>
+            <hr class="login-divider">
+            <div class="login-section-title">开发者通道</div>
+            <div class="login-input-group">
+                <input type="password" id="loginPassword" placeholder="密码" autocomplete="off">
+            </div>
+            <button class="login-btn" id="loginBtn">进入</button>
+            <div id="loginError" class="login-error"></div>
+            <div class="login-section-title" style="margin-top:24px;margin-bottom:12px;">— 或 —</div>
+            <button class="login-guest-btn" id="guestBtn">以访客身份浏览</button>
+            <div class="login-footer-text">
+                访客数据仅保存在本地浏览器中
+                <span class="small-note">清除缓存后数据将丢失</span>
+                <span class="small-note" style="margin-top:6px;">“我的喜欢”和“我的书签”需搭配采集器使用</span>
+            </div>
+            <div class="login-dev-signature">开发者：浮生若夢</div>
+        </div>
+
+        <!-- =====================================================
+        页面：一级菜单（新增存储显示）
+        ===================================================== -->
+        <div class="page" id="pageMenu">
+            <div class="app-title" style="font-size:22px;margin-bottom:4px;">万能媒体下载器</div>
+            <div class="menu-grid">
+                <div class="menu-card" id="menuX">
+                    <span class="menu-arrow">›</span>
+                    <div class="menu-card-title">下载 X 上的媒体</div>
+                    <div class="menu-card-desc">图片 · 视频 · 喜欢 · 书签</div>
+                </div>
+                <div class="menu-card" id="menuMissav">
+                    <span class="menu-arrow">›</span>
+                    <div class="menu-card-title">下载 Missav 上的电影</div>
+                    <div class="menu-card-desc">即将上线</div>
+                </div>
+                <div class="menu-card disabled">
+                    <span class="menu-arrow" style="color:rgba(255,255,255,0.1);">›</span>
+                    <div class="menu-card-title" style="color:rgba(255,255,255,0.3);">敬请期待…</div>
+                    <div class="menu-card-desc">更多网站支持中</div>
+                </div>
+            </div>
+
+            <!-- ========== 存储显示区域（仅开发者可见） ========== -->
+            <div class="storage-section" id="storageSection">
+                <div class="storage-title">存储空间</div>
+                <div class="storage-bar" id="storageBar">
+                    <div class="segment images-segment" id="imagesSegment" style="width:0%;"></div>
+                    <div class="segment videos-segment" id="videosSegment" style="width:0%;"></div>
+                    <div class="segment free-segment" id="freeSegment" style="width:0%;"></div>
+                    <div class="segment other-segment" id="otherSegment" style="width:0%;"></div>
+                </div>
+                <div class="storage-stats" id="storageStats">
+                    <span class="stat-item"><span class="color-dot dot-images"></span> 图片: <span class="stat-number" id="statImages">0</span></span>
+                    <span class="stat-item"><span class="color-dot dot-videos"></span> 视频: <span class="stat-number" id="statVideos">0</span></span>
+                    <span class="stat-item"><span class="color-dot dot-free"></span> 剩余: <span class="stat-number" id="statFree">0</span></span>
+                    <span class="stat-item"><span class="color-dot dot-other"></span> 其他: <span class="stat-number" id="statOther">0</span></span>
+                </div>
+                <div class="storage-footer" id="storageFooter">媒体总数: <span id="statTotalMedia">0</span> · 数据库: <span id="statDbSize">0 KB</span></div>
+            </div>
+
+            <div class="login-dev-signature" style="margin-top:20px;">开发者：浮生若夢</div>
+        </div>
+
+        <!-- =====================================================
+        页面：X 子菜单
+        ===================================================== -->
+        <div class="page" id="pageXSub">
+            <div class="back-row" id="backFromX">
+                <span class="back-icon">‹</span> 返回
+            </div>
+            <div class="submenu-title">下载 X 上的媒体</div>
+            <div class="submenu-desc">图片 · 视频 · 喜欢 · 书签</div>
+            <div class="submenu-grid">
+                <div class="submenu-card" id="subSearch">
+                    <div class="submenu-card-title">搜索博主</div>
+                    <div class="submenu-card-desc">输入用户名，搜索指定博主的媒体</div>
+                </div>
+                <div class="submenu-card" id="subLikes">
+                    <div class="submenu-card-title">❤️ 我的喜欢</div>
+                    <div class="submenu-card-desc">查看采集器上传的喜欢列表</div>
+                </div>
+                <div class="submenu-card" id="subBookmarks">
+                    <div class="submenu-card-title">🔖 我的书签</div>
+                    <div class="submenu-card-desc">查看采集器上传的书签列表</div>
+                </div>
+            </div>
+            <div class="login-dev-signature" style="margin-top:28px;">开发者：浮生若夢</div>
+        </div>
+
+        <!-- =====================================================
+        页面：搜索博主
+        ===================================================== -->
+        <div class="page" id="pageSearch">
+            <div class="back-row" id="backFromSearch">
+                <span class="back-icon">‹</span> 返回
+            </div>
+            <div class="submenu-title">搜索博主</div>
+            <div class="submenu-desc">输入 X 用户名，搜索该博主的所有媒体</div>
+            <div class="search-section">
+                <label class="search-label">博主</label>
+                <div class="search-row">
+                    <input type="text" id="profileInput" placeholder="@NASA / NASA / x.com/NASA" autocomplete="off" autocapitalize="off" spellcheck="false">
+                    <button class="search-btn-icon" id="searchBtn">⌕</button>
+                    <button class="search-favorite-btn" id="favoriteAddBtn">☆ 收藏</button>
+                </div>
+                <div class="favorite-entry" style="margin-top:10px;">
+                    <button class="favorite-toggle-btn" id="favoriteToggleBtn">我的收藏</button>
+                    <div class="favorites-panel hidden" id="favoritesPanel"></div>
+                </div>
+                <div class="option-section">
+                    <span class="option-label">时间范围</span>
+                    <div class="option-row" data-group="range">
+                        <button class="option-btn active" data-value="all">全部</button>
+                        <button class="option-btn" data-value="7">最近7天</button>
+                        <button class="option-btn" data-value="30">最近30天</button>
+                        <button class="option-btn" data-value="365">最近1年</button>
+                        <button class="option-btn" data-value="custom">自定义</button>
+                    </div>
+                </div>
+                <div class="hidden" id="customDates" style="margin-top:10px;">
+                    <div class="date-row">
+                        <div>
+                            <label class="search-label" style="font-size:11px;">开始日期</label>
+                            <input type="date" id="startDate">
+                        </div>
+                        <div>
+                            <label class="search-label" style="font-size:11px;">结束日期</label>
+                            <input type="date" id="endDate">
+                        </div>
+                    </div>
+                </div>
+                <div class="option-section">
+                    <span class="option-label">媒体类型</span>
+                    <div class="option-row" data-group="media">
+                        <button class="option-btn active" data-value="photo">图片</button>
+                        <button class="option-btn" data-value="video">视频</button>
+                        <button class="option-btn" data-value="all">全部</button>
+                    </div>
+                </div>
+                <div class="option-section">
+                    <span class="option-label">帖子来源</span>
+                    <div class="option-row" data-group="source">
+                        <button class="option-btn active" data-value="all">全部</button>
+                        <button class="option-btn" data-value="original">原创</button>
+                        <button class="option-btn" data-value="repost">转帖 / 引用</button>
+                    </div>
+                </div>
+                <button class="primary-btn" id="searchSubmitBtn">开始找图</button>
+                <div class="status-box hidden" id="searchStatus"></div>
+                <div class="result-header hidden" id="searchResultHeader">
+                    <span class="result-title" id="searchResultTitle">搜索结果</span>
+                    <span class="result-count" id="searchResultCount"></span>
+                </div>
+                <div class="gallery" id="searchGallery"></div>
+            </div>
+            <div class="login-dev-signature" style="margin-top:28px;">开发者：浮生若夢</div>
+        </div>
+
+        <!-- =====================================================
+        页面：我的喜欢 / 我的书签（共用）
+        ===================================================== -->
+        <div class="page" id="pageLibrary">
+            <div class="back-row" id="backFromLibrary">
+                <span class="back-icon">‹</span> 返回
+            </div>
+            <div class="submenu-title" id="libraryTitle">我的喜欢</div>
+            <div class="submenu-desc" id="libraryDesc">查看采集器上传的喜欢列表</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:4px;flex-wrap:wrap;gap:6px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:12px;color:rgba(255,255,255,0.25);font-weight:300;" id="libraryCount">正在读取…</span>
+                    <button style="background:transparent;border:0;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;" id="refreshLibraryBtn">刷新</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button id="selectToggleBtn" style="background:transparent;border:0;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;">选择</button>
+                </div>
+            </div>
+
+            <div class="option-section" style="margin-top:0;">
+                <span class="option-label">时间范围</span>
+                <div class="option-row" data-group="libraryRange">
+                    <button class="option-btn active" data-value="all">全部</button>
+                    <button class="option-btn" data-value="7">最近7天</button>
+                    <button class="option-btn" data-value="30">最近30天</button>
+                    <button class="option-btn" data-value="365">最近1年</button>
+                    <button class="option-btn" data-value="custom">自定义</button>
+                </div>
+            </div>
+            <div class="hidden" id="libraryCustomDates" style="margin-top:8px;">
+                <div class="date-row">
+                    <div>
+                        <label class="search-label" style="font-size:11px;">开始日期</label>
+                        <input type="date" id="libraryStartDate">
+                    </div>
+                    <div>
+                        <label class="search-label" style="font-size:11px;">结束日期</label>
+                        <input type="date" id="libraryEndDate">
+                    </div>
+                </div>
+            </div>
+
+            <div class="option-section" style="margin-top:12px;">
+                <span class="option-label">媒体类型</span>
+                <div class="option-row" data-group="libraryMedia">
+                    <button class="option-btn active" data-value="all">全部</button>
+                    <button class="option-btn" data-value="image">图片</button>
+                    <button class="option-btn" data-value="video">视频</button>
+                </div>
+            </div>
+
+            <div class="status-box hidden" id="libraryStatus"></div>
+            <div class="result-header hidden" id="libraryResultHeader">
+                <span class="result-title" id="libraryResultTitle">媒体</span>
+                <span class="result-count" id="libraryResultCount"></span>
+            </div>
+            <div class="gallery" id="libraryGallery"></div>
+            <div class="login-dev-signature" style="margin-top:28px;">开发者：浮生若夢</div>
+        </div>
+
+    </div>
+
+    <!-- =====================================================
+    访客提示弹窗
+    ===================================================== -->
+    <div class="guest-tip-overlay hidden" id="guestTip">
+        <div class="guest-tip-box">
+            <div class="tip-icon">📌</div>
+            <div class="tip-title">访客模式</div>
+            <div class="tip-desc">此功能需要搭配采集器使用<br>安装后即可正常使用</div>
+            <button class="tip-btn" id="guestTipBtn">我知道了</button>
+        </div>
+    </div>
+
+    <!-- =====================================================
+    敬请期待弹窗
+    ===================================================== -->
+    <div class="coming-soon-overlay hidden" id="comingSoon">
+        <div class="coming-soon-box">
+            <div class="cs-title">敬请期待</div>
+            <div class="cs-desc">更多网站支持中…</div>
+            <button class="cs-btn" id="comingSoonBtn">知道了</button>
+        </div>
+    </div>
+
+    <!-- =====================================================
+    Missav 提示弹窗
+    ===================================================== -->
+    <div class="coming-soon-overlay hidden" id="missavTip">
+        <div class="coming-soon-box">
+            <div class="cs-title">功能开发中</div>
+            <div class="cs-desc">Missav 电影下载功能即将上线</div>
+            <button class="cs-btn" id="missavTipBtn">知道了</button>
+        </div>
+    </div>
+
+    <!-- =====================================================
+    Modal
+    ===================================================== -->
+    <div class="modal-overlay hidden" id="modal">
+        <div class="modal-top">
+            <button class="modal-close" id="modalCloseBtn">关闭</button>
+        </div>
+        <div class="modal-content" id="modalContent"></div>
+        <div class="modal-bottom">
+            <button class="modal-download" id="modalDownloadBtn">下载</button>
+            <button class="modal-original" id="modalOriginalBtn">打开原帖</button>
+        </div>
+    </div>
+
+    <!-- =====================================================
+    底部工具栏（选择模式）
+    ===================================================== -->
+    <div class="selection-toolbar" id="selectionToolbar">
+        <div class="toolbar-left">
+            <button class="toolbar-btn" id="toolbarCancel">取消</button>
+            <button class="toolbar-btn" id="toolbarSelectAll">全选</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <span class="selected-count" id="selectedCount">已选 0 个</span>
+            <button class="toolbar-btn danger" id="toolbarDelete">删除</button>
+        </div>
+    </div>
+
+    <!-- =====================================================
+    删除确认弹窗
+    ===================================================== -->
+    <div class="delete-confirm-overlay" id="deleteConfirm">
+        <div class="delete-confirm-box">
+            <span class="confirm-icon">🗑️</span>
+            <div class="confirm-title" id="confirmTitle">确定删除？</div>
+            <div class="confirm-desc" id="confirmDesc">这些媒体将被永久删除，无法恢复。</div>
+            <div class="confirm-actions">
+                <button class="confirm-cancel" id="confirmCancel">取消</button>
+                <button class="confirm-delete" id="confirmDelete">确定删除</button>
+            </div>
+        </div>
+    </div>
+<script>
         // =====================================================
         // 状态
         // =====================================================
