@@ -48,15 +48,14 @@ database = Database(DATABASE_URL)
 
 
 # =========================================================
-# 初始化数据库
+# 初始化数据库（增加 favorites 表）
 # =========================================================
 
 async def init_db():
-    # 检查是否是 PostgreSQL
     is_postgres = DATABASE_URL.startswith("postgresql")
     
+    # media 表
     if is_postgres:
-        # PostgreSQL: 使用不同的表结构
         await database.execute("""
             CREATE TABLE IF NOT EXISTS media (
                 id TEXT PRIMARY KEY,
@@ -65,7 +64,6 @@ async def init_db():
         """)
         await database.execute("CREATE INDEX IF NOT EXISTS idx_source ON media(data)")
     else:
-        # SQLite
         await database.execute("""
             CREATE TABLE IF NOT EXISTS media (
                 id TEXT PRIMARY KEY,
@@ -73,6 +71,24 @@ async def init_db():
             )
         """)
         await database.execute("CREATE INDEX IF NOT EXISTS idx_source ON media(data)")
+    
+    # favorites 表
+    if is_postgres:
+        await database.execute("""
+            CREATE TABLE IF NOT EXISTS favorites (
+                username TEXT PRIMARY KEY,
+                name TEXT,
+                addedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    else:
+        await database.execute("""
+            CREATE TABLE IF NOT EXISTS favorites (
+                username TEXT PRIMARY KEY,
+                name TEXT,
+                addedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
 
 @app.on_event("startup")
@@ -90,7 +106,7 @@ async def shutdown():
 
 
 # =========================================================
-# 媒体库操作
+# 媒体库操作（不变）
 # =========================================================
 
 async def load_all_media():
@@ -108,7 +124,6 @@ async def load_all_media():
 
 
 async def save_media_item(media_id, data):
-    """保存单条记录，PostgreSQL 兼容"""
     try:
         serialized = json.dumps(data, ensure_ascii=False)
     except Exception as e:
@@ -120,7 +135,6 @@ async def save_media_item(media_id, data):
     for attempt in range(3):
         try:
             if is_postgres:
-                # PostgreSQL: 使用 INSERT ... ON CONFLICT DO UPDATE
                 await database.execute(
                     """
                     INSERT INTO media (id, data)
@@ -131,7 +145,6 @@ async def save_media_item(media_id, data):
                     {"id": media_id, "data": serialized}
                 )
             else:
-                # SQLite: 使用 REPLACE INTO
                 await database.execute(
                     "REPLACE INTO media (id, data) VALUES (:id, :data)",
                     {"id": media_id, "data": serialized}
@@ -149,12 +162,63 @@ async def clear_all_media():
     await database.execute("DELETE FROM media")
 
 
+# =========================================================
+# 收藏操作（新增）
+# =========================================================
+
+async def load_all_favorites():
+    rows = await database.fetch_all("SELECT username, name, addedAt FROM favorites ORDER BY addedAt DESC")
+    favorites = []
+    for row in rows:
+        if hasattr(row, "_mapping"):
+            favorites.append({
+                "username": row._mapping["username"],
+                "name": row._mapping["name"],
+                "addedAt": row._mapping["addedAt"]
+            })
+        else:
+            favorites.append({
+                "username": row[0],
+                "name": row[1],
+                "addedAt": row[2]
+            })
+    return favorites
+
+
+async def save_favorite(username, name):
+    is_postgres = DATABASE_URL.startswith("postgresql")
+    if is_postgres:
+        await database.execute(
+            """
+            INSERT INTO favorites (username, name, addedAt)
+            VALUES (:username, :name, CURRENT_TIMESTAMP)
+            ON CONFLICT (username) DO UPDATE
+            SET name = EXCLUDED.name, addedAt = CURRENT_TIMESTAMP
+            """,
+            {"username": username, "name": name}
+        )
+    else:
+        await database.execute(
+            "REPLACE INTO favorites (username, name, addedAt) VALUES (:username, :name, CURRENT_TIMESTAMP)",
+            {"username": username, "name": name}
+        )
+
+
+async def delete_favorite(username):
+    await database.execute("DELETE FROM favorites WHERE username = :username", {"username": username})
+
+
+async def is_favorite(username):
+    row = await database.fetch_one("SELECT 1 FROM favorites WHERE username = :username", {"username": username})
+    return row is not None
+
+
 # 内存缓存
 media_library = {}
 
 
 # =========================================================
-# 基础工具
+# 基础工具（不变）
 # =========================================================
 
 def get_username(profile: str):
@@ -215,7 +279,7 @@ def safe_filename(value):
 
 
 # =========================================================
-# URL 处理
+# URL 处理（不变）
 # =========================================================
 
 def normalize_x_media_url(url):
@@ -286,7 +350,7 @@ def validate_hls_url(url):
 
 
 # =========================================================
-# X 数据抓取
+# X 数据抓取（不变）
 # =========================================================
 
 async def fetch_media_page(username, cursor=None, count=100):
@@ -382,9 +446,9 @@ def extract_videos(tweet):
     return result
 
 
-# =========================================================
+# =====================================================
 # API：登录验证
-# =========================================================
+# =====================================================
 
 @app.post("/api/auth/login")
 async def login(response: Response, payload: dict = Body(...)):
@@ -410,9 +474,9 @@ async def check_auth(request: Request):
     return {"ok": True, "authenticated": False}
 
 
-# =========================================================
+# =====================================================
 # API：搜索博主
-# =========================================================
+# =====================================================
 
 @app.get("/api/search")
 async def search(
@@ -526,17 +590,17 @@ async def search(
     return {"ok": True, "username": username, "count": len(items), "pages": pages, "items": items}
 
 
-# =========================================================
+# =====================================================
 # 媒体库 ID
-# =========================================================
+# =====================================================
 
 def make_media_id(tweet_id, media_type, idx):
     return f"tweet_{tweet_id}_{media_type}_{idx}"
 
 
-# =========================================================
-# API：导入媒体（使用 API Key 验证，单条失败不中断）
-# =========================================================
+# =====================================================
+# API：导入媒体（不变）
+# =====================================================
 
 def normalize_import_item(item):
     if not isinstance(item, dict):
@@ -592,7 +656,6 @@ def normalize_import_item(item):
 async def import_media(request: Request, payload: dict = Body(...)):
     global media_library
 
-    # 验证 API Key
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
         print(f"[AUTH] 无效的 API Key: {api_key}")
@@ -611,7 +674,6 @@ async def import_media(request: Request, payload: dict = Body(...)):
     failed = 0
     failed_ids = []
 
-    # 确保内存缓存加载
     if not media_library:
         media_library = await load_all_media()
 
@@ -640,7 +702,6 @@ async def import_media(request: Request, payload: dict = Body(...)):
             }
             imported += 1
 
-            # 检查内存缓存
             old_item = media_library.get(media_id)
             if old_item:
                 duplicates += 1
@@ -660,7 +721,6 @@ async def import_media(request: Request, payload: dict = Body(...)):
                         print(f"[IMPORT] 保存失败 (更新) {media_id}: {err}")
                 continue
 
-            # 新增
             media_library[media_id] = record
             success, err = await save_media_item(media_id, record)
             if success:
@@ -668,7 +728,6 @@ async def import_media(request: Request, payload: dict = Body(...)):
             else:
                 failed += 1
                 failed_ids.append(media_id)
-                # 从缓存中移除失败的记录
                 del media_library[media_id]
                 print(f"[IMPORT] 保存失败 (新增) {media_id}: {err}")
 
@@ -685,9 +744,9 @@ async def import_media(request: Request, payload: dict = Body(...)):
     }
 
 
-# =========================================================
+# =====================================================
 # API：媒体库
-# =========================================================
+# =====================================================
 
 @app.get("/api/media")
 async def get_media(
@@ -747,54 +806,72 @@ async def get_media(
     return {"ok": True, "count": len(output), "items": output}
 
 
-# =========================================================
-# API：标记下载状态
-# =========================================================
+# =====================================================
+# API：收藏（新增）
+# =====================================================
 
-@app.post("/api/media/{media_id}/downloaded")
-async def mark_downloaded(request: Request, media_id: str, payload: dict = Body(default={})):
-    global media_library
-
-    session = request.cookies.get("session")
-    if session != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="未登录")
-
-    if not media_library:
-        media_library = await load_all_media()
-
-    if media_id not in media_library:
-        raise HTTPException(status_code=404, detail="媒体不存在")
-    downloaded = True
-    if isinstance(payload, dict) and "downloaded" in payload:
-        downloaded = bool(payload["downloaded"])
-    media_library[media_id]["downloaded"] = downloaded
-    media_library[media_id]["downloadedAt"] = datetime.now(timezone.utc).isoformat() if downloaded else None
-    success, err = await save_media_item(media_id, media_library[media_id])
-    if not success:
-        raise HTTPException(status_code=500, detail=f"数据库保存失败: {err}")
-    return {"ok": True, "id": media_id, "downloaded": downloaded}
+@app.get("/api/favorites")
+async def get_favorites(request: Request):
+    """获取当前用户的收藏列表（使用 API Key 验证）"""
+    api_key = request.headers.get("X-API-Key")
+    if api_key != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="无效的 API Key")
+    favorites = await load_all_favorites()
+    return {"ok": True, "items": favorites}
 
 
-# =========================================================
-# API：清空媒体库
-# =========================================================
+@app.post("/api/favorites")
+async def add_favorite(request: Request, payload: dict = Body(...)):
+    """添加收藏"""
+    api_key = request.headers.get("X-API-Key")
+    if api_key != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="无效的 API Key")
+    
+    username = payload.get("username")
+    if not username:
+        raise HTTPException(status_code=400, detail="username 不能为空")
+    username = re.sub(r"[^A-Za-z0-9_]", "", username)
+    if not username:
+        raise HTTPException(status_code=400, detail="用户名无效")
+    name = payload.get("name") or username
+    
+    await save_favorite(username, name)
+    return {"ok": True, "username": username, "name": name}
 
-@app.delete("/api/media")
-async def clear_media(request: Request):
-    global media_library
 
-    session = request.cookies.get("session")
-    if session != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="未登录")
+@app.delete("/api/favorites/{username}")
+async def remove_favorite(request: Request, username: str):
+    """删除收藏"""
+    api_key = request.headers.get("X-API-Key")
+    if api_key != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="无效的 API Key")
+    
+    username = re.sub(r"[^A-Za-z0-9_]", "", username)
+    if not username:
+        raise HTTPException(status_code=400, detail="用户名无效")
+    
+    await delete_favorite(username)
+    return {"ok": True, "username": username}
 
-    media_library = {}
-    await clear_all_media()
-    return {"ok": True, "count": 0}
+
+@app.get("/api/favorites/check/{username}")
+async def check_favorite(request: Request, username: str):
+    """检查是否已收藏"""
+    api_key = request.headers.get("X-API-Key")
+    if api_key != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="无效的 API Key")
+    
+    username = re.sub(r"[^A-Za-z0-9_]", "", username)
+    if not username:
+        raise HTTPException(status_code=400, detail="用户名无效")
+    
+    exists = await is_favorite(username)
+    return {"ok": True, "username": username, "favorited": exists}
 
 
-# =========================================================
-# API：媒体代理
-# =========================================================
+# =====================================================
+# API：媒体代理（不变）
+# =====================================================
 
 @app.get("/api/media-proxy")
 async def media_proxy(request: Request, url: str = Query(...)):
@@ -860,9 +937,54 @@ async def media_proxy(request: Request, url: str = Query(...)):
         raise HTTPException(status_code=502, detail=f"媒体代理获取失败：{str(e)}")
 
 
-# =========================================================
-# API：下载文件
-# =========================================================
+# =====================================================
+# API：标记下载状态（不变）
+# =====================================================
+
+@app.post("/api/media/{media_id}/downloaded")
+async def mark_downloaded(request: Request, media_id: str, payload: dict = Body(default={})):
+    global media_library
+
+    session = request.cookies.get("session")
+    if session != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    if not media_library:
+        media_library = await load_all_media()
+
+    if media_id not in media_library:
+        raise HTTPException(status_code=404, detail="媒体不存在")
+    downloaded = True
+    if isinstance(payload, dict) and "downloaded" in payload:
+        downloaded = bool(payload["downloaded"])
+    media_library[media_id]["downloaded"] = downloaded
+    media_library[media_id]["downloadedAt"] = datetime.now(timezone.utc).isoformat() if downloaded else None
+    success, err = await save_media_item(media_id, media_library[media_id])
+    if not success:
+        raise HTTPException(status_code=500, detail=f"数据库保存失败: {err}")
+    return {"ok": True, "id": media_id, "downloaded": downloaded}
+
+
+# =====================================================
+# API：清空媒体库（不变）
+# =====================================================
+
+@app.delete("/api/media")
+async def clear_media(request: Request):
+    global media_library
+
+    session = request.cookies.get("session")
+    if session != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    media_library = {}
+    await clear_all_media()
+    return {"ok": True, "count": 0}
+
+
+# =====================================================
+# API：下载文件（不变）
+# =====================================================
 
 @app.get("/api/download")
 async def download(url: str = Query(...), filename: str = Query("x-media")):
@@ -915,9 +1037,9 @@ async def download(url: str = Query(...), filename: str = Query("x-media")):
     )
 
 
-# =========================================================
-# 视频工具
-# =========================================================
+# =====================================================
+# 视频工具（不变）
+# =====================================================
 
 def cleanup_video_directory(directory):
     try:
@@ -938,9 +1060,9 @@ def cleanup_video_directory(directory):
         pass
 
 
-# =========================================================
-# API：视频下载
-# =========================================================
+# =====================================================
+# API：视频下载（不变）
+# =====================================================
 
 @app.get("/api/video-download")
 async def video_download(url: str = Query(...), filename: str = Query("x-video.mp4")):
@@ -996,9 +1118,9 @@ async def video_download(url: str = Query(...), filename: str = Query("x-video.m
     )
 
 
-# =========================================================
+# =====================================================
 # API：视频流（在线预览）
-# =========================================================
+# =====================================================
 
 @app.get("/api/video-stream")
 async def video_stream(url: str = Query(...)):
@@ -1051,9 +1173,9 @@ async def video_stream(url: str = Query(...)):
     )
 
 
-# =========================================================
+# =====================================================
 # 首页 & 健康检查
-# =========================================================
+# =====================================================
 
 @app.get("/")
 async def index():
@@ -1068,9 +1190,9 @@ async def health():
     return {"ok": True, "service": "万能媒体下载器", "media_count": len(media_library)}
 
 
-# =========================================================
+# =====================================================
 # 启动
-# =========================================================
+# =====================================================
 
 if __name__ == "__main__":
     import uvicorn
