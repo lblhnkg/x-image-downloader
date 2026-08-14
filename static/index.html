@@ -26,6 +26,7 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            padding-bottom: 80px;
         }
 
         .hidden {
@@ -771,6 +772,49 @@
             border-radius: 10px;
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.04);
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .item.selected {
+            border-color: #007aff;
+            background: rgba(0, 122, 255, 0.08);
+        }
+
+        /* =====================================================
+           选择框
+        ===================================================== */
+        .select-check {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 10;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #fff;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .item.in-select-mode .select-check {
+            display: flex;
+        }
+
+        .item.selected .select-check {
+            background: #007aff;
+            border-color: #007aff;
+        }
+
+        .item.selected .select-check::after {
+            content: "✓";
+            font-weight: 600;
         }
 
         .media-wrap {
@@ -786,6 +830,10 @@
             aspect-ratio: 1 / 1;
             object-fit: cover;
             cursor: pointer;
+        }
+
+        .item.in-select-mode .media-wrap img {
+            cursor: default;
         }
 
         .media-error {
@@ -862,7 +910,7 @@
         }
 
         /* =====================================================
-           卡片按钮 - 三个等宽（无彩色边框）
+           卡片按钮 - 三个等宽
         ===================================================== */
         .item-actions {
             display: grid;
@@ -879,6 +927,11 @@
             font-family: inherit;
             border: 0;
             transition: all 0.2s ease;
+        }
+
+        .item.in-select-mode .item-actions button {
+            pointer-events: none;
+            opacity: 0.3;
         }
 
         .item-actions .btn-view {
@@ -909,6 +962,167 @@
         .item-actions .btn-original:hover {
             background: rgba(255, 255, 255, 0.1);
             color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* =====================================================
+           底部工具栏（选择模式）
+        ===================================================== */
+        .selection-toolbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(20, 20, 22, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 12px 20px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .selection-toolbar.active {
+            display: flex;
+        }
+
+        .selection-toolbar .toolbar-left {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .selection-toolbar .toolbar-btn {
+            background: transparent;
+            border: 0;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 15px;
+            font-weight: 450;
+            padding: 8px 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: color 0.2s ease;
+        }
+
+        .selection-toolbar .toolbar-btn:hover {
+            color: #fff;
+        }
+
+        .selection-toolbar .toolbar-btn.danger {
+            background: #fff;
+            color: #ff3b30;
+            padding: 8px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .selection-toolbar .toolbar-btn.danger:hover {
+            opacity: 0.85;
+        }
+
+        .selection-toolbar .toolbar-btn.danger:active {
+            transform: scale(0.96);
+        }
+
+        .selection-toolbar .selected-count {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 13px;
+            font-weight: 300;
+        }
+
+        /* =====================================================
+           自定义删除确认弹窗
+        ===================================================== */
+        .delete-confirm-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .delete-confirm-overlay.active {
+            display: flex;
+        }
+
+        .delete-confirm-box {
+            background: #1c1c1e;
+            border-radius: 14px;
+            padding: 28px 24px 20px;
+            max-width: 340px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .delete-confirm-box .confirm-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            display: block;
+            color: #ff3b30;
+        }
+
+        .delete-confirm-box .confirm-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .delete-confirm-box .confirm-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        .delete-confirm-box .confirm-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .delete-confirm-box .confirm-actions button {
+            flex: 1;
+            padding: 12px 0;
+            border: 0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-cancel {
+            background: transparent;
+            color: #007aff;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-cancel:hover {
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-delete {
+            background: #fff;
+            color: #ff3b30;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-delete:hover {
+            opacity: 0.85;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-delete:active {
+            transform: scale(0.96);
         }
 
         /* =====================================================
@@ -1040,6 +1254,17 @@
             .item-actions button {
                 font-size: 9px;
                 padding: 4px 0;
+            }
+            .selection-toolbar {
+                padding: 10px 16px;
+                padding-bottom: calc(10px + env(safe-area-inset-bottom));
+            }
+            .selection-toolbar .toolbar-btn {
+                font-size: 13px;
+            }
+            .selection-toolbar .toolbar-btn.danger {
+                padding: 6px 14px;
+                font-size: 13px;
             }
         }
 
@@ -1374,12 +1599,42 @@
             <div class="submenu-title" id="libraryTitle">我的喜欢</div>
             <div class="submenu-desc" id="libraryDesc">查看采集器上传的喜欢列表</div>
 
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;margin-top:4px;">
-                <span style="font-size:12px;color:rgba(255,255,255,0.25);font-weight:300;" id="libraryCount">正在读取…</span>
-                <button style="background:transparent;border:0;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;" id="refreshLibraryBtn">刷新</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:4px;flex-wrap:wrap;gap:6px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:12px;color:rgba(255,255,255,0.25);font-weight:300;" id="libraryCount">正在读取…</span>
+                    <button style="background:transparent;border:0;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;" id="refreshLibraryBtn">刷新</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button id="selectToggleBtn" class="hidden" style="background:transparent;border:0;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;">选择</button>
+                </div>
             </div>
 
+            <!-- ========== 日期筛选（新增） ========== -->
             <div class="option-section" style="margin-top:0;">
+                <span class="option-label">时间范围</span>
+                <div class="option-row" data-group="libraryRange">
+                    <button class="option-btn active" data-value="all">全部</button>
+                    <button class="option-btn" data-value="7">最近7天</button>
+                    <button class="option-btn" data-value="30">最近30天</button>
+                    <button class="option-btn" data-value="365">最近1年</button>
+                    <button class="option-btn" data-value="custom">自定义</button>
+                </div>
+            </div>
+
+            <div class="hidden" id="libraryCustomDates" style="margin-top:8px;">
+                <div class="date-row">
+                    <div>
+                        <label class="search-label" style="font-size:11px;">开始日期</label>
+                        <input type="date" id="libraryStartDate">
+                    </div>
+                    <div>
+                        <label class="search-label" style="font-size:11px;">结束日期</label>
+                        <input type="date" id="libraryEndDate">
+                    </div>
+                </div>
+            </div>
+
+            <div class="option-section" style="margin-top:12px;">
                 <span class="option-label">媒体类型</span>
                 <div class="option-row" data-group="libraryMedia">
                     <button class="option-btn active" data-value="all">全部</button>
@@ -1450,256 +1705,278 @@
             <button class="modal-original" id="modalOriginalBtn">打开原帖</button>
         </div>
     </div>
+
+    <!-- =====================================================
+    底部工具栏（选择模式）
+    ===================================================== -->
+    <div class="selection-toolbar" id="selectionToolbar">
+        <div class="toolbar-left">
+            <button class="toolbar-btn" id="toolbarCancel">取消</button>
+            <button class="toolbar-btn" id="toolbarSelectAll">全选</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <span class="selected-count" id="selectedCount">已选 0 个</span>
+            <button class="toolbar-btn danger" id="toolbarDelete">删除</button>
+        </div>
+    </div>
+
+    <!-- =====================================================
+    删除确认弹窗
+    ===================================================== -->
+    <div class="delete-confirm-overlay" id="deleteConfirm">
+        <div class="delete-confirm-box">
+            <span class="confirm-icon">🗑️</span>
+            <div class="confirm-title" id="confirmTitle">确定删除？</div>
+            <div class="confirm-desc" id="confirmDesc">这些媒体将被永久删除，无法恢复。</div>
+            <div class="confirm-actions">
+                <button class="confirm-cancel" id="confirmCancel">取消</button>
+                <button class="confirm-delete" id="confirmDelete">确定删除</button>
+            </div>
+        </div>
+    </div>
 <script>
-    // =====================================================
-    // 调试模式：捕获所有错误并弹窗
-    // =====================================================
-    window.onerror = function(message, source, lineno, colno, error) {
-        alert('⚠️ 页面错误:\n' + message + '\n位置: ' + lineno + '行');
-        return true;
-    };
+        // =====================================================
+        // 状态
+        // =====================================================
+        let currentMode = 'guest'; // 'developer' | 'guest'
+        let currentSubPage = '';
+        let currentItem = null;
+        let currentHls = null;
 
-    // =====================================================
-    // 状态
-    // =====================================================
-    let currentMode = 'guest'; // 'developer' | 'guest'
-    let currentSubPage = '';
-    let currentItem = null;
-    let currentHls = null;
+        let range = 'all';
+        let mediaType = 'photo';
+        let sourceType = 'all';
+        let libraryMediaType = 'all';
 
-    let range = 'all';
-    let mediaType = 'photo';
-    let sourceType = 'all';
-    let libraryMediaType = 'all';
+        // ========== 日期筛选状态 ==========
+        let libraryRange = 'all';
+        let libraryStartDate = '';
+        let libraryEndDate = '';
 
-    let libraryRange = 'all';
-    let libraryStartDate = '';
-    let libraryEndDate = '';
+        let favorites = [];
+        let favoritesLoaded = false;
 
-    let favorites = [];
-    let favoritesLoaded = false;
+        // ========== 选择模式状态 ==========
+        let isSelectMode = false;
+        let selectedIds = new Set();
 
-    let isSelectMode = false;
-    let selectedIds = new Set();
+        // API Key（用于收藏同步）
+        const API_KEY = 'fushengruomeng'; // 请与服务器密码一致
 
-    const API_KEY = 'fushengruomeng';
+        // =====================================================
+        // 分页与缓存
+        // =====================================================
+        let cachedLibraryItems = [];
+        let cachedLibrarySource = '';
+        let allFilteredItems = [];
+        let currentBatch = 0;
+        const BATCH_SIZE = 50;
+        let isLoadingMore = false;
+        let allLoaded = false;
+        let scrollListenerAttached = false;
 
-    let cachedLibraryItems = [];
-    let cachedLibrarySource = '';
-    let allFilteredItems = [];
-    let currentBatch = 0;
-    const BATCH_SIZE = 50;
-    let isLoadingMore = false;
-    let allLoaded = false;
-    let scrollListenerAttached = false;
+        /* =====================================================
+           DOM 引用
+        ==================================================== */
+        const $ = id => document.getElementById(id);
 
-    /* =====================================================
-       DOM 引用
-    ==================================================== */
-    const $ = id => document.getElementById(id);
+        const pageLogin = $('pageLogin');
+        const pageMenu = $('pageMenu');
+        const pageXSub = $('pageXSub');
+        const pageSearch = $('pageSearch');
+        const pageLibrary = $('pageLibrary');
 
-    const pageLogin = $('pageLogin');
-    const pageMenu = $('pageMenu');
-    const pageXSub = $('pageXSub');
-    const pageSearch = $('pageSearch');
-    const pageLibrary = $('pageLibrary');
+        const loginPassword = $('loginPassword');
+        const loginBtn = $('loginBtn');
+        const loginError = $('loginError');
+        const guestBtn = $('guestBtn');
 
-    const loginPassword = $('loginPassword');
-    const loginBtn = $('loginBtn');
-    const loginError = $('loginError');
-    const guestBtn = $('guestBtn');
+        const menuX = $('menuX');
+        const menuMissav = $('menuMissav');
 
-    const menuX = $('menuX');
-    const menuMissav = $('menuMissav');
+        const backFromX = $('backFromX');
+        const backFromSearch = $('backFromSearch');
+        const backFromLibrary = $('backFromLibrary');
 
-    const backFromX = $('backFromX');
-    const backFromSearch = $('backFromSearch');
-    const backFromLibrary = $('backFromLibrary');
+        const subSearch = $('subSearch');
+        const subLikes = $('subLikes');
+        const subBookmarks = $('subBookmarks');
 
-    const subSearch = $('subSearch');
-    const subLikes = $('subLikes');
-    const subBookmarks = $('subBookmarks');
+        const profileInput = $('profileInput');
+        const searchBtn = $('searchBtn');
+        const favoriteAddBtn = $('favoriteAddBtn');
+        const favoriteToggleBtn = $('favoriteToggleBtn');
+        const favoritesPanel = $('favoritesPanel');
+        const searchSubmitBtn = $('searchSubmitBtn');
+        const searchStatus = $('searchStatus');
+        const searchResultHeader = $('searchResultHeader');
+        const searchResultTitle = $('searchResultTitle');
+        const searchResultCount = $('searchResultCount');
+        const searchGallery = $('searchGallery');
 
-    const profileInput = $('profileInput');
-    const searchBtn = $('searchBtn');
-    const favoriteAddBtn = $('favoriteAddBtn');
-    const favoriteToggleBtn = $('favoriteToggleBtn');
-    const favoritesPanel = $('favoritesPanel');
-    const searchSubmitBtn = $('searchSubmitBtn');
-    const searchStatus = $('searchStatus');
-    const searchResultHeader = $('searchResultHeader');
-    const searchResultTitle = $('searchResultTitle');
-    const searchResultCount = $('searchResultCount');
-    const searchGallery = $('searchGallery');
+        const libraryTitle = $('libraryTitle');
+        const libraryDesc = $('libraryDesc');
+        const libraryCount = $('libraryCount');
+        const refreshLibraryBtn = $('refreshLibraryBtn');
+        const libraryStatus = $('libraryStatus');
+        const libraryResultHeader = $('libraryResultHeader');
+        const libraryResultTitle = $('libraryResultTitle');
+        const libraryResultCount = $('libraryResultCount');
+        const libraryGallery = $('libraryGallery');
+        const selectToggleBtn = $('selectToggleBtn');
 
-    const libraryTitle = $('libraryTitle');
-    const libraryDesc = $('libraryDesc');
-    const libraryCount = $('libraryCount');
-    const refreshLibraryBtn = $('refreshLibraryBtn');
-    const libraryStatus = $('libraryStatus');
-    const libraryResultHeader = $('libraryResultHeader');
-    const libraryResultTitle = $('libraryResultTitle');
-    const libraryResultCount = $('libraryResultCount');
-    const libraryGallery = $('libraryGallery');
-    const selectToggleBtn = $('selectToggleBtn');
+        const startDate = $('startDate');
+        const endDate = $('endDate');
+        const customDates = $('customDates');
+        const libraryCustomDates = $('libraryCustomDates');
+        const libraryStartDate = $('libraryStartDate');
+        const libraryEndDate = $('libraryEndDate');
 
-    const startDate = $('startDate');
-    const endDate = $('endDate');
-    const customDates = $('customDates');
-    const libraryCustomDates = $('libraryCustomDates');
-    const libraryStartDate = $('libraryStartDate');
-    const libraryEndDate = $('libraryEndDate');
+        const modal = $('modal');
+        const modalContent = $('modalContent');
+        const modalCloseBtn = $('modalCloseBtn');
+        const modalDownloadBtn = $('modalDownloadBtn');
+        const modalOriginalBtn = $('modalOriginalBtn');
 
-    const modal = $('modal');
-    const modalContent = $('modalContent');
-    const modalCloseBtn = $('modalCloseBtn');
-    const modalDownloadBtn = $('modalDownloadBtn');
-    const modalOriginalBtn = $('modalOriginalBtn');
+        const guestTip = $('guestTip');
+        const guestTipBtn = $('guestTipBtn');
+        const comingSoon = $('comingSoon');
+        const comingSoonBtn = $('comingSoonBtn');
+        const missavTip = $('missavTip');
+        const missavTipBtn = $('missavTipBtn');
 
-    const guestTip = $('guestTip');
-    const guestTipBtn = $('guestTipBtn');
-    const comingSoon = $('comingSoon');
-    const comingSoonBtn = $('comingSoonBtn');
-    const missavTip = $('missavTip');
-    const missavTipBtn = $('missavTipBtn');
+        // 选择模式元素
+        const selectionToolbar = $('selectionToolbar');
+        const toolbarCancel = $('toolbarCancel');
+        const toolbarSelectAll = $('toolbarSelectAll');
+        const toolbarDelete = $('toolbarDelete');
+        const selectedCount = $('selectedCount');
+        const deleteConfirm = $('deleteConfirm');
+        const confirmTitle = $('confirmTitle');
+        const confirmDesc = $('confirmDesc');
+        const confirmCancel = $('confirmCancel');
+        const confirmDelete = $('confirmDelete');
 
-    const selectionToolbar = $('selectionToolbar');
-    const toolbarCancel = $('toolbarCancel');
-    const toolbarSelectAll = $('toolbarSelectAll');
-    const toolbarDelete = $('toolbarDelete');
-    const selectedCount = $('selectedCount');
-    const deleteConfirm = $('deleteConfirm');
-    const confirmTitle = $('confirmTitle');
-    const confirmDesc = $('confirmDesc');
-    const confirmCancel = $('confirmCancel');
-    const confirmDelete = $('confirmDelete');
-
-    // =====================================================
-    // 检查关键 DOM 是否存在
-    // =====================================================
-    alert('🔍 调试：页面加载完成，关键 DOM 检查中...\n\n' +
-        'menuX: ' + (!!menuX) + '\n' +
-        'subLikes: ' + (!!subLikes) + '\n' +
-        'selectToggleBtn: ' + (!!selectToggleBtn) + '\n' +
-        'libraryGallery: ' + (!!libraryGallery) + '\n' +
-        'selectionToolbar: ' + (!!selectionToolbar));
-
-    /* =====================================================
-       页面切换
-    ==================================================== */
-    function showPage(pageId) {
-        try {
+        /* =====================================================
+           页面切换
+        ==================================================== */
+        function showPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             const target = document.getElementById(pageId);
             if (target) target.classList.add('active');
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            // 退出选择模式（如果开启）
             if (isSelectMode) exitSelectMode();
-        } catch (e) {
-            alert('❌ showPage 错误: ' + e.message);
         }
-    }
 
-    /* =====================================================
-       登录
-    ==================================================== */
-    async function handleLogin() {
-        const password = loginPassword.value.trim();
-        if (!password) {
-            loginError.textContent = '请输入密码';
-            return;
-        }
-        loginError.textContent = '';
-        loginBtn.disabled = true;
-        loginBtn.textContent = '登录中…';
-
-        try {
-            const res = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password }),
-                credentials: 'include'
-            });
-            const data = await res.json();
-            if (res.ok && data.ok) {
-                currentMode = 'developer';
-                await loadFavoritesFromServer();
-                showPage('pageMenu');
-                loginPassword.value = '';
-            } else {
-                loginError.textContent = data.detail || '密码错误';
+        /* =====================================================
+           登录
+        ==================================================== */
+        async function handleLogin() {
+            const password = loginPassword.value.trim();
+            if (!password) {
+                loginError.textContent = '请输入密码';
+                return;
             }
-        } catch (e) {
-            loginError.textContent = '连接服务器失败，请稍后重试';
-        } finally {
-            loginBtn.disabled = false;
-            loginBtn.textContent = '进入';
+            loginError.textContent = '';
+            loginBtn.disabled = true;
+            loginBtn.textContent = '登录中…';
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password }),
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (res.ok && data.ok) {
+                    currentMode = 'developer';
+                    await loadFavoritesFromServer();
+                    showPage('pageMenu');
+                    loginPassword.value = '';
+                } else {
+                    loginError.textContent = data.detail || '密码错误';
+                }
+            } catch (e) {
+                loginError.textContent = '连接服务器失败，请稍后重试';
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = '进入';
+            }
         }
-    }
 
-    loginBtn.addEventListener('click', handleLogin);
-    loginPassword.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') handleLogin();
-    });
+        loginBtn.addEventListener('click', handleLogin);
 
-    /* =====================================================
-       访客模式
-    ==================================================== */
-    let guestTipShown = false;
-    guestBtn.addEventListener('click', () => {
-        currentMode = 'guest';
-        loadFavoritesFromLocal();
-        if (!guestTipShown) {
-            guestTip.classList.remove('hidden');
-        } else {
+        loginPassword.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+
+        /* =====================================================
+           访客模式（只提示一次）
+        ==================================================== */
+        let guestTipShown = false;
+
+        guestBtn.addEventListener('click', () => {
+            currentMode = 'guest';
+            loadFavoritesFromLocal();
+            if (!guestTipShown) {
+                guestTip.classList.remove('hidden');
+            } else {
+                showPage('pageMenu');
+            }
+        });
+
+        guestTipBtn.addEventListener('click', () => {
+            guestTip.classList.add('hidden');
+            guestTipShown = true;
             showPage('pageMenu');
-        }
-    });
-    guestTipBtn.addEventListener('click', () => {
-        guestTip.classList.add('hidden');
-        guestTipShown = true;
-        showPage('pageMenu');
-    });
+        });
 
-    /* =====================================================
-       菜单导航
-    ==================================================== */
-    menuX.addEventListener('click', () => {
-        alert('✅ 点击了 "下载 X 上的媒体"');
-        showPage('pageXSub');
-    });
+        /* =====================================================
+           菜单导航
+        ==================================================== */
+        menuX.addEventListener('click', () => {
+            showPage('pageXSub');
+        });
 
-    menuMissav.addEventListener('click', () => {
-        missavTip.classList.remove('hidden');
-    });
-    missavTipBtn.addEventListener('click', () => {
-        missavTip.classList.add('hidden');
-    });
+        menuMissav.addEventListener('click', () => {
+            missavTip.classList.remove('hidden');
+        });
 
-    backFromX.addEventListener('click', () => showPage('pageMenu'));
-    backFromSearch.addEventListener('click', () => showPage('pageXSub'));
-    backFromLibrary.addEventListener('click', () => {
-        showPage('pageXSub');
-        if (isSelectMode) exitSelectMode();
-    });
+        missavTipBtn.addEventListener('click', () => {
+            missavTip.classList.add('hidden');
+        });
 
-    /* =====================================================
-       X 子菜单
-    ==================================================== */
-    subSearch.addEventListener('click', () => {
-        showPage('pageSearch');
-    });
+        backFromX.addEventListener('click', () => {
+            showPage('pageMenu');
+        });
 
-    subLikes.addEventListener('click', () => {
-        alert('✅ 点击了 "我的喜欢"');
-        openLibrary('likes');
-    });
+        backFromSearch.addEventListener('click', () => {
+            showPage('pageXSub');
+        });
 
-    subBookmarks.addEventListener('click', () => {
-        openLibrary('bookmarks');
-    });
+        backFromLibrary.addEventListener('click', () => {
+            showPage('pageXSub');
+            if (isSelectMode) exitSelectMode();
+        });
 
-    function openLibrary(source) {
-        try {
+        /* =====================================================
+           X 子菜单 - 访客直接进入（不弹窗）
+        ==================================================== */
+        subSearch.addEventListener('click', () => {
+            showPage('pageSearch');
+        });
+
+        subLikes.addEventListener('click', () => {
+            openLibrary('likes');
+        });
+
+        subBookmarks.addEventListener('click', () => {
+            openLibrary('bookmarks');
+        });
+
+        function openLibrary(source) {
             currentSubPage = source;
             if (source === 'likes') {
                 libraryTitle.textContent = '我的喜欢';
@@ -1712,413 +1989,458 @@
 
             if (currentMode === 'guest') {
                 libraryCount.textContent = '共 0 个媒体';
-                libraryGallery.innerHTML = `<div class="loader">请安装采集器后使用此功能</div>`;
+                libraryGallery.innerHTML =
+                    `<div class="loader">请安装采集器后使用此功能</div>`;
                 libraryStatus.classList.add('hidden');
                 libraryResultHeader.classList.add('hidden');
-                if (selectToggleBtn) selectToggleBtn.classList.add('hidden');
+                selectToggleBtn.classList.add('hidden');
                 return;
             }
 
-            if (selectToggleBtn) selectToggleBtn.classList.remove('hidden');
+            selectToggleBtn.classList.remove('hidden');
             loadLibrary(source);
-        } catch (e) {
-            alert('❌ openLibrary 错误: ' + e.message);
         }
-    }
 
-    /* =====================================================
-       选项按钮
-    ==================================================== */
-    document.querySelectorAll('.option-row').forEach(row => {
-        row.querySelectorAll('.option-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const group = row.dataset.group;
-                row.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                const value = btn.dataset.value;
+        /* =====================================================
+           选项按钮
+        ==================================================== */
+        document.querySelectorAll('.option-row').forEach(row => {
+            row.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const group = row.dataset.group;
+                    row.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const value = btn.dataset.value;
 
-                if (group === 'range') {
-                    range = value;
-                    customDates.classList.toggle('hidden', value !== 'custom');
-                } else if (group === 'media') {
-                    mediaType = value;
-                } else if (group === 'source') {
-                    sourceType = value;
-                } else if (group === 'libraryRange') {
-                    libraryRange = value;
-                    libraryCustomDates.classList.toggle('hidden', value !== 'custom');
-                    resetPaginationAndRender();
-                } else if (group === 'libraryMedia') {
-                    libraryMediaType = value;
-                    resetPaginationAndRender();
-                }
+                    if (group === 'range') {
+                        range = value;
+                        customDates.classList.toggle('hidden', value !== 'custom');
+                    } else if (group === 'media') {
+                        mediaType = value;
+                    } else if (group === 'source') {
+                        sourceType = value;
+                    } else if (group === 'libraryRange') {
+                        libraryRange = value;
+                        libraryCustomDates.classList.toggle('hidden', value !== 'custom');
+                        resetPaginationAndRender();
+                    } else if (group === 'libraryMedia') {
+                        libraryMediaType = value;
+                        resetPaginationAndRender();
+                    }
+                });
             });
         });
-    });
 
-    libraryStartDate.addEventListener('change', () => {
-        if (libraryRange === 'custom') resetPaginationAndRender();
-    });
-    libraryEndDate.addEventListener('change', () => {
-        if (libraryRange === 'custom') resetPaginationAndRender();
-    });
+        // 日期输入变化时触发重新渲染
+        libraryStartDate.addEventListener('change', () => {
+            if (libraryRange === 'custom') resetPaginationAndRender();
+        });
+        libraryEndDate.addEventListener('change', () => {
+            if (libraryRange === 'custom') resetPaginationAndRender();
+        });
 
-    /* =====================================================
-       收藏功能（简化）
-    ==================================================== */
-    const FAVORITE_KEY = 'universal_downloader_favorites';
-    async function loadFavoritesFromServer() {
-        try {
-            const response = await fetch('/api/favorites', {
-                headers: { 'X-API-Key': API_KEY },
-                credentials: 'include'
-            });
-            if (response.ok) {
-                const data = await response.json();
-                if (data.ok && Array.isArray(data.items)) {
-                    favorites = data.items;
-                    favoritesLoaded = true;
-                    localStorage.setItem(FAVORITE_KEY, JSON.stringify(favorites));
-                    renderFavorites();
-                    updateFavoriteButton();
-                    return;
-                }
-            }
-            loadFavoritesFromLocal();
-        } catch (e) {
-            loadFavoritesFromLocal();
-        }
-    }
-    function loadFavoritesFromLocal() {
-        try {
-            const data = localStorage.getItem(FAVORITE_KEY);
-            favorites = data ? JSON.parse(data) : [];
-            favoritesLoaded = true;
-            renderFavorites();
-            updateFavoriteButton();
-        } catch { favorites = []; }
-    }
-    async function addFavorite(username, name) {
-        if (currentMode === 'developer') {
+        /* =====================================================
+           收藏功能（支持服务器同步）
+        ==================================================== */
+        const FAVORITE_KEY = 'universal_downloader_favorites';
+
+        async function loadFavoritesFromServer() {
             try {
                 const response = await fetch('/api/favorites', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
-                    body: JSON.stringify({ username, name }),
-                    credentials: 'include'
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.ok) {
-                        await loadFavoritesFromServer();
-                        return true;
-                    }
-                }
-                return addFavoriteLocal(username, name);
-            } catch (e) {
-                return addFavoriteLocal(username, name);
-            }
-        } else {
-            return addFavoriteLocal(username, name);
-        }
-    }
-    function addFavoriteLocal(username, name) {
-        if (!favorites.some(f => f.username.toLowerCase() === username.toLowerCase())) {
-            favorites.push({ username, name, addedAt: new Date().toISOString() });
-            localStorage.setItem(FAVORITE_KEY, JSON.stringify(favorites));
-            renderFavorites();
-            updateFavoriteButton();
-            return true;
-        }
-        return false;
-    }
-    async function removeFavorite(username) {
-        if (currentMode === 'developer') {
-            try {
-                const response = await fetch(`/api/favorites/${encodeURIComponent(username)}`, {
-                    method: 'DELETE',
                     headers: { 'X-API-Key': API_KEY },
                     credentials: 'include'
                 });
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.ok) {
-                        await loadFavoritesFromServer();
-                        return true;
+                    if (data.ok && Array.isArray(data.items)) {
+                        favorites = data.items;
+                        favoritesLoaded = true;
+                        localStorage.setItem(FAVORITE_KEY, JSON.stringify(favorites));
+                        renderFavorites();
+                        updateFavoriteButton();
+                        return;
                     }
                 }
-                return removeFavoriteLocal(username);
+                loadFavoritesFromLocal();
             } catch (e) {
+                console.warn('从服务器加载收藏失败，使用本地缓存', e);
+                loadFavoritesFromLocal();
+            }
+        }
+
+        function loadFavoritesFromLocal() {
+            try {
+                const data = localStorage.getItem(FAVORITE_KEY);
+                favorites = data ? JSON.parse(data) : [];
+                favoritesLoaded = true;
+                renderFavorites();
+                updateFavoriteButton();
+            } catch {
+                favorites = [];
+            }
+        }
+
+        async function addFavorite(username, name) {
+            if (currentMode === 'developer') {
+                try {
+                    const response = await fetch('/api/favorites', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Key': API_KEY
+                        },
+                        body: JSON.stringify({ username, name }),
+                        credentials: 'include'
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.ok) {
+                            await loadFavoritesFromServer();
+                            return true;
+                        }
+                    }
+                    return addFavoriteLocal(username, name);
+                } catch (e) {
+                    console.warn('服务器添加收藏失败，回退本地', e);
+                    return addFavoriteLocal(username, name);
+                }
+            } else {
+                return addFavoriteLocal(username, name);
+            }
+        }
+
+        function addFavoriteLocal(username, name) {
+            if (!favorites.some(f => f.username.toLowerCase() === username.toLowerCase())) {
+                favorites.push({ username, name, addedAt: new Date().toISOString() });
+                localStorage.setItem(FAVORITE_KEY, JSON.stringify(favorites));
+                renderFavorites();
+                updateFavoriteButton();
+                return true;
+            }
+            return false;
+        }
+
+        async function removeFavorite(username) {
+            if (currentMode === 'developer') {
+                try {
+                    const response = await fetch(`/api/favorites/${encodeURIComponent(username)}`, {
+                        method: 'DELETE',
+                        headers: { 'X-API-Key': API_KEY },
+                        credentials: 'include'
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.ok) {
+                            await loadFavoritesFromServer();
+                            return true;
+                        }
+                    }
+                    return removeFavoriteLocal(username);
+                } catch (e) {
+                    console.warn('服务器删除收藏失败，回退本地', e);
+                    return removeFavoriteLocal(username);
+                }
+            } else {
                 return removeFavoriteLocal(username);
             }
-        } else {
-            return removeFavoriteLocal(username);
         }
-    }
-    function removeFavoriteLocal(username) {
-        const idx = favorites.findIndex(f => f.username.toLowerCase() === username.toLowerCase());
-        if (idx >= 0) {
-            favorites.splice(idx, 1);
-            localStorage.setItem(FAVORITE_KEY, JSON.stringify(favorites));
-            renderFavorites();
-            updateFavoriteButton();
-            return true;
-        }
-        return false;
-    }
-    function renderFavorites() {
-        favoritesPanel.innerHTML = '';
-        if (!favorites.length) {
-            favoritesPanel.innerHTML = `<div class="favorite-empty">暂时没有收藏的博主</div>`;
-            return;
-        }
-        favorites.forEach((fav, index) => {
-            const div = document.createElement('div');
-            div.className = 'favorite-item';
-            div.innerHTML = `
-                <div class="fav-info">
-                    <div class="fav-name">${fav.name || fav.username}</div>
-                    <div class="fav-handle">@${fav.username}</div>
-                </div>
-                <div class="fav-actions">
-                    <button class="fav-use" data-index="${index}">查找</button>
-                    <button class="fav-delete" data-index="${index}">删除</button>
-                </div>
-            `;
-            favoritesPanel.appendChild(div);
-        });
-        favoritesPanel.querySelectorAll('.fav-use').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const idx = parseInt(btn.dataset.index);
-                const fav = favorites[idx];
-                if (fav) {
-                    profileInput.value = fav.username;
-                    updateFavoriteButton();
-                    favoritesPanel.classList.add('hidden');
-                }
-            });
-        });
-        favoritesPanel.querySelectorAll('.fav-delete').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const idx = parseInt(btn.dataset.index);
-                const fav = favorites[idx];
-                if (fav) {
-                    await removeFavorite(fav.username);
-                }
-            });
-        });
-    }
-    function updateFavoriteButton() {
-        const username = normalizeUsername(profileInput.value);
-        if (!username) {
-            favoriteAddBtn.textContent = '☆ 收藏';
-            favoriteAddBtn.classList.remove('favorited');
-            return;
-        }
-        const exists = favorites.some(f => f.username.toLowerCase() === username.toLowerCase());
-        favoriteAddBtn.textContent = exists ? '★ 已收藏' : '☆ 收藏';
-        if (exists) {
-            favoriteAddBtn.classList.add('favorited');
-        } else {
-            favoriteAddBtn.classList.remove('favorited');
-        }
-    }
-    profileInput.addEventListener('input', updateFavoriteButton);
-    favoriteAddBtn.addEventListener('click', async () => {
-        const username = normalizeUsername(profileInput.value);
-        if (!username) {
-            showSearchStatus('请先输入博主名', 'error');
-            return;
-        }
-        const exists = favorites.some(f => f.username.toLowerCase() === username.toLowerCase());
-        if (exists) {
-            await removeFavorite(username);
-        } else {
-            await addFavorite(username, username);
-        }
-    });
-    favoriteToggleBtn.addEventListener('click', () => {
-        favoritesPanel.classList.toggle('hidden');
-    });
 
-    /* =====================================================
-       工具函数
-    ==================================================== */
-    function normalizeUsername(input) {
-        let value = input.trim();
-        if (!value) return null;
-        if (value.includes('x.com/') || value.includes('twitter.com/')) {
-            if (!value.startsWith('http://') && !value.startsWith('https://')) {
-                value = 'https://' + value;
+        function removeFavoriteLocal(username) {
+            const idx = favorites.findIndex(f => f.username.toLowerCase() === username.toLowerCase());
+            if (idx >= 0) {
+                favorites.splice(idx, 1);
+                localStorage.setItem(FAVORITE_KEY, JSON.stringify(favorites));
+                renderFavorites();
+                updateFavoriteButton();
+                return true;
             }
-            try {
-                const url = new URL(value);
-                const parts = url.pathname.split('/').filter(Boolean);
-                if (parts.length) value = parts[0];
-            } catch { return null; }
+            return false;
         }
-        value = value.replace(/^@+/, '').replace(/\/+$/, '').replace(/[^A-Za-z0-9_]/g, '');
-        return value || null;
-    }
-    function formatDateFromX(value) {
-        if (!value) return '';
-        const match = value.match(/^\w+\s+(\w+)\s+(\d+).*?(\d{4})$/);
-        if (!match) return value;
-        const months = { Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09',
-            Oct: '10', Nov: '11', Dec: '12' };
-        const month = months[match[1]];
-        if (!month) return value;
-        return `${match[3]}-${month}-${String(match[2]).padStart(2, '0')}`;
-    }
-    function formatLibraryDate(value) {
-        if (!value) return '';
-        try {
-            const date = new Date(value);
-            if (isNaN(date.getTime())) return '';
-            return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate())
-                .padStart(2, '0');
-        } catch { return ''; }
-    }
-    function getLibraryDateRange() {
-        if (libraryRange === 'all') return { start: null, end: null };
-        if (libraryRange === 'custom') {
+
+        function renderFavorites() {
+            favoritesPanel.innerHTML = '';
+            if (!favorites.length) {
+                favoritesPanel.innerHTML = `<div class="favorite-empty">暂时没有收藏的博主</div>`;
+                return;
+            }
+            favorites.forEach((fav, index) => {
+                const div = document.createElement('div');
+                div.className = 'favorite-item';
+                div.innerHTML = `
+                    <div class="fav-info">
+                        <div class="fav-name">${fav.name || fav.username}</div>
+                        <div class="fav-handle">@${fav.username}</div>
+                    </div>
+                    <div class="fav-actions">
+                        <button class="fav-use" data-index="${index}">查找</button>
+                        <button class="fav-delete" data-index="${index}">删除</button>
+                    </div>
+                `;
+                favoritesPanel.appendChild(div);
+            });
+
+            favoritesPanel.querySelectorAll('.fav-use').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.index);
+                    const fav = favorites[idx];
+                    if (fav) {
+                        profileInput.value = fav.username;
+                        updateFavoriteButton();
+                        favoritesPanel.classList.add('hidden');
+                    }
+                });
+            });
+
+            favoritesPanel.querySelectorAll('.fav-delete').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const idx = parseInt(btn.dataset.index);
+                    const fav = favorites[idx];
+                    if (fav) {
+                        await removeFavorite(fav.username);
+                    }
+                });
+            });
+        }
+
+        function updateFavoriteButton() {
+            const username = normalizeUsername(profileInput.value);
+            if (!username) {
+                favoriteAddBtn.textContent = '☆ 收藏';
+                favoriteAddBtn.classList.remove('favorited');
+                return;
+            }
+            const exists = favorites.some(f => f.username.toLowerCase() === username.toLowerCase());
+            favoriteAddBtn.textContent = exists ? '★ 已收藏' : '☆ 收藏';
+            if (exists) {
+                favoriteAddBtn.classList.add('favorited');
+            } else {
+                favoriteAddBtn.classList.remove('favorited');
+            }
+        }
+
+        profileInput.addEventListener('input', updateFavoriteButton);
+
+        favoriteAddBtn.addEventListener('click', async () => {
+            const username = normalizeUsername(profileInput.value);
+            if (!username) {
+                showSearchStatus('请先输入博主名', 'error');
+                return;
+            }
+            const exists = favorites.some(f => f.username.toLowerCase() === username.toLowerCase());
+            if (exists) {
+                await removeFavorite(username);
+            } else {
+                await addFavorite(username, username);
+            }
+        });
+
+        favoriteToggleBtn.addEventListener('click', () => {
+            favoritesPanel.classList.toggle('hidden');
+        });
+
+        /* =====================================================
+           工具函数
+        ==================================================== */
+        function normalizeUsername(input) {
+            let value = input.trim();
+            if (!value) return null;
+            if (value.includes('x.com/') || value.includes('twitter.com/')) {
+                if (!value.startsWith('http://') && !value.startsWith('https://')) {
+                    value = 'https://' + value;
+                }
+                try {
+                    const url = new URL(value);
+                    const parts = url.pathname.split('/').filter(Boolean);
+                    if (parts.length) value = parts[0];
+                } catch {
+                    return null;
+                }
+            }
+            value = value.replace(/^@+/, '').replace(/\/+$/, '').replace(/[^A-Za-z0-9_]/g, '');
+            return value || null;
+        }
+
+        function formatDateFromX(value) {
+            if (!value) return '';
+            const match = value.match(/^\w+\s+(\w+)\s+(\d+).*?(\d{4})$/);
+            if (!match) return value;
+            const months = { Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09',
+                Oct: '10', Nov: '11', Dec: '12' };
+            const month = months[match[1]];
+            if (!month) return value;
+            return `${match[3]}-${month}-${String(match[2]).padStart(2, '0')}`;
+        }
+
+        function formatLibraryDate(value) {
+            if (!value) return '';
+            try {
+                const date = new Date(value);
+                if (isNaN(date.getTime())) return '';
+                return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate())
+                    .padStart(2, '0');
+            } catch { return ''; }
+        }
+
+        function getLibraryDateRange() {
+            if (libraryRange === 'all') return { start: null, end: null };
+            if (libraryRange === 'custom') {
+                return {
+                    start: libraryStartDate.value || null,
+                    end: libraryEndDate.value || null
+                };
+            }
+            const now = new Date();
+            const start = new Date(now);
+            start.setDate(start.getDate() - Number(libraryRange));
             return {
-                start: libraryStartDate.value || null,
-                end: libraryEndDate.value || null
+                start: start.getFullYear() + '-' + String(start.getMonth() + 1).padStart(2, '0') + '-' + String(start.getDate())
+                    .padStart(2, '0'),
+                end: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(
+                    2, '0')
             };
         }
-        const now = new Date();
-        const start = new Date(now);
-        start.setDate(start.getDate() - Number(libraryRange));
-        return {
-            start: start.getFullYear() + '-' + String(start.getMonth() + 1).padStart(2, '0') + '-' + String(start.getDate())
-                .padStart(2, '0'),
-            end: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(
-                2, '0')
-        };
-    }
-    function getDates() {
-        if (range === 'all') return { start: null, end: null };
-        if (range === 'custom') return { start: startDate.value || null, end: endDate.value || null };
-        const now = new Date();
-        const start = new Date(now);
-        start.setDate(start.getDate() - Number(range));
-        return {
-            start: start.getFullYear() + '-' + String(start.getMonth() + 1).padStart(2, '0') + '-' + String(start.getDate())
-                .padStart(2, '0'),
-            end: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(
-                2, '0')
-        };
-    }
-    function getFilename(item) {
-        let date = formatDateFromX(item.created_at || item.createdAt) || 'x-media';
-        let suffix = (item.media_total && item.media_total > 1) ? `-${item.media_index}` : '';
-        let extension = '.jpg';
-        const type = item.media_type || item.type;
-        const rawUrl = item.originalUrl || item.sourceUrl || item.media_url || item.url || '';
-        const lower = String(rawUrl).toLowerCase();
-        if (type === 'video') extension = '.mp4';
-        else if (lower.includes('.png')) extension = '.png';
-        else if (lower.includes('.webp')) extension = '.webp';
-        else if (lower.includes('.gif')) extension = '.gif';
-        return `${date}${suffix}${extension}`;
-    }
-    function showSearchStatus(msg, type = '') {
-        searchStatus.classList.remove('hidden');
-        searchStatus.textContent = msg;
-        searchStatus.className = 'status-box' + (type === 'error' ? ' error' : '');
-    }
-    function hideSearchStatus() {
-        searchStatus.classList.add('hidden');
-        searchStatus.textContent = '';
-        searchStatus.className = 'status-box';
-    }
 
-    /* =====================================================
-       搜索博主
-    ==================================================== */
-    searchBtn.addEventListener('click', performSearch);
-    searchSubmitBtn.addEventListener('click', performSearch);
-    profileInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') performSearch();
-    });
-    async function performSearch() {
-        const raw = profileInput.value.trim();
-        const username = normalizeUsername(raw);
-        if (!username) {
-            showSearchStatus('无法识别博主。可以输入：NASA / @NASA / x.com/NASA', 'error');
-            return;
+        function getDates() {
+            if (range === 'all') return { start: null, end: null };
+            if (range === 'custom') return { start: startDate.value || null, end: endDate.value || null };
+            const now = new Date();
+            const start = new Date(now);
+            start.setDate(start.getDate() - Number(range));
+            return {
+                start: start.getFullYear() + '-' + String(start.getMonth() + 1).padStart(2, '0') + '-' + String(start.getDate())
+                    .padStart(2, '0'),
+                end: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(
+                    2, '0')
+            };
         }
-        const dates = getDates();
-        if (dates.start && dates.end && dates.start > dates.end) {
-            showSearchStatus('开始日期不能晚于结束日期', 'error');
-            return;
+
+        function getFilename(item) {
+            let date = formatDateFromX(item.created_at || item.createdAt) || 'x-media';
+            let suffix = (item.media_total && item.media_total > 1) ? `-${item.media_index}` : '';
+            let extension = '.jpg';
+            const type = item.media_type || item.type;
+            const rawUrl = item.originalUrl || item.sourceUrl || item.media_url || item.url || '';
+            const lower = String(rawUrl).toLowerCase();
+            if (type === 'video') extension = '.mp4';
+            else if (lower.includes('.png')) extension = '.png';
+            else if (lower.includes('.webp')) extension = '.webp';
+            else if (lower.includes('.gif')) extension = '.gif';
+            return `${date}${suffix}${extension}`;
         }
-        searchSubmitBtn.disabled = true;
-        searchSubmitBtn.textContent = '正在寻找…';
-        hideSearchStatus();
-        searchResultHeader.classList.add('hidden');
-        searchGallery.innerHTML = '';
-        try {
-            const params = new URLSearchParams();
-            params.set('profile', `https://x.com/${username}`);
-            params.set('media_type', mediaType);
-            params.set('source_type', sourceType);
-            if (dates.start) params.set('start_date', dates.start);
-            if (dates.end) params.set('end_date', dates.end);
-            const res = await fetch(`/api/search?${params.toString()}`);
-            const data = await res.json();
-            if (!res.ok || !data.ok) {
-                throw new Error(data.detail || '搜索失败');
-            }
-            renderSearchResults(data, username);
-        } catch (err) {
-            showSearchStatus(err.message || '搜索失败', 'error');
-        } finally {
-            searchSubmitBtn.disabled = false;
-            searchSubmitBtn.textContent = '开始找图';
+
+        function showSearchStatus(msg, type = '') {
+            searchStatus.classList.remove('hidden');
+            searchStatus.textContent = msg;
+            searchStatus.className = 'status-box' + (type === 'error' ? ' error' : '');
         }
-    }
-    function renderSearchResults(data, username) {
-        searchResultHeader.classList.remove('hidden');
-        searchResultTitle.textContent = `@${username}`;
-        searchResultCount.textContent = `找到 ${data.count} 个媒体 · 查询 ${data.pages} 页`;
-        searchGallery.innerHTML = '';
-        if (!data.items || data.items.length === 0) {
-            searchGallery.innerHTML = `<div class="loader">没有找到媒体</div>`;
-            return;
+
+        function hideSearchStatus() {
+            searchStatus.classList.add('hidden');
+            searchStatus.textContent = '';
+            searchStatus.className = 'status-box';
         }
-        data.items.forEach(item => {
-            searchGallery.appendChild(createMediaItem(item, 'search'));
+
+        /* =====================================================
+           搜索博主
+        ==================================================== */
+        searchBtn.addEventListener('click', performSearch);
+        searchSubmitBtn.addEventListener('click', performSearch);
+
+        profileInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') performSearch();
         });
-    }
 
-    /* =====================================================
-       媒体库 - 缓存 + 分批渲染
-    ==================================================== */
-    async function loadLibrary(source) {
-        try {
+        async function performSearch() {
+            const raw = profileInput.value.trim();
+            const username = normalizeUsername(raw);
+            if (!username) {
+                showSearchStatus('无法识别博主。可以输入：NASA / @NASA / x.com/NASA', 'error');
+                return;
+            }
+
+            const dates = getDates();
+            if (dates.start && dates.end && dates.start > dates.end) {
+                showSearchStatus('开始日期不能晚于结束日期', 'error');
+                return;
+            }
+
+            searchSubmitBtn.disabled = true;
+            searchSubmitBtn.textContent = '正在寻找…';
+            hideSearchStatus();
+            searchResultHeader.classList.add('hidden');
+            searchGallery.innerHTML = '';
+
+            try {
+                const params = new URLSearchParams();
+                params.set('profile', `https://x.com/${username}`);
+                params.set('media_type', mediaType);
+                params.set('source_type', sourceType);
+                if (dates.start) params.set('start_date', dates.start);
+                if (dates.end) params.set('end_date', dates.end);
+
+                const res = await fetch(`/api/search?${params.toString()}`);
+                const data = await res.json();
+
+                if (!res.ok || !data.ok) {
+                    throw new Error(data.detail || '搜索失败');
+                }
+
+                renderSearchResults(data, username);
+
+            } catch (err) {
+                showSearchStatus(err.message || '搜索失败', 'error');
+            } finally {
+                searchSubmitBtn.disabled = false;
+                searchSubmitBtn.textContent = '开始找图';
+            }
+        }
+
+        function renderSearchResults(data, username) {
+            searchResultHeader.classList.remove('hidden');
+            searchResultTitle.textContent = `@${username}`;
+            searchResultCount.textContent = `找到 ${data.count} 个媒体 · 查询 ${data.pages} 页`;
+
+            searchGallery.innerHTML = '';
+            if (!data.items || data.items.length === 0) {
+                searchGallery.innerHTML = `<div class="loader">没有找到媒体</div>`;
+                return;
+            }
+
+            data.items.forEach(item => {
+                searchGallery.appendChild(createMediaItem(item, 'search'));
+            });
+        }
+
+        /* =====================================================
+           媒体库 - 缓存 + 分批渲染
+        ==================================================== */
+        async function loadLibrary(source) {
             if (currentMode === 'guest') {
                 libraryCount.textContent = '共 0 个媒体';
                 libraryGallery.innerHTML = `<div class="loader">请安装采集器后使用此功能</div>`;
                 return;
             }
+
             if (source !== cachedLibrarySource || cachedLibraryItems.length === 0) {
                 libraryCount.textContent = '正在读取…';
                 libraryStatus.classList.add('hidden');
                 libraryResultHeader.classList.add('hidden');
                 libraryGallery.innerHTML = '';
+
                 try {
                     const params = new URLSearchParams();
                     params.set('source', source);
                     params.set('media_type', 'all');
+
                     const res = await fetch(`/api/media?${params.toString()}`, {
                         credentials: 'include'
                     });
                     const data = await res.json();
+
                     if (!res.ok || !data.ok) {
                         throw new Error(data.detail || '读取媒体库失败');
                     }
+
                     cachedLibraryItems = data.items || [];
                     cachedLibrarySource = source;
                 } catch (err) {
@@ -2129,47 +2451,54 @@
                     return;
                 }
             }
+
             resetPagination();
             renderLibraryResults();
-        } catch (e) {
-            alert('❌ loadLibrary 错误: ' + e.message);
         }
-    }
 
-    function renderLibraryResults() {
-        try {
+        function renderLibraryResults() {
+            // 先按媒体类型过滤
             let filtered = cachedLibraryItems;
             if (libraryMediaType === 'image') {
                 filtered = cachedLibraryItems.filter(item => item.type === 'image');
             } else if (libraryMediaType === 'video') {
                 filtered = cachedLibraryItems.filter(item => item.type === 'video');
             }
+
+            // 再按日期过滤
             const dateRange = getLibraryDateRange();
             if (dateRange.start || dateRange.end) {
                 const startDt = dateRange.start ? new Date(dateRange.start + 'T00:00:00Z') : null;
                 const endDt = dateRange.end ? new Date(dateRange.end + 'T23:59:59Z') : null;
                 filtered = filtered.filter(item => {
                     const timeStr = item.tweetCreatedAt || item.createdAt || '';
-                    if (!timeStr) return true;
+                    if (!timeStr) return true; // 没有时间信息则保留
                     try {
                         let dt = new Date(timeStr);
-                        if (isNaN(dt.getTime())) return true;
+                        if (isNaN(dt.getTime())) return true; // 无法解析则保留
                         if (startDt && dt < startDt) return false;
                         if (endDt && dt > endDt) return false;
                         return true;
-                    } catch { return true; }
+                    } catch {
+                        return true;
+                    }
                 });
             }
+
             allFilteredItems = filtered;
+
             libraryCount.textContent = `共 ${allFilteredItems.length} 个媒体`;
             libraryResultHeader.classList.remove('hidden');
             libraryResultTitle.textContent = currentSubPage === 'likes' ? '我的喜欢' : '我的书签';
             libraryResultCount.textContent = `共 ${allFilteredItems.length} 个媒体`;
+
             libraryGallery.innerHTML = '';
+
             if (!allFilteredItems || allFilteredItems.length === 0) {
                 libraryGallery.innerHTML = `<div class="loader">没有符合条件的媒体</div>`;
                 return;
             }
+
             allFilteredItems.sort((a, b) => {
                 const timeA = a.tweetCreatedAt || a.createdAt || '';
                 const timeB = b.tweetCreatedAt || b.createdAt || '';
@@ -2178,481 +2507,537 @@
                 if (!timeA && timeB) return 1;
                 return 0;
             });
+
             currentBatch = 0;
             allLoaded = false;
             isLoadingMore = false;
+
+            // 如果进入选择模式，退出
             if (isSelectMode) exitSelectMode();
+
             loadNextBatch();
+
             if (!scrollListenerAttached) {
                 window.addEventListener('scroll', handleScroll);
                 scrollListenerAttached = true;
             }
-        } catch (e) {
-            alert('❌ renderLibraryResults 错误: ' + e.message);
         }
-    }
 
-    function resetPagination() {
-        allFilteredItems = [];
-        currentBatch = 0;
-        allLoaded = false;
-        isLoadingMore = false;
-    }
-    function resetPaginationAndRender() {
-        resetPagination();
-        renderLibraryResults();
-    }
-    function loadNextBatch() {
-        if (allLoaded || isLoadingMore) return;
-        if (currentBatch * BATCH_SIZE >= allFilteredItems.length) {
-            allLoaded = true;
-            return;
-        }
-        isLoadingMore = true;
-        requestAnimationFrame(() => {
-            const start = currentBatch * BATCH_SIZE;
-            const end = Math.min(start + BATCH_SIZE, allFilteredItems.length);
-            const fragment = document.createDocumentFragment();
-            for (let i = start; i < end; i++) {
-                const el = createMediaItem(allFilteredItems[i], 'library');
-                fragment.appendChild(el);
-            }
-            libraryGallery.appendChild(fragment);
-            currentBatch++;
+        function resetPagination() {
+            allFilteredItems = [];
+            currentBatch = 0;
+            allLoaded = false;
             isLoadingMore = false;
+        }
+
+        function resetPaginationAndRender() {
+            resetPagination();
+            renderLibraryResults();
+        }
+
+        function loadNextBatch() {
+            if (allLoaded || isLoadingMore) return;
             if (currentBatch * BATCH_SIZE >= allFilteredItems.length) {
                 allLoaded = true;
+                return;
             }
-        });
-    }
-    let scrollTimeout = null;
 
-    function handleScroll() {
-        if (scrollTimeout) return;
-        scrollTimeout = setTimeout(() => {
-            scrollTimeout = null;
-            const scrollY = window.scrollY || window.pageYOffset;
-            const windowHeight = window.innerHeight;
-            const docHeight = document.documentElement.scrollHeight;
-            if (scrollY + windowHeight >= docHeight - 300) {
-                if (!allLoaded && !isLoadingMore) {
-                    loadNextBatch();
+            isLoadingMore = true;
+            requestAnimationFrame(() => {
+                const start = currentBatch * BATCH_SIZE;
+                const end = Math.min(start + BATCH_SIZE, allFilteredItems.length);
+                const fragment = document.createDocumentFragment();
+                for (let i = start; i < end; i++) {
+                    const el = createMediaItem(allFilteredItems[i], 'library');
+                    fragment.appendChild(el);
                 }
-            }
-        }, 150);
-    }
+                libraryGallery.appendChild(fragment);
+                currentBatch++;
+                isLoadingMore = false;
 
-    refreshLibraryBtn.addEventListener('click', () => {
-        cachedLibraryItems = [];
-        cachedLibrarySource = '';
-        resetPagination();
-        if (currentSubPage) {
-            loadLibrary(currentSubPage);
-        }
-    });
-
-    /* =====================================================
-       选择模式
-    ==================================================== */
-    selectToggleBtn.addEventListener('click', () => {
-        enterSelectMode();
-    });
-
-    function enterSelectMode() {
-        if (isSelectMode) return;
-        isSelectMode = true;
-        selectedIds.clear();
-        selectionToolbar.classList.add('active');
-        selectToggleBtn.textContent = '取消选择';
-        selectToggleBtn.style.color = 'rgba(255,255,255,0.6)';
-        document.querySelectorAll('#libraryGallery .item').forEach(el => {
-            el.classList.add('in-select-mode');
-            el.addEventListener('click', handleItemClick);
-        });
-        updateSelectedCount();
-    }
-
-    function exitSelectMode() {
-        if (!isSelectMode) return;
-        isSelectMode = false;
-        selectedIds.clear();
-        selectionToolbar.classList.remove('active');
-        selectToggleBtn.textContent = '选择';
-        selectToggleBtn.style.color = 'rgba(255,255,255,0.4)';
-        document.querySelectorAll('#libraryGallery .item').forEach(el => {
-            el.classList.remove('in-select-mode', 'selected');
-            el.removeEventListener('click', handleItemClick);
-        });
-        updateSelectedCount();
-    }
-
-    function handleItemClick(e) {
-        const item = e.currentTarget;
-        if (e.target.closest('button') || e.target.closest('a')) return;
-        const mediaId = item.dataset.mediaId;
-        if (!mediaId) return;
-        if (selectedIds.has(mediaId)) {
-            selectedIds.delete(mediaId);
-            item.classList.remove('selected');
-        } else {
-            selectedIds.add(mediaId);
-            item.classList.add('selected');
-        }
-        updateSelectedCount();
-    }
-
-    function updateSelectedCount() {
-        const count = selectedIds.size;
-        selectedCount.textContent = `已选 ${count} 个`;
-        toolbarDelete.style.display = count > 0 ? 'block' : 'none';
-    }
-
-    toolbarSelectAll.addEventListener('click', () => {
-        const items = document.querySelectorAll('#libraryGallery .item');
-        let allSelected = true;
-        items.forEach(el => {
-            const id = el.dataset.mediaId;
-            if (id && !selectedIds.has(id)) {
-                allSelected = false;
-            }
-        });
-        if (allSelected) {
-            items.forEach(el => {
-                const id = el.dataset.mediaId;
-                if (id) {
-                    selectedIds.delete(id);
-                    el.classList.remove('selected');
-                }
-            });
-        } else {
-            items.forEach(el => {
-                const id = el.dataset.mediaId;
-                if (id) {
-                    selectedIds.add(id);
-                    el.classList.add('selected');
+                if (currentBatch * BATCH_SIZE >= allFilteredItems.length) {
+                    allLoaded = true;
                 }
             });
         }
-        updateSelectedCount();
-    });
 
-    toolbarCancel.addEventListener('click', exitSelectMode);
+        let scrollTimeout = null;
 
-    toolbarDelete.addEventListener('click', () => {
-        const count = selectedIds.size;
-        if (count === 0) return;
-        confirmTitle.textContent = `删除 ${count} 个媒体？`;
-        confirmDesc.textContent = '这些媒体将被永久删除，无法恢复。';
-        deleteConfirm.classList.add('active');
-    });
+        function handleScroll() {
+            if (scrollTimeout) return;
+            scrollTimeout = setTimeout(() => {
+                scrollTimeout = null;
+                const scrollY = window.scrollY || window.pageYOffset;
+                const windowHeight = window.innerHeight;
+                const docHeight = document.documentElement.scrollHeight;
+                if (scrollY + windowHeight >= docHeight - 300) {
+                    if (!allLoaded && !isLoadingMore) {
+                        loadNextBatch();
+                    }
+                }
+            }, 150);
+        }
 
-    confirmCancel.addEventListener('click', () => {
-        deleteConfirm.classList.remove('active');
-    });
+        refreshLibraryBtn.addEventListener('click', () => {
+            cachedLibraryItems = [];
+            cachedLibrarySource = '';
+            resetPagination();
+            if (currentSubPage) {
+                loadLibrary(currentSubPage);
+            }
+        });
 
-    confirmDelete.addEventListener('click', async () => {
-        const ids = Array.from(selectedIds);
-        if (ids.length === 0) return;
-        deleteConfirm.classList.remove('active');
-        try {
-            const response = await fetch('/api/media', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ media_ids: ids }),
-                credentials: 'include'
+        /* =====================================================
+           选择模式
+        ==================================================== */
+        selectToggleBtn.addEventListener('click', () => {
+            enterSelectMode();
+        });
+
+        function enterSelectMode() {
+            if (isSelectMode) return;
+            isSelectMode = true;
+            selectedIds.clear();
+            selectionToolbar.classList.add('active');
+            selectToggleBtn.textContent = '取消选择';
+            selectToggleBtn.style.color = 'rgba(255,255,255,0.6)';
+
+            document.querySelectorAll('#libraryGallery .item').forEach(el => {
+                el.classList.add('in-select-mode');
+                el.addEventListener('click', handleItemClick);
             });
-            const data = await response.json();
-            if (response.ok && data.ok) {
-                const deletedSet = new Set(ids);
-                cachedLibraryItems = cachedLibraryItems.filter(item => !deletedSet.has(item.id));
-                exitSelectMode();
-                renderLibraryResults();
+
+            updateSelectedCount();
+        }
+
+        function exitSelectMode() {
+            if (!isSelectMode) return;
+            isSelectMode = false;
+            selectedIds.clear();
+            selectionToolbar.classList.remove('active');
+            selectToggleBtn.textContent = '选择';
+            selectToggleBtn.style.color = 'rgba(255,255,255,0.4)';
+
+            document.querySelectorAll('#libraryGallery .item').forEach(el => {
+                el.classList.remove('in-select-mode', 'selected');
+                el.removeEventListener('click', handleItemClick);
+            });
+
+            updateSelectedCount();
+        }
+
+        function handleItemClick(e) {
+            const item = e.currentTarget;
+            // 如果点击的是按钮或链接，不触发选择
+            if (e.target.closest('button') || e.target.closest('a')) return;
+
+            const mediaId = item.dataset.mediaId;
+            if (!mediaId) return;
+
+            if (selectedIds.has(mediaId)) {
+                selectedIds.delete(mediaId);
+                item.classList.remove('selected');
             } else {
-                alert('删除失败：' + (data.detail || '未知错误'));
+                selectedIds.add(mediaId);
+                item.classList.add('selected');
             }
-        } catch (e) {
-            alert('删除请求失败：' + e.message);
+            updateSelectedCount();
         }
-    });
 
-    deleteConfirm.addEventListener('click', (e) => {
-        if (e.target === deleteConfirm) {
+        function updateSelectedCount() {
+            const count = selectedIds.size;
+            selectedCount.textContent = `已选 ${count} 个`;
+            toolbarDelete.style.display = count > 0 ? 'block' : 'none';
+        }
+
+        // 全选（仅当前已加载的媒体）
+        toolbarSelectAll.addEventListener('click', () => {
+            const items = document.querySelectorAll('#libraryGallery .item');
+            let allSelected = true;
+            items.forEach(el => {
+                const id = el.dataset.mediaId;
+                if (id && !selectedIds.has(id)) {
+                    allSelected = false;
+                }
+            });
+            if (allSelected) {
+                // 如果已经全选，取消全选
+                items.forEach(el => {
+                    const id = el.dataset.mediaId;
+                    if (id) {
+                        selectedIds.delete(id);
+                        el.classList.remove('selected');
+                    }
+                });
+            } else {
+                items.forEach(el => {
+                    const id = el.dataset.mediaId;
+                    if (id) {
+                        selectedIds.add(id);
+                        el.classList.add('selected');
+                    }
+                });
+            }
+            updateSelectedCount();
+        });
+
+        // 取消选择
+        toolbarCancel.addEventListener('click', exitSelectMode);
+
+        // 删除
+        toolbarDelete.addEventListener('click', () => {
+            const count = selectedIds.size;
+            if (count === 0) return;
+            confirmTitle.textContent = `删除 ${count} 个媒体？`;
+            confirmDesc.textContent = '这些媒体将被永久删除，无法恢复。';
+            deleteConfirm.classList.add('active');
+        });
+
+        confirmCancel.addEventListener('click', () => {
             deleteConfirm.classList.remove('active');
-        }
-    });
+        });
 
-    /* =====================================================
-       创建媒体卡片
-    ==================================================== */
-    function createMediaItem(item, mode) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'item';
-        wrapper.dataset.mediaId = item.id || '';
+        confirmDelete.addEventListener('click', async () => {
+            const ids = Array.from(selectedIds);
+            if (ids.length === 0) return;
+            deleteConfirm.classList.remove('active');
 
-        const isVideo = item.media_type === 'video' || item.type === 'video';
-        const mediaUrl = item.media_url || item.url || '';
-        const thumbnail = item.thumbnail || mediaUrl;
-        const normalized = normalizeLibraryItem(item);
-
-        const mediaWrap = document.createElement('div');
-        mediaWrap.className = 'media-wrap';
-        const checkBox = document.createElement('div');
-        checkBox.className = 'select-check';
-        mediaWrap.appendChild(checkBox);
-
-        const img = document.createElement('img');
-        img.src = isVideo ? thumbnail : mediaUrl;
-        img.loading = 'lazy';
-        img.alt = item.alt || '';
-        img.onerror = () => {
-            const fallback = item.originalUrl || item.sourceUrl || '';
-            if (fallback && !img.dataset.fallback) {
-                img.dataset.fallback = '1';
-                img.src = '/api/media-proxy?url=' + encodeURIComponent(fallback);
-                return;
-            }
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'media-error';
-            errorDiv.textContent = '媒体暂时无法加载';
-            img.replaceWith(errorDiv);
-        };
-        img.addEventListener('click', () => openModal(normalized));
-
-        mediaWrap.appendChild(img);
-
-        if (isVideo) {
-            const badge = document.createElement('div');
-            badge.className = 'video-badge';
-            badge.textContent = '视频';
-            mediaWrap.appendChild(badge);
-        }
-
-        if (mode === 'search') {
-            if (item.source && item.source !== 'original') {
-                const badge = document.createElement('div');
-                badge.className = 'source-badge';
-                badge.textContent = item.source === 'repost' ? '转帖' : '引用';
-                mediaWrap.appendChild(badge);
-            }
-        } else {
-            const badge = document.createElement('div');
-            badge.className = 'library-badge';
-            badge.textContent = currentSubPage === 'likes' ? '喜欢' : '书签';
-            mediaWrap.appendChild(badge);
-        }
-
-        wrapper.appendChild(mediaWrap);
-
-        const info = document.createElement('div');
-        info.className = 'item-info';
-
-        if (item.author) {
-            const author = document.createElement('div');
-            author.className = 'item-author';
-            author.textContent = '@' + item.author;
-            info.appendChild(author);
-        }
-
-        const date = document.createElement('div');
-        date.className = 'item-date';
-        const rawDate = item.tweetCreatedAt || item.created_at || item.createdAt || '';
-        date.textContent = mode === 'search' ? formatDateFromX(rawDate) : formatLibraryDate(rawDate);
-        info.appendChild(date);
-
-        const actions = document.createElement('div');
-        actions.className = 'item-actions';
-
-        const viewBtn = document.createElement('button');
-        viewBtn.className = 'btn-view';
-        viewBtn.textContent = isVideo ? '播放' : '查看';
-        viewBtn.onclick = (e) => { e.stopPropagation();
-            openModal(normalized); };
-        actions.appendChild(viewBtn);
-
-        const downloadBtn = document.createElement('button');
-        downloadBtn.className = 'btn-download';
-        downloadBtn.textContent = '下载';
-        downloadBtn.onclick = (e) => { e.stopPropagation();
-            downloadItem(normalized); };
-        actions.appendChild(downloadBtn);
-
-        const postBtn = document.createElement('button');
-        postBtn.className = 'btn-original';
-        postBtn.textContent = '原帖';
-        postBtn.onclick = (e) => { e.stopPropagation(); if (item.tweet_url) window.open(item.tweet_url, '_blank'); };
-        actions.appendChild(postBtn);
-
-        info.appendChild(actions);
-        wrapper.appendChild(info);
-
-        return wrapper;
-    }
-
-    function normalizeLibraryItem(item) {
-        const type = item.type || item.media_type || 'image';
-        const mediaUrl = item.url || item.media_url || item.sourceUrl || '';
-        const originalUrl = item.originalUrl || item.sourceUrl || mediaUrl;
-        return {
-            media_type: type,
-            media_url: mediaUrl,
-            video_url: type === 'video' ? mediaUrl : '',
-            thumbnail: item.thumbnail || '',
-            tweet_url: item.tweet_url || '',
-            author: item.author || '',
-            created_at: item.tweetCreatedAt || item.createdAt || item.created_at || '',
-            originalUrl: originalUrl,
-            libraryId: item.id || '',
-            width: item.width || 0,
-            height: item.height || 0,
-            bitrate: item.bitrate || 0,
-            streamType: item.streamType || '',
-            media_index: item.media_index || 1,
-            media_total: item.media_total || 1
-        };
-    }
-
-    function downloadItem(item) {
-        const url = item.originalUrl || item.media_url || item.url || '';
-        if (!url) {
-            alert('这个媒体暂时没有可下载地址。');
-            return;
-        }
-        const isVideo = item.media_type === 'video' || item.type === 'video' ||
-            url.includes('.m3u8') || url.includes('.mp4') || url.includes('.webm');
-        const filename = getFilename(item);
-        if (isVideo) {
-            const videoFilename = filename.endsWith('.mp4') ? filename : filename + '.mp4';
-            window.location.href = '/api/video-download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(
-                videoFilename);
-        } else {
-            window.location.href = '/api/download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(
-                filename);
-        }
-    }
-
-    function openModal(item) {
-        currentItem = item;
-        modalContent.innerHTML = '';
-        let rawVideoUrl = item.video_url || item.media_url || item.url || '';
-        const isHlsUrl = rawVideoUrl.includes('.m3u8') || item.streamType === 'hls';
-        const isMp4Url = rawVideoUrl.includes('.mp4');
-        const isVideo = item.media_type === 'video' || item.type === 'video' || isHlsUrl || isMp4Url;
-        if (isVideo) {
-            if (!rawVideoUrl) {
-                modalContent.innerHTML =
-                    `<div class="media-error" style="color:#fff;background:transparent;">该视频暂无可用播放地址，请点击下载保存到本地</div>`;
-                modalDownloadBtn.textContent = '下载视频';
-                modal.classList.remove('hidden');
-                return;
-            }
-            const container = document.createElement('div');
-            container.style.cssText =
-                'width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;';
-            const video = document.createElement('video');
-            video.controls = true;
-            video.autoplay = true;
-            video.playsInline = true;
-            video.preload = 'metadata';
-            video.style.cssText = 'max-width:100%;max-height:100%;';
-            const errorMsg = document.createElement('div');
-            errorMsg.style.cssText =
-                'display:none;color:rgba(255,255,255,0.5);text-align:center;padding:20px;font-size:14px;font-weight:300;';
-            errorMsg.textContent = '视频在线预览失败，请点击下方“下载”保存到本地观看';
-            container.appendChild(video);
-            container.appendChild(errorMsg);
-            modalContent.appendChild(container);
-            if (isHlsUrl) {
-                const streamUrl = '/api/video-stream?url=' + encodeURIComponent(rawVideoUrl);
-                video.src = streamUrl;
-                const loadingMsg = document.createElement('div');
-                loadingMsg.style.cssText =
-                    'position:absolute;color:rgba(255,255,255,0.5);text-align:center;font-size:14px;font-weight:300;';
-                loadingMsg.textContent = '视频正在转码，请稍候…（约3-5秒）';
-                container.appendChild(loadingMsg);
-                video.onloadedmetadata = function() {
-                    if (loadingMsg.parentNode) loadingMsg.remove();
-                    if (errorMsg.parentNode) errorMsg.style.display = 'none';
-                };
-            } else if (isMp4Url) {
-                if (!rawVideoUrl.startsWith('/api/media-proxy')) {
-                    rawVideoUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
+            try {
+                const response = await fetch('/api/media', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ media_ids: ids }),
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                if (response.ok && data.ok) {
+                    // 从缓存中移除已删除的项
+                    const deletedSet = new Set(ids);
+                    cachedLibraryItems = cachedLibraryItems.filter(item => !deletedSet.has(item.id));
+                    // 退出选择模式并重新渲染
+                    exitSelectMode();
+                    renderLibraryResults();
+                } else {
+                    alert('删除失败：' + (data.detail || '未知错误'));
                 }
-                video.src = rawVideoUrl;
-            } else {
-                video.src = rawVideoUrl;
+            } catch (e) {
+                alert('删除请求失败：' + e.message);
             }
-            video.onerror = function() {
-                video.style.display = 'none';
-                errorMsg.style.display = 'block';
-                const loading = container.querySelector('div');
-                if (loading && loading.textContent && loading.textContent.includes('转码')) {
-                    loading.remove();
-                }
-            };
-            modalDownloadBtn.textContent = '下载视频';
-        } else {
+        });
+
+        // 点击弹窗外部关闭
+        deleteConfirm.addEventListener('click', (e) => {
+            if (e.target === deleteConfirm) {
+                deleteConfirm.classList.remove('active');
+            }
+        });
+
+        /* =====================================================
+           创建媒体卡片
+        ==================================================== */
+        function createMediaItem(item, mode) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'item';
+            wrapper.dataset.mediaId = item.id || '';
+
+            const isVideo = item.media_type === 'video' || item.type === 'video';
+            const mediaUrl = item.media_url || item.url || '';
+            const thumbnail = item.thumbnail || mediaUrl;
+            const normalized = normalizeLibraryItem(item);
+
+            const mediaWrap = document.createElement('div');
+            mediaWrap.className = 'media-wrap';
+
+            // 选择框
+            const checkBox = document.createElement('div');
+            checkBox.className = 'select-check';
+            mediaWrap.appendChild(checkBox);
+
             const img = document.createElement('img');
-            img.src = item.media_url || item.url || item.originalUrl || '';
+            img.src = isVideo ? thumbnail : mediaUrl;
+            img.loading = 'lazy';
             img.alt = item.alt || '';
-            img.onerror = function() {
-                const proxySource = item.originalUrl || item.sourceUrl || '';
-                if (proxySource && !img.dataset.proxy) {
-                    img.dataset.proxy = '1';
-                    img.src = '/api/media-proxy?url=' + encodeURIComponent(proxySource);
+            img.onerror = () => {
+                const fallback = item.originalUrl || item.sourceUrl || '';
+                if (fallback && !img.dataset.fallback) {
+                    img.dataset.fallback = '1';
+                    img.src = '/api/media-proxy?url=' + encodeURIComponent(fallback);
                     return;
                 }
-                modalContent.innerHTML =
-                    `<div class="media-error" style="color:#fff;background:transparent;">图片暂时无法加载</div>`;
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'media-error';
+                errorDiv.textContent = '媒体暂时无法加载';
+                img.replaceWith(errorDiv);
             };
-            modalContent.appendChild(img);
-            modalDownloadBtn.textContent = '下载原图';
-        }
-        modal.classList.remove('hidden');
-    }
+            img.addEventListener('click', () => openModal(normalized));
 
-    modalCloseBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
-    });
+            mediaWrap.appendChild(img);
 
-    function closeModal() {
-        const video = modalContent.querySelector('video');
-        if (video) {
-            video.pause();
-            video.removeAttribute('src');
-            video.load();
-            video.remove();
-        }
-        if (currentHls) {
-            currentHls.destroy();
-            currentHls = null;
-        }
-        modal.classList.add('hidden');
-        modalContent.innerHTML = '';
-        currentItem = null;
-    }
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeModal();
-    });
-    modalDownloadBtn.addEventListener('click', () => {
-        if (currentItem) downloadItem(currentItem);
-    });
-    modalOriginalBtn.addEventListener('click', () => {
-        if (currentItem && currentItem.tweet_url) {
-            window.open(currentItem.tweet_url, '_blank');
-        }
-    });
+            if (isVideo) {
+                const badge = document.createElement('div');
+                badge.className = 'video-badge';
+                badge.textContent = '视频';
+                mediaWrap.appendChild(badge);
+            }
 
-    comingSoonBtn.addEventListener('click', () => {
-        comingSoon.classList.add('hidden');
-    });
+            if (mode === 'search') {
+                if (item.source && item.source !== 'original') {
+                    const badge = document.createElement('div');
+                    badge.className = 'source-badge';
+                    badge.textContent = item.source === 'repost' ? '转帖' : '引用';
+                    mediaWrap.appendChild(badge);
+                }
+            } else {
+                const badge = document.createElement('div');
+                badge.className = 'library-badge';
+                badge.textContent = currentSubPage === 'likes' ? '喜欢' : '书签';
+                mediaWrap.appendChild(badge);
+            }
 
-    // =====================================================
-    // 初始化
-    // =====================================================
-    loadFavoritesFromLocal();
-    showPage('pageLogin');
-    alert('✅ 初始化完成，页面已加载。点击“我的喜欢”测试。');
-    console.log('万能媒体下载器 已加载');
-    console.log('开发者：浮生若夢');
-</script>
+            wrapper.appendChild(mediaWrap);
+
+            const info = document.createElement('div');
+            info.className = 'item-info';
+
+            if (item.author) {
+                const author = document.createElement('div');
+                author.className = 'item-author';
+                author.textContent = '@' + item.author;
+                info.appendChild(author);
+            }
+
+            const date = document.createElement('div');
+            date.className = 'item-date';
+            const rawDate = item.tweetCreatedAt || item.created_at || item.createdAt || '';
+            date.textContent = mode === 'search' ? formatDateFromX(rawDate) : formatLibraryDate(rawDate);
+            info.appendChild(date);
+
+            const actions = document.createElement('div');
+            actions.className = 'item-actions';
+
+            const viewBtn = document.createElement('button');
+            viewBtn.className = 'btn-view';
+            viewBtn.textContent = isVideo ? '播放' : '查看';
+            viewBtn.onclick = (e) => { e.stopPropagation();
+                openModal(normalized); };
+            actions.appendChild(viewBtn);
+
+            const downloadBtn = document.createElement('button');
+            downloadBtn.className = 'btn-download';
+            downloadBtn.textContent = '下载';
+            downloadBtn.onclick = (e) => { e.stopPropagation();
+                downloadItem(normalized); };
+            actions.appendChild(downloadBtn);
+
+            const postBtn = document.createElement('button');
+            postBtn.className = 'btn-original';
+            postBtn.textContent = '原帖';
+            postBtn.onclick = (e) => { e.stopPropagation(); if (item.tweet_url) window.open(item.tweet_url, '_blank'); };
+            actions.appendChild(postBtn);
+
+            info.appendChild(actions);
+            wrapper.appendChild(info);
+
+            return wrapper;
+        }
+
+        /* =====================================================
+           数据转换
+        ==================================================== */
+        function normalizeLibraryItem(item) {
+            const type = item.type || item.media_type || 'image';
+            const mediaUrl = item.url || item.media_url || item.sourceUrl || '';
+            const originalUrl = item.originalUrl || item.sourceUrl || mediaUrl;
+            return {
+                media_type: type,
+                media_url: mediaUrl,
+                video_url: type === 'video' ? mediaUrl : '',
+                thumbnail: item.thumbnail || '',
+                tweet_url: item.tweet_url || '',
+                author: item.author || '',
+                created_at: item.tweetCreatedAt || item.createdAt || item.created_at || '',
+                originalUrl: originalUrl,
+                libraryId: item.id || '',
+                width: item.width || 0,
+                height: item.height || 0,
+                bitrate: item.bitrate || 0,
+                streamType: item.streamType || '',
+                media_index: item.media_index || 1,
+                media_total: item.media_total || 1
+            };
+        }
+
+        /* =====================================================
+           下载
+        ==================================================== */
+        function downloadItem(item) {
+            const url = item.originalUrl || item.media_url || item.url || '';
+            if (!url) {
+                alert('这个媒体暂时没有可下载地址。');
+                return;
+            }
+
+            const isVideo = item.media_type === 'video' || item.type === 'video' ||
+                url.includes('.m3u8') || url.includes('.mp4') || url.includes('.webm');
+            const filename = getFilename(item);
+
+            if (isVideo) {
+                const videoFilename = filename.endsWith('.mp4') ? filename : filename + '.mp4';
+                window.location.href = '/api/video-download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(
+                    videoFilename);
+            } else {
+                window.location.href = '/api/download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(
+                    filename);
+            }
+        }
+
+        /* =====================================================
+           Modal
+        ==================================================== */
+        function openModal(item) {
+            currentItem = item;
+            modalContent.innerHTML = '';
+
+            let rawVideoUrl = item.video_url || item.media_url || item.url || '';
+            const isHlsUrl = rawVideoUrl.includes('.m3u8') || item.streamType === 'hls';
+            const isMp4Url = rawVideoUrl.includes('.mp4');
+            const isVideo = item.media_type === 'video' || item.type === 'video' || isHlsUrl || isMp4Url;
+
+            if (isVideo) {
+                if (!rawVideoUrl) {
+                    modalContent.innerHTML =
+                        `<div class="media-error" style="color:#fff;background:transparent;">该视频暂无可用播放地址，请点击下载保存到本地</div>`;
+                    modalDownloadBtn.textContent = '下载视频';
+                    modal.classList.remove('hidden');
+                    return;
+                }
+
+                const container = document.createElement('div');
+                container.style.cssText =
+                    'width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;';
+
+                const video = document.createElement('video');
+                video.controls = true;
+                video.autoplay = true;
+                video.playsInline = true;
+                video.preload = 'metadata';
+                video.style.cssText = 'max-width:100%;max-height:100%;';
+
+                const errorMsg = document.createElement('div');
+                errorMsg.style.cssText =
+                    'display:none;color:rgba(255,255,255,0.5);text-align:center;padding:20px;font-size:14px;font-weight:300;';
+                errorMsg.textContent = '视频在线预览失败，请点击下方“下载”保存到本地观看';
+
+                container.appendChild(video);
+                container.appendChild(errorMsg);
+                modalContent.appendChild(container);
+
+                if (isHlsUrl) {
+                    const streamUrl = '/api/video-stream?url=' + encodeURIComponent(rawVideoUrl);
+                    video.src = streamUrl;
+
+                    const loadingMsg = document.createElement('div');
+                    loadingMsg.style.cssText =
+                        'position:absolute;color:rgba(255,255,255,0.5);text-align:center;font-size:14px;font-weight:300;';
+                    loadingMsg.textContent = '视频正在转码，请稍候…（约3-5秒）';
+                    container.appendChild(loadingMsg);
+
+                    video.onloadedmetadata = function() {
+                        if (loadingMsg.parentNode) loadingMsg.remove();
+                        if (errorMsg.parentNode) errorMsg.style.display = 'none';
+                    };
+                } else if (isMp4Url) {
+                    if (!rawVideoUrl.startsWith('/api/media-proxy')) {
+                        rawVideoUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
+                    }
+                    video.src = rawVideoUrl;
+                } else {
+                    video.src = rawVideoUrl;
+                }
+
+                video.onerror = function() {
+                    video.style.display = 'none';
+                    errorMsg.style.display = 'block';
+                    const loading = container.querySelector('div');
+                    if (loading && loading.textContent && loading.textContent.includes('转码')) {
+                        loading.remove();
+                    }
+                };
+
+                modalDownloadBtn.textContent = '下载视频';
+
+            } else {
+                const img = document.createElement('img');
+                img.src = item.media_url || item.url || item.originalUrl || '';
+                img.alt = item.alt || '';
+                img.onerror = function() {
+                    const proxySource = item.originalUrl || item.sourceUrl || '';
+                    if (proxySource && !img.dataset.proxy) {
+                        img.dataset.proxy = '1';
+                        img.src = '/api/media-proxy?url=' + encodeURIComponent(proxySource);
+                        return;
+                    }
+                    modalContent.innerHTML =
+                        `<div class="media-error" style="color:#fff;background:transparent;">图片暂时无法加载</div>`;
+                };
+                modalContent.appendChild(img);
+                modalDownloadBtn.textContent = '下载原图';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        modalCloseBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        function closeModal() {
+            const video = modalContent.querySelector('video');
+            if (video) {
+                video.pause();
+                video.removeAttribute('src');
+                video.load();
+                video.remove();
+            }
+            if (currentHls) {
+                currentHls.destroy();
+                currentHls = null;
+            }
+            modal.classList.add('hidden');
+            modalContent.innerHTML = '';
+            currentItem = null;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        modalDownloadBtn.addEventListener('click', () => {
+            if (currentItem) downloadItem(currentItem);
+        });
+
+        modalOriginalBtn.addEventListener('click', () => {
+            if (currentItem && currentItem.tweet_url) {
+                window.open(currentItem.tweet_url, '_blank');
+            }
+        });
+
+        /* =====================================================
+           敬请期待
+        ==================================================== */
+        comingSoonBtn.addEventListener('click', () => {
+            comingSoon.classList.add('hidden');
+        });
+
+        /* =====================================================
+           初始化
+        ==================================================== */
+        loadFavoritesFromLocal();
+        showPage('pageLogin');
+        console.log('万能媒体下载器 已加载');
+        console.log('开发者：浮生若夢');
+    </script>
+</body>
+
+</html>
