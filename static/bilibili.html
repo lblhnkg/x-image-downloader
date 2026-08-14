@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+    <title>Bilibili 下载器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #141414 0%, #1a1a1a 100%);
+            border-radius: 32px;
+            padding: 40px 28px 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            text-align: center;
+        }
+        .back-link {
+            display: inline-block;
+            color: rgba(255,255,255,0.4);
+            font-size: 14px;
+            text-decoration: none;
+            margin-bottom: 24px;
+            transition: color 0.2s ease;
+        }
+        .back-link:hover {
+            color: rgba(255,255,255,0.7);
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            display: block;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .desc {
+            font-size: 14px;
+            color: rgba(255,255,255,0.35);
+            line-height: 1.7;
+            font-weight: 300;
+        }
+        .dev-signature {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255,255,255,0.15);
+            margin-top: 32px;
+            letter-spacing: 0.5px;
+            font-weight: 300;
+        }
+        .coming-badge {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 6px 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.3);
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a class="back-link" href="/">‹ 返回首页</a>
+    <span class="icon">🎬</span>
+    <div class="title">Bilibili 下载器</div>
+    <div class="desc">B站视频下载功能正在开发中</div>
+    <div class="coming-badge">敬请期待</div>
+    <div class="dev-signature">开发者：浮生若夢</div>
+</div>
+</body>
+</html>
