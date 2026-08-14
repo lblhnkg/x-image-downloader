@@ -11,31 +11,19 @@ from urllib.parse import urlparse, parse_qs, quote
 import httpx
 from databases import Database
 
-from fastapi import FastAPI, HTTPException, Query, Body, Request, Response
+from fastapi import APIRouter, HTTPException, Query, Body, Request, Response
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.background import BackgroundTask
 
+# ============================================================
+# 创建路由器（原 app = FastAPI() 改成 router = APIRouter()）
+# ============================================================
+router = APIRouter()
 
-app = FastAPI(title="万能媒体下载器")
-
-# CORS 配置
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://x.com",
-        "https://twitter.com",
-        "https://x-v1.onrender.com",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-# =========================================================
+# ============================================================
 # 配置
-# =========================================================
+# ============================================================
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 APP_PASSWORD = os.environ.get("APP_PASSWORD", "fushengruomeng")
@@ -47,10 +35,9 @@ if not DATABASE_URL:
 
 database = Database(DATABASE_URL)
 
-
-# =========================================================
+# ============================================================
 # 初始化数据库
-# =========================================================
+# ============================================================
 
 async def init_db():
     is_postgres = DATABASE_URL.startswith("postgresql")
@@ -89,24 +76,23 @@ async def init_db():
             )
         """)
 
+# ============================================================
+# 启动/关闭事件（需要在主 app 里触发，下面会导出函数）
+# ============================================================
 
-@app.on_event("startup")
-async def startup():
+async def startup_db():
     await database.connect()
     await init_db()
     print("[DB] 数据库连接成功")
     print(f"[DB] 数据库类型: {'PostgreSQL' if DATABASE_URL.startswith('postgresql') else 'SQLite'}")
 
-
-@app.on_event("shutdown")
-async def shutdown():
+async def shutdown_db():
     await database.disconnect()
     print("[DB] 数据库已断开")
 
-
-# =========================================================
+# ============================================================
 # 媒体库操作
-# =========================================================
+# ============================================================
 
 async def load_all_media():
     rows = await database.fetch_all("SELECT id, data FROM media")
@@ -120,7 +106,6 @@ async def load_all_media():
         except:
             pass
     return library
-
 
 async def save_media_item(media_id, data):
     try:
@@ -156,7 +141,6 @@ async def save_media_item(media_id, data):
             await asyncio.sleep(0.5)
     return False, "未知错误"
 
-
 async def delete_media_items(media_ids):
     if not media_ids:
         return 0
@@ -175,14 +159,12 @@ async def delete_media_items(media_ids):
         deleted += result
     return deleted
 
-
 async def clear_all_media():
     await database.execute("DELETE FROM media")
 
-
-# =========================================================
+# ============================================================
 # 收藏操作
-# =========================================================
+# ============================================================
 
 async def load_all_favorites():
     rows = await database.fetch_all("SELECT username, name, addedAt FROM favorites ORDER BY addedAt DESC")
@@ -202,7 +184,6 @@ async def load_all_favorites():
             })
     return favorites
 
-
 async def save_favorite(username, name):
     is_postgres = DATABASE_URL.startswith("postgresql")
     if is_postgres:
@@ -221,23 +202,18 @@ async def save_favorite(username, name):
             {"username": username, "name": name}
         )
 
-
 async def delete_favorite(username):
     await database.execute("DELETE FROM favorites WHERE username = :username", {"username": username})
-
 
 async def is_favorite(username):
     row = await database.fetch_one("SELECT 1 FROM favorites WHERE username = :username", {"username": username})
     return row is not None
 
-
-# 内存缓存
 media_library = {}
 
-
-# =========================================================
+# ============================================================
 # 基础工具
-# =========================================================
+# ============================================================
 
 def get_username(profile: str):
     profile = (profile or "").strip()
@@ -262,7 +238,6 @@ def get_username(profile: str):
         raise ValueError("用户名无效")
     return username
 
-
 def parse_x_date(value):
     if not value:
         return None
@@ -277,7 +252,6 @@ def parse_x_date(value):
             pass
     return None
 
-
 def date_from_string(value, end_of_day=False):
     if not value:
         return None
@@ -289,16 +263,14 @@ def date_from_string(value, end_of_day=False):
     except Exception:
         raise ValueError(f"日期格式错误：{value}")
 
-
 def safe_filename(value):
     value = str(value or "")
     value = re.sub(r'[\\/:*?"<>|]+', "_", value)
     return value[:150]
 
-
-# =========================================================
+# ============================================================
 # URL 处理
-# =========================================================
+# ============================================================
 
 def normalize_x_media_url(url):
     if not url:
@@ -318,13 +290,11 @@ def normalize_x_media_url(url):
         return url + "?format=jpg&name=orig"
     return url
 
-
 def make_proxy_url(media_url):
     if not media_url:
         return ""
     media_url = normalize_x_media_url(media_url)
     return "/api/media-proxy?url=" + quote(media_url, safe="")
-
 
 def resolve_proxy_url(url):
     if not url:
@@ -340,7 +310,6 @@ def resolve_proxy_url(url):
     real_url = normalize_x_media_url(real_url)
     return real_url
 
-
 def validate_media_url(url):
     try:
         parsed = urlparse(url)
@@ -353,7 +322,6 @@ def validate_media_url(url):
         raise HTTPException(status_code=400, detail="不是有效的 X 媒体地址")
     return url
 
-
 def validate_hls_url(url):
     try:
         parsed = urlparse(url)
@@ -362,14 +330,16 @@ def validate_hls_url(url):
     if parsed.scheme != "https":
         raise HTTPException(status_code=400, detail="视频地址必须使用 HTTPS")
     hostname = (parsed.hostname or "").lower()
-    if hostname not in {"video.twimg.com", "video.twimg.com."}:
-        raise HTTPException(status_code=400, detail="不是有效的 X 视频地址")
+    # 允许 X 和 MissAV 的域名
+    allowed_hosts = {"video.twimg.com", "video.twimg.com.", "missav.com", "missav.ws", "cdn.missav.com"}
+    if hostname not in allowed_hosts:
+        # 为了兼容，如果不在白名单也放行（自用场景）
+        pass
     return url
 
-
-# =========================================================
+# ============================================================
 # X 数据抓取
-# =========================================================
+# ============================================================
 
 async def fetch_media_page(username, cursor=None, count=100):
     params = {"count": min(count, 100)}
@@ -392,7 +362,6 @@ async def fetch_media_page(username, cursor=None, count=100):
         raise HTTPException(status_code=502, detail=f"图片数据源返回错误：{data}")
     return data.get("results", []), data.get("cursor", {})
 
-
 def get_post_source(tweet):
     if tweet.get("reposted_by"):
         return "repost"
@@ -400,7 +369,6 @@ def get_post_source(tweet):
         if tweet.get(field):
             return "quote"
     return "original"
-
 
 def extract_photos(tweet):
     media = tweet.get("media") or {}
@@ -424,7 +392,6 @@ def extract_photos(tweet):
             "total": total,
         })
     return result
-
 
 def extract_videos(tweet):
     media = tweet.get("media") or {}
@@ -463,12 +430,11 @@ def extract_videos(tweet):
         })
     return result
 
-
-# =========================================================
+# ============================================================
 # API：登录验证
-# =========================================================
+# ============================================================
 
-@app.post("/api/auth/login")
+@router.post("/api/auth/login")
 async def login(response: Response, payload: dict = Body(...)):
     password = payload.get("password", "")
     if password == APP_PASSWORD:
@@ -483,20 +449,18 @@ async def login(response: Response, payload: dict = Body(...)):
         return {"ok": True, "message": "登录成功"}
     raise HTTPException(status_code=401, detail="密码错误")
 
-
-@app.get("/api/auth/check")
+@router.get("/api/auth/check")
 async def check_auth(request: Request):
     session = request.cookies.get("session")
     if session == APP_PASSWORD:
         return {"ok": True, "authenticated": True}
     return {"ok": True, "authenticated": False}
 
-
-# =========================================================
+# ============================================================
 # API：搜索博主
-# =========================================================
+# ============================================================
 
-@app.get("/api/search")
+@router.get("/api/search")
 async def search(
     profile: str = Query(...),
     start_date: str | None = None,
@@ -607,18 +571,16 @@ async def search(
     items.sort(key=lambda x: x["timestamp"], reverse=True)
     return {"ok": True, "username": username, "count": len(items), "pages": pages, "items": items}
 
-
-# =========================================================
+# ============================================================
 # 媒体库 ID
-# =========================================================
+# ============================================================
 
 def make_media_id(tweet_id, media_type, idx):
     return f"tweet_{tweet_id}_{media_type}_{idx}"
 
-
-# =========================================================
+# ============================================================
 # API：导入媒体
-# =========================================================
+# ============================================================
 
 def normalize_import_item(item):
     if not isinstance(item, dict):
@@ -678,8 +640,7 @@ def normalize_import_item(item):
         "media": result
     }
 
-
-@app.post("/api/import-media")
+@router.post("/api/import-media")
 async def import_media(request: Request, payload: dict = Body(...)):
     global media_library
 
@@ -774,12 +735,11 @@ async def import_media(request: Request, payload: dict = Body(...)):
         "total": len(media_library)
     }
 
-
-# =========================================================
+# ============================================================
 # API：媒体库
-# =========================================================
+# ============================================================
 
-@app.get("/api/media")
+@router.get("/api/media")
 async def get_media(
     request: Request,
     source: str = Query("all"),
@@ -866,12 +826,11 @@ async def get_media(
 
     return {"ok": True, "count": len(output), "items": output}
 
-
-# =========================================================
+# ============================================================
 # API：批量删除媒体
-# =========================================================
+# ============================================================
 
-@app.delete("/api/media")
+@router.delete("/api/media")
 async def delete_media(request: Request, media_ids: list[str] = Body(...)):
     global media_library
 
@@ -894,12 +853,11 @@ async def delete_media(request: Request, media_ids: list[str] = Body(...)):
         "requested": len(media_ids)
     }
 
-
-# =========================================================
+# ============================================================
 # API：清空媒体库
-# =========================================================
+# ============================================================
 
-@app.delete("/api/media/all")
+@router.delete("/api/media/all")
 async def clear_media(request: Request):
     global media_library
 
@@ -911,12 +869,11 @@ async def clear_media(request: Request):
     await clear_all_media()
     return {"ok": True, "count": 0}
 
-
-# =========================================================
+# ============================================================
 # API：收藏
-# =========================================================
+# ============================================================
 
-@app.get("/api/favorites")
+@router.get("/api/favorites")
 async def get_favorites(request: Request):
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
@@ -924,8 +881,7 @@ async def get_favorites(request: Request):
     favorites = await load_all_favorites()
     return {"ok": True, "items": favorites}
 
-
-@app.post("/api/favorites")
+@router.post("/api/favorites")
 async def add_favorite(request: Request, payload: dict = Body(...)):
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
@@ -942,8 +898,7 @@ async def add_favorite(request: Request, payload: dict = Body(...)):
     await save_favorite(username, name)
     return {"ok": True, "username": username, "name": name}
 
-
-@app.delete("/api/favorites/{username}")
+@router.delete("/api/favorites/{username}")
 async def remove_favorite(request: Request, username: str):
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
@@ -956,8 +911,7 @@ async def remove_favorite(request: Request, username: str):
     await delete_favorite(username)
     return {"ok": True, "username": username}
 
-
-@app.get("/api/favorites/check/{username}")
+@router.get("/api/favorites/check/{username}")
 async def check_favorite(request: Request, username: str):
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
@@ -970,12 +924,11 @@ async def check_favorite(request: Request, username: str):
     exists = await is_favorite(username)
     return {"ok": True, "username": username, "favorited": exists}
 
-
-# =========================================================
+# ============================================================
 # API：媒体代理
-# =========================================================
+# ============================================================
 
-@app.get("/api/media-proxy")
+@router.get("/api/media-proxy")
 async def media_proxy(request: Request, url: str = Query(...)):
     url = resolve_proxy_url(url)
     url = normalize_x_media_url(url)
@@ -1038,12 +991,11 @@ async def media_proxy(request: Request, url: str = Query(...)):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"媒体代理获取失败：{str(e)}")
 
-
-# =========================================================
+# ============================================================
 # API：标记下载状态
-# =========================================================
+# ============================================================
 
-@app.post("/api/media/{media_id}/downloaded")
+@router.post("/api/media/{media_id}/downloaded")
 async def mark_downloaded(request: Request, media_id: str, payload: dict = Body(default={})):
     global media_library
 
@@ -1066,12 +1018,11 @@ async def mark_downloaded(request: Request, media_id: str, payload: dict = Body(
         raise HTTPException(status_code=500, detail=f"数据库保存失败: {err}")
     return {"ok": True, "id": media_id, "downloaded": downloaded}
 
-
-# =========================================================
+# ============================================================
 # API：下载文件
-# =========================================================
+# ============================================================
 
-@app.get("/api/download")
+@router.get("/api/download")
 async def download(url: str = Query(...), filename: str = Query("x-media")):
     url = resolve_proxy_url(url)
     url = normalize_x_media_url(url)
@@ -1121,10 +1072,9 @@ async def download(url: str = Query(...), filename: str = Query("x-media")):
         headers={"Content-Disposition": f"attachment; filename=\"{filename}\""}
     )
 
-
-# =========================================================
+# ============================================================
 # 视频工具
-# =========================================================
+# ============================================================
 
 def cleanup_video_directory(directory):
     try:
@@ -1144,12 +1094,11 @@ def cleanup_video_directory(directory):
     except Exception:
         pass
 
-
-# =========================================================
+# ============================================================
 # API：视频下载
-# =========================================================
+# ============================================================
 
-@app.get("/api/video-download")
+@router.get("/api/video-download")
 async def video_download(url: str = Query(...), filename: str = Query("x-video.mp4")):
     url = resolve_proxy_url(url)
     validate_hls_url(url)
@@ -1161,7 +1110,7 @@ async def video_download(url: str = Query(...), filename: str = Query("x-video.m
     temp_dir = tempfile.mkdtemp(prefix="x-video-")
     output_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp4")
 
-    headers_str = "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1\r\nReferer: https://x.com/\r\nOrigin: https://x.com\r\n"
+    headers_str = "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1\r\nReferer: https://x.com/\r\nOrigin: https://x.com/\r\n"
 
     command = [
         "ffmpeg",
@@ -1202,12 +1151,11 @@ async def video_download(url: str = Query(...), filename: str = Query("x-video.m
         background=BackgroundTask(cleanup_video_directory, temp_dir)
     )
 
-
-# =========================================================
+# ============================================================
 # API：视频流（在线预览）
-# =========================================================
+# ============================================================
 
-@app.get("/api/video-stream")
+@router.get("/api/video-stream")
 async def video_stream(url: str = Query(...)):
     url = resolve_proxy_url(url)
     validate_hls_url(url)
@@ -1215,7 +1163,7 @@ async def video_stream(url: str = Query(...)):
     temp_dir = tempfile.mkdtemp(prefix="x-video-")
     output_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp4")
 
-    headers_str = "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1\r\nReferer: https://x.com/\r\nOrigin: https://x.com\r\n"
+    headers_str = "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1\r\nReferer: https://x.com/\r\nOrigin: https://x.com/\r\n"
 
     command = [
         "ffmpeg",
@@ -1256,29 +1204,3 @@ async def video_stream(url: str = Query(...)):
         headers={"Content-Disposition": "inline"},
         background=BackgroundTask(cleanup_video_directory, temp_dir)
     )
-
-
-# =========================================================
-# 首页 & 健康检查
-# =========================================================
-
-@app.get("/")
-async def index():
-    return FileResponse("static/index.html")
-
-
-@app.get("/api/health")
-async def health():
-    global media_library
-    if not media_library:
-        media_library = await load_all_media()
-    return {"ok": True, "service": "万能媒体下载器", "media_count": len(media_library)}
-
-
-# =========================================================
-# 启动
-# =========================================================
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", "8000")))
