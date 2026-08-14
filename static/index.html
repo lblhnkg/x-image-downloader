@@ -964,6 +964,9 @@ input:focus {
 
 </style>
 
+<!-- HLS 视频播放支持（m3u8） -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+
 </head>
 
 
@@ -1576,6 +1579,13 @@ const modalContent =
     document.getElementById(
         "modalContent"
     );
+
+/*
+ * 当前模态框中的 HLS 实例，
+ * 关闭时需要销毁以释放内存。
+ */
+let currentHls =
+    null;
 
 const closeModal =
     document.getElementById(
@@ -3838,7 +3848,15 @@ function createLibraryItem(
 
     const isVideo =
         item.type ===
-        "video";
+        "video"
+        ||
+        (item.url || "").includes(
+            ".m3u8"
+        )
+        ||
+        (item.url || "").includes(
+            ".mp4"
+        );
 
 
     /*
@@ -4195,7 +4213,11 @@ function normalizeLibraryItem(
 
         bitrate:
             item.bitrate ||
-            0
+            0,
+
+        streamType:
+            item.streamType ||
+            ""
 
     };
 
@@ -4286,12 +4308,28 @@ function downloadItem(
     }
 
 
+    /*
+     * 扩展视频检测：
+     * type 标记或 URL 后缀为 .m3u8 / .mp4 / .webm
+     */
     const isVideo =
         item.media_type ===
         "video"
         ||
         item.type ===
-        "video";
+        "video"
+        ||
+        url.includes(
+            ".m3u8"
+        )
+        ||
+        url.includes(
+            ".mp4"
+        )
+        ||
+        url.includes(
+            ".webm"
+        );
 
 
     const filename =
@@ -4349,29 +4387,90 @@ function openModal(
         "";
 
 
+    /*
+     * 扩展视频检测：
+     * 1. type / media_type 标记为 video
+     * 2. URL 后缀为 .m3u8 / .mp4 / .webm
+     * 3. streamType 标记为 hls
+     */
+    const rawVideoUrl =
+        item.video_url ||
+        item.media_url ||
+        item.url ||
+        "";
+
+    const isHlsUrl =
+        rawVideoUrl.includes(
+            ".m3u8"
+        ) ||
+        item.streamType ===
+        "hls";
+
+    const isMp4Url =
+        rawVideoUrl.includes(
+            ".mp4"
+        );
+
     const isVideo =
         item.media_type ===
         "video"
         ||
         item.type ===
-        "video";
+        "video"
+        ||
+        isHlsUrl
+        ||
+        isMp4Url;
 
 
     if (
         isVideo
     ) {
 
+        /*
+         * 在线播放优先使用 MP4（兼容性最好），
+         * 没有 MP4 时回退到 m3u8（HLS）。
+         */
+        const videoUrl =
+            isMp4Url
+                ? rawVideoUrl
+                : rawVideoUrl;
+
+        /*
+         * 空 URL 直接返回，
+         * 避免创建空 src 的 video 后触发 onerror。
+         */
+        if (
+            !videoUrl
+        ) {
+
+            modalContent.innerHTML =
+                `
+                <div
+                    class="media-error"
+                    style="
+                        width:100%;
+                        max-width:500px;
+                        color:#fff;
+                        background:#222;
+                    "
+                >
+                    该视频暂无可用播放地址
+                </div>
+                `;
+
+            downloadButton.textContent =
+                "⬇ 下载视频";
+
+            return;
+
+        }
+
+
         const video =
             document.createElement(
                 "video"
             );
-
-
-        video.src =
-            item.video_url ||
-            item.media_url ||
-            item.url ||
-            "";
 
 
         video.controls =
@@ -4382,6 +4481,13 @@ function openModal(
 
         video.playsInline =
             true;
+
+        /*
+         * 只预加载元数据（时长、尺寸），
+         * 不提前下载整个视频，加快打开速度。
+         */
+        video.preload =
+            "metadata";
 
 
         video.onerror =
@@ -4403,6 +4509,120 @@ function openModal(
                     `;
 
             };
+
+
+        /*
+         * HLS 流（.m3u8）处理：
+         * - Safari 原生支持，直接用 src
+         * - Chrome / Firefox / WebView 使用 hls.js
+         */
+        if (
+            isHlsUrl
+        ) {
+
+            if (
+                video.canPlayType(
+                    "application/vnd.apple.mpegurl"
+                )
+            ) {
+
+                /*
+                 * Safari / iOS 原生支持 HLS，
+                 * 直接赋值 src 即可。
+                 */
+                video.src =
+                    videoUrl;
+
+            } else if (
+                typeof Hls !==
+                "undefined" &&
+                Hls.isSupported()
+            ) {
+
+                /*
+                 * Chrome / Firefox / Android WebView
+                 * 使用 hls.js 解码 m3u8。
+                 */
+                currentHls =
+                    new Hls();
+
+                currentHls.loadSource(
+                    videoUrl
+                );
+
+                currentHls.attachMedia(
+                    video
+                );
+
+                currentHls.on(
+                    Hls.Events.ERROR,
+                    (
+                        _event,
+                        data
+                    ) => {
+
+                        if (
+                            data.fatal
+                        ) {
+
+                            modalContent.innerHTML =
+                                `
+                                <div
+                                    class="media-error"
+                                    style="
+                                        width:100%;
+                                        max-width:500px;
+                                        color:#fff;
+                                        background:#222;
+                                    "
+                                >
+                                    视频暂时无法加载
+                                </div>
+                                `;
+
+                        }
+
+                    }
+                );
+
+            } else {
+
+                /*
+                 * 既不原生支持 HLS，
+                 * 也没有 hls.js 可用时的兜底。
+                 */
+                modalContent.innerHTML =
+                    `
+                    <div
+                        class="media-error"
+                        style="
+                            width:100%;
+                            max-width:500px;
+                            color:#fff;
+                            background:#222;
+                        "
+                    >
+                        当前浏览器不支持该视频格式
+                    </div>
+                    `;
+
+                downloadButton.textContent =
+                    "⬇ 下载视频";
+
+                return;
+
+            }
+
+        } else {
+
+            /*
+             * MP4 / WebM 等普通格式，
+             * 原生播放即可。
+             */
+            video.src =
+                videoUrl;
+
+        }
 
 
         modalContent.appendChild(
@@ -4525,6 +4745,48 @@ modal.addEventListener(
 
 
 function closeModalWindow() {
+
+    /*
+     * 关闭前先暂停视频，
+     * 否则声音会在后台继续播放。
+     */
+    const existingVideo =
+        modalContent.querySelector(
+            "video"
+        );
+
+    if (
+        existingVideo
+    ) {
+
+        existingVideo.pause();
+
+        existingVideo.removeAttribute(
+            "src"
+        );
+
+        existingVideo.load();
+
+        existingVideo.remove();
+
+    }
+
+
+    /*
+     * 销毁 HLS 实例，释放内存，
+     * 避免连续打开多个视频造成泄漏。
+     */
+    if (
+        currentHls
+    ) {
+
+        currentHls.destroy();
+
+        currentHls =
+            null;
+
+    }
+
 
     modal.classList.add(
         "hidden"
