@@ -164,11 +164,6 @@
             color: #fff;
         }
 
-        .app-title-icon {
-            display: inline-block;
-            margin-right: 6px;
-        }
-
         /* =====================================================
            登录页
         ===================================================== */
@@ -276,10 +271,6 @@
             padding: 0 4px;
         }
 
-        .login-footer-text .highlight {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
         .login-footer-text .small-note {
             display: block;
             margin-top: 4px;
@@ -367,7 +358,7 @@
         }
 
         /* =====================================================
-           二级菜单（返回 + 子选项）
+           二级菜单
         ===================================================== */
         .back-row {
             display: flex;
@@ -620,7 +611,7 @@
         }
 
         /* =====================================================
-           选项行（时间/媒体类型/来源）
+           选项行
         ===================================================== */
         .option-section {
             margin-top: 18px;
@@ -910,7 +901,6 @@
             color: rgba(255, 255, 255, 0.7);
         }
 
-        /* 下载按钮 - 炫彩边框 + 最大 */
         .item-actions .btn-download {
             background: #0a0a0a;
             color: #fff;
@@ -1161,7 +1151,7 @@
         }
 
         /* =====================================================
-           Missav 敬请期待弹窗
+           敬请期待弹窗
         ===================================================== */
         .coming-soon-overlay {
             position: fixed;
@@ -1232,9 +1222,7 @@
         页面：登录
         ===================================================== -->
         <div class="page active" id="pageLogin">
-            <div class="app-title">
-                <span class="app-title-icon">🖼️</span>万能媒体下载器
-            </div>
+            <div class="app-title">万能媒体下载器</div>
 
             <hr class="login-divider">
 
@@ -1265,9 +1253,7 @@
         页面：一级菜单
         ===================================================== -->
         <div class="page" id="pageMenu">
-            <div class="app-title" style="font-size:22px;margin-bottom:4px;">
-                <span class="app-title-icon">🖼️</span>万能媒体下载器
-            </div>
+            <div class="app-title" style="font-size:22px;margin-bottom:4px;">万能媒体下载器</div>
 
             <div class="menu-grid">
                 <div class="menu-card" id="menuX">
@@ -1305,7 +1291,7 @@
 
             <div class="submenu-grid">
                 <div class="submenu-card" id="subSearch">
-                    <div class="submenu-card-title">🔍 搜索博主</div>
+                    <div class="submenu-card-title">搜索博主</div>
                     <div class="submenu-card-desc">输入用户名，搜索指定博主的媒体</div>
                 </div>
 
@@ -1343,7 +1329,7 @@
                 </div>
 
                 <div class="favorite-entry" style="margin-top:10px;">
-                    <button class="favorite-toggle-btn" id="favoriteToggleBtn">⭐ 我的收藏</button>
+                    <button class="favorite-toggle-btn" id="favoriteToggleBtn">我的收藏</button>
                     <div class="favorites-panel hidden" id="favoritesPanel"></div>
                 </div>
 
@@ -1415,7 +1401,7 @@
 
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;margin-top:4px;">
                 <span style="font-size:12px;color:rgba(255,255,255,0.25);font-weight:300;" id="libraryCount">正在读取…</span>
-                <button style="background:transparent;border:0;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;" id="refreshLibraryBtn">↻ 刷新</button>
+                <button style="background:transparent;border:0;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;" id="refreshLibraryBtn">刷新</button>
             </div>
 
             <div class="option-section" style="margin-top:0;">
@@ -1444,7 +1430,7 @@
     ===================================================== -->
     <div class="guest-tip-overlay hidden" id="guestTip">
         <div class="guest-tip-box">
-            <span class="tip-icon">📌</span>
+            <div class="tip-icon">📌</div>
             <div class="tip-title">访客模式</div>
             <div class="tip-desc">
                 此功能需要搭配采集器使用<br>
@@ -1481,7 +1467,7 @@
     ===================================================== -->
     <div class="modal-overlay hidden" id="modal">
         <div class="modal-top">
-            <button class="modal-close" id="modalCloseBtn">✕ 关闭</button>
+            <button class="modal-close" id="modalCloseBtn">关闭</button>
         </div>
         <div class="modal-content" id="modalContent"></div>
         <div class="modal-bottom">
@@ -1507,7 +1493,7 @@
         let libraryMediaType = 'all';
 
         let favorites = [];
-        let guestTarget = '';
+        let guestTipShown = false;
 
         /* =====================================================
            DOM 引用
@@ -1608,6 +1594,7 @@
                 const data = await res.json();
                 if (res.ok && data.ok) {
                     currentMode = 'developer';
+                    guestTipShown = true;
                     showPage('pageMenu');
                     loginPassword.value = '';
                 } else {
@@ -1627,20 +1614,22 @@
             if (e.key === 'Enter') handleLogin();
         });
 
+        /* =====================================================
+           访客模式
+        ==================================================== */
         guestBtn.addEventListener('click', () => {
             currentMode = 'guest';
-            guestTip.classList.remove('hidden');
+            if (!guestTipShown) {
+                guestTip.classList.remove('hidden');
+            } else {
+                showPage('pageMenu');
+            }
         });
 
         guestTipBtn.addEventListener('click', () => {
             guestTip.classList.add('hidden');
-            if (guestTarget === 'likes') {
-                guestTarget = '';
-                openLibrary('likes');
-            } else if (guestTarget === 'bookmarks') {
-                guestTarget = '';
-                openLibrary('bookmarks');
-            }
+            guestTipShown = true;
+            showPage('pageMenu');
         });
 
         /* =====================================================
@@ -1671,27 +1660,17 @@
         });
 
         /* =====================================================
-           X 子菜单 - 修复访客模式
+           X 子菜单 - 访客直接进入
         ==================================================== */
         subSearch.addEventListener('click', () => {
             showPage('pageSearch');
         });
 
         subLikes.addEventListener('click', () => {
-            if (currentMode === 'guest') {
-                guestTarget = 'likes';
-                guestTip.classList.remove('hidden');
-                return;
-            }
             openLibrary('likes');
         });
 
         subBookmarks.addEventListener('click', () => {
-            if (currentMode === 'guest') {
-                guestTarget = 'bookmarks';
-                guestTip.classList.remove('hidden');
-                return;
-            }
             openLibrary('bookmarks');
         });
 
@@ -1709,7 +1688,7 @@
             if (currentMode === 'guest') {
                 libraryCount.textContent = '共 0 个媒体';
                 libraryGallery.innerHTML =
-                `<div class="loader">请安装采集器后使用此功能</div>`;
+                    `<div class="loader">请安装采集器后使用此功能</div>`;
                 libraryStatus.classList.add('hidden');
                 libraryResultHeader.classList.add('hidden');
                 return;
@@ -1745,7 +1724,7 @@
         });
 
         /* =====================================================
-           收藏功能（本地存储）
+           收藏功能
         ==================================================== */
         const FAVORITE_KEY = 'universal_downloader_favorites';
 
@@ -2110,7 +2089,7 @@
             if (isVideo) {
                 const badge = document.createElement('div');
                 badge.className = 'video-badge';
-                badge.textContent = '▶ 视频';
+                badge.textContent = '视频';
                 mediaWrap.appendChild(badge);
             }
 
@@ -2151,14 +2130,13 @@
 
             const viewBtn = document.createElement('button');
             viewBtn.className = 'btn-view';
-            viewBtn.textContent = isVideo ? '▶ 播放' : '查看';
+            viewBtn.textContent = isVideo ? '播放' : '查看';
             viewBtn.onclick = () => openModal(normalized);
             actions.appendChild(viewBtn);
 
             const downloadBtn = document.createElement('button');
             downloadBtn.className = 'btn-download';
-            downloadBtn.textContent = '下载原图';
-            if (isVideo) downloadBtn.textContent = '下载视频';
+            downloadBtn.textContent = '下载';
             downloadBtn.onclick = () => downloadItem(normalized);
             actions.appendChild(downloadBtn);
 
@@ -2222,7 +2200,7 @@
                     videoFilename);
             } else {
                 window.location.href = '/api/download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(
-                filename);
+                    filename);
             }
         }
 
@@ -2370,7 +2348,7 @@
         ==================================================== */
         loadFavorites();
         showPage('pageLogin');
-        console.log('🖼️ 万能媒体下载器 已加载');
+        console.log('万能媒体下载器 已加载');
         console.log('开发者：浮生若夢');
     </script>
 </body>
