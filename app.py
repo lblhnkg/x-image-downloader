@@ -63,7 +63,7 @@ HLS_ALLOWED_HOSTS = {
 
 
 # =========================================================
-# 数据库（代替 JSON，防止数据丢失）
+# 数据库
 # =========================================================
 
 def init_db():
@@ -352,7 +352,7 @@ def extract_videos(tweet):
 
 
 # =========================================================
-# 搜索博主
+# API：搜索博主
 # =========================================================
 
 @app.get("/api/search")
@@ -476,7 +476,7 @@ def make_media_id(tweet_id, media_type, idx):
 
 
 # =========================================================
-# 导入媒体
+# API：导入媒体
 # =========================================================
 
 def normalize_import_item(item):
@@ -587,7 +587,7 @@ async def import_media(payload: dict = Body(...)):
 
 
 # =========================================================
-# 媒体库
+# API：媒体库
 # =========================================================
 
 @app.get("/api/media")
@@ -627,14 +627,8 @@ async def get_media(
         item["originalUrl"] = original_media_url
         item["sourceUrl"] = original_media_url
 
-        if item.get("type") == "image" and original_media_url:
+        if original_media_url:
             item["url"] = make_proxy_url(original_media_url)
-        elif item.get("type") == "video":
-            # 视频也走代理，方便在线播放
-            if original_media_url:
-                item["url"] = make_proxy_url(original_media_url)
-            else:
-                item["url"] = original_media_url
 
         if original_thumbnail:
             item["thumbnail"] = make_proxy_url(original_thumbnail)
@@ -645,7 +639,7 @@ async def get_media(
 
 
 # =========================================================
-# 媒体代理（支持视频流 + Range 请求）
+# API：媒体代理
 # =========================================================
 
 @app.get("/api/media-proxy")
@@ -665,7 +659,6 @@ async def media_proxy(request: Request, url: str = Query(...)):
         "Connection": "keep-alive",
     }
 
-    # 转发 Range 请求（支持视频拖动进度条）
     range_header = request.headers.get("range")
     if range_header:
         headers["Range"] = range_header
@@ -678,7 +671,6 @@ async def media_proxy(request: Request, url: str = Query(...)):
         ) as client:
             response = await client.get(url)
 
-            # 判断 content-type
             content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
             if not content_type or content_type == "application/octet-stream":
                 path = urlparse(url).path.lower()
@@ -693,7 +685,6 @@ async def media_proxy(request: Request, url: str = Query(...)):
                 else:
                     content_type = "image/jpeg"
 
-            # 如果是视频，添加 Content-Range 支持
             if content_type and "video" in content_type:
                 return Response(
                     content=response.content,
@@ -724,7 +715,7 @@ async def media_proxy(request: Request, url: str = Query(...)):
 
 
 # =========================================================
-# 标记下载状态
+# API：标记下载状态
 # =========================================================
 
 @app.post("/api/media/{media_id}/downloaded")
@@ -741,7 +732,7 @@ async def mark_downloaded(media_id: str, payload: dict = Body(default={})):
 
 
 # =========================================================
-# 清空媒体库
+# API：清空媒体库
 # =========================================================
 
 @app.delete("/api/media")
@@ -752,7 +743,7 @@ async def clear_media():
 
 
 # =========================================================
-# 下载文件
+# API：下载文件
 # =========================================================
 
 @app.get("/api/download")
@@ -834,7 +825,7 @@ def cleanup_video_directory(directory):
 
 
 # =========================================================
-# 视频下载（MP4 转换）
+# API：视频下载（MP4 转换）
 # =========================================================
 
 @app.get("/api/video-download")
@@ -893,6 +884,73 @@ async def video_download(url: str = Query(...), filename: str = Query("x-video.m
         path=output_path,
         media_type="video/mp4",
         filename=filename,
+        background=BackgroundTask(cleanup_video_directory, temp_dir)
+    )
+
+
+# =========================================================
+# API：视频流式播放（在线预览）- 核心新增
+# =========================================================
+
+@app.get("/api/video-stream")
+async def video_stream(url: str = Query(...)):
+    """
+    在线预览视频，返回 MP4 流（不触发下载）
+    和 video-download 一样，但 Content-Disposition 是 inline
+    绕过 X 防盗链，让浏览器直接播放
+    """
+    url = resolve_proxy_url(url)
+    validate_hls_url(url)
+
+    temp_dir = tempfile.mkdtemp(prefix="x-video-")
+    output_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp4")
+
+    headers_str = f"User-Agent: {USER_AGENT}\r\nReferer: https://x.com/\r\nOrigin: https://x.com\r\n"
+
+    command = [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel", "error",
+        "-headers", headers_str,
+        "-protocol_whitelist", "file,http,https,tcp,tls,crypto",
+        "-allowed_extensions", "ALL",
+        "-i", url,
+        "-map", "0:v:0?", "-map", "0:a:0?",
+        "-c", "copy",
+        "-movflags", "+faststart",
+        "-y", output_path,
+    ]
+
+    try:
+        process = await asyncio.to_thread(
+            subprocess.run,
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=180,
+        )
+    except subprocess.TimeoutExpired:
+        cleanup_video_directory(temp_dir)
+        raise HTTPException(status_code=504, detail="视频转换超时")
+    except Exception as e:
+        cleanup_video_directory(temp_dir)
+        raise HTTPException(status_code=500, detail=f"FFmpeg 启动失败：{str(e)}")
+
+    if process.returncode != 0:
+        error_message = process.stderr.decode("utf-8", errors="ignore").strip()
+        cleanup_video_directory(temp_dir)
+        raise HTTPException(status_code=500, detail=f"FFmpeg 转换失败：{error_message[-3000:] if error_message else '未知错误'}")
+
+    if not os.path.exists(output_path) or os.path.getsize(output_path) < 1024:
+        cleanup_video_directory(temp_dir)
+        raise HTTPException(status_code=500, detail="生成的 MP4 文件异常")
+
+    # 关键区别：Content-Disposition 是 inline，浏览器直接播放
+    return FileResponse(
+        path=output_path,
+        media_type="video/mp4",
+        filename=os.path.basename(output_path),
+        headers={"Content-Disposition": "inline"},
         background=BackgroundTask(cleanup_video_directory, temp_dir)
     )
 
