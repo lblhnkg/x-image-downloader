@@ -48,13 +48,12 @@ database = Database(DATABASE_URL)
 
 
 # =========================================================
-# 初始化数据库（新增 favorites 表）
+# 初始化数据库
 # =========================================================
 
 async def init_db():
     is_postgres = DATABASE_URL.startswith("postgresql")
     
-    # media 表
     if is_postgres:
         await database.execute("""
             CREATE TABLE IF NOT EXISTS media (
@@ -72,7 +71,6 @@ async def init_db():
         """)
         await database.execute("CREATE INDEX IF NOT EXISTS idx_source ON media(data)")
     
-    # favorites 表
     if is_postgres:
         await database.execute("""
             CREATE TABLE IF NOT EXISTS favorites (
@@ -159,24 +157,19 @@ async def save_media_item(media_id, data):
 
 
 async def delete_media_items(media_ids):
-    """批量删除媒体"""
     if not media_ids:
         return 0
-    # 分批删除，避免 SQL 过长
     deleted = 0
     batch_size = 100
     for i in range(0, len(media_ids), batch_size):
         batch = media_ids[i:i+batch_size]
-        placeholders = ','.join(['?'] * len(batch))
-        query = f"DELETE FROM media WHERE id IN ({placeholders})"
-        # 根据数据库类型调整占位符
         if DATABASE_URL.startswith("postgresql"):
-            # PostgreSQL 使用 $1, $2, ...
-            placeholders_pg = ','.join([f'${j+1}' for j in range(len(batch))])
-            query = f"DELETE FROM media WHERE id IN ({placeholders_pg})"
+            placeholders = ','.join([f'${j+1}' for j in range(len(batch))])
+            query = f"DELETE FROM media WHERE id IN ({placeholders})"
             result = await database.execute(query, batch)
         else:
-            # SQLite
+            placeholders = ','.join(['?'] * len(batch))
+            query = f"DELETE FROM media WHERE id IN ({placeholders})"
             result = await database.execute(query, batch)
         deleted += result
     return deleted
@@ -670,7 +663,7 @@ def normalize_import_item(item):
             "height": int(media.get("height")) if media.get("height") else 0,
             "bitrate": int(media.get("bitrate")) if media.get("bitrate") else 0,
             "index": idx,
-            "tweetCreatedAt": tweet_created_at  # ← 传递真实发布时间
+            "tweetCreatedAt": tweet_created_at
         })
 
     if not result:
@@ -687,7 +680,7 @@ def normalize_import_item(item):
 
 @app.post("/api/import-media")
 async def import_media(request: Request, payload: dict = Body(...)):
-    global media_library
+    global media_library  # ← 添加
 
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
@@ -717,7 +710,6 @@ async def import_media(request: Request, payload: dict = Body(...)):
         for media in item["media"]:
             media_id = make_media_id(item["tweet_id"], media["type"], media["index"])
             
-            # 处理时间字段
             tweet_created_at = media.get("tweetCreatedAt") or item.get("tweet_created_at") or ""
             
             record = {
@@ -736,7 +728,7 @@ async def import_media(request: Request, payload: dict = Body(...)):
                 "bitrate": int(media["bitrate"]) if media["bitrate"] else 0,
                 "downloaded": False,
                 "createdAt": datetime.now(timezone.utc).isoformat(),
-                "tweetCreatedAt": tweet_created_at,  # ← 真实发布时间
+                "tweetCreatedAt": tweet_created_at,
             }
             imported += 1
 
@@ -792,9 +784,11 @@ async def get_media(
     source: str = Query("all"),
     media_type: str = Query("all"),
     downloaded: str = Query("all"),
-    start_date: str | None = None,   # ← 新增
-    end_date: str | None = None,     # ← 新增
+    start_date: str | None = None,
+    end_date: str | None = None,
 ):
+    global media_library  # ← 添加
+
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="未登录")
@@ -815,7 +809,6 @@ async def get_media(
     elif downloaded == "no":
         items = [item for item in items if item.get("downloaded") is not True]
 
-    # ========== 日期筛选 ==========
     if start_date or end_date:
         def parse_date(d):
             try:
@@ -826,15 +819,12 @@ async def get_media(
         end_dt = parse_date(end_date) if end_date else None
         filtered = []
         for item in items:
-            # 优先使用 tweetCreatedAt，若无则回退到 createdAt
             time_str = item.get("tweetCreatedAt") or item.get("createdAt") or ""
             if time_str:
                 dt = None
                 try:
-                    # 尝试解析 ISO 格式
                     dt = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
                 except:
-                    # 尝试解析 X 的日期格式（如 "Fri Aug 14 00:00:00 +0000 2020"）
                     dt = parse_x_date(time_str)
                 if dt:
                     if start_dt and dt < start_dt:
@@ -842,14 +832,11 @@ async def get_media(
                     if end_dt and dt > end_dt:
                         continue
                 else:
-                    # 如果解析失败，保留该记录（不过滤）
                     filtered.append(item)
                     continue
-            # 如果时间解析成功或没有时间信息，保留
             filtered.append(item)
         items = filtered
 
-    # 排序（按时间倒序，优先 tweetCreatedAt）
     items.sort(key=lambda x: x.get("tweetCreatedAt") or x.get("createdAt") or "", reverse=True)
 
     output = []
@@ -885,11 +872,7 @@ async def get_media(
 
 @app.delete("/api/media")
 async def delete_media(request: Request, media_ids: list[str] = Body(...)):
-    """
-    批量删除媒体
-    请求体: {"media_ids": ["id1", "id2", ...]}
-    """
-    global media_library
+    global media_library  # ← 添加
 
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
@@ -898,12 +881,10 @@ async def delete_media(request: Request, media_ids: list[str] = Body(...)):
     if not media_ids or not isinstance(media_ids, list):
         raise HTTPException(status_code=400, detail="media_ids 必须是字符串数组")
 
-    # 从缓存中移除
     for media_id in media_ids:
         if media_id in media_library:
             del media_library[media_id]
 
-    # 从数据库删除
     deleted_count = await delete_media_items(media_ids)
 
     return {
@@ -914,12 +895,12 @@ async def delete_media(request: Request, media_ids: list[str] = Body(...)):
 
 
 # =========================================================
-# API：清空媒体库（用于删除旧数据）
+# API：清空媒体库
 # =========================================================
 
 @app.delete("/api/media/all")
 async def clear_media(request: Request):
-    global media_library
+    global media_library  # ← 添加
 
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
@@ -1063,7 +1044,7 @@ async def media_proxy(request: Request, url: str = Query(...)):
 
 @app.post("/api/media/{media_id}/downloaded")
 async def mark_downloaded(request: Request, media_id: str, payload: dict = Body(default={})):
-    global media_library
+    global media_library  # ← 添加
 
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
