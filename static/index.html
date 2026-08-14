@@ -968,8 +968,6 @@ input:focus {
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
 
 </head>
-
-
 <body>
 
 <div class="container">
@@ -1469,8 +1467,6 @@ input:focus {
 
 
 <script>
-
-
 /* =====================================================
    DOM
 ===================================================== */
@@ -4364,71 +4360,58 @@ function downloadItem(
 
 
 /* =====================================================
-   Modal - 核心修复：视频播放
+   Modal - 核心修复 v2：针对 iPhone Safari 优化
 ===================================================== */
 
-function openModal(
-    item
-) {
+function openModal(item) {
 
-    currentItem =
-        item;
+    currentItem = item;
 
+    modalContent.innerHTML = "";
 
-    modalContent.innerHTML =
-        "";
-
-
-    /*
-     * 获取视频 URL
-     */
-    const rawVideoUrl =
+    // 获取视频 URL
+    let rawVideoUrl =
         item.video_url ||
         item.media_url ||
         item.url ||
         "";
 
-    /*
-     * 判断是不是 HLS 流（.m3u8）
-     * 使用后端返回的 streamType 或 URL 后缀
-     */
-    const isHlsUrl =
-        item.streamType === "hls" ||
-        rawVideoUrl.includes(".m3u8");
+    // 如果 URL 是代理地址（/api/media-proxy?url=...），解析出真实地址
+    if (rawVideoUrl.startsWith("/api/media-proxy")) {
+        try {
+            const urlObj = new URL(rawVideoUrl, window.location.origin);
+            const realUrl = urlObj.searchParams.get("url");
+            if (realUrl) {
+                rawVideoUrl = decodeURIComponent(realUrl);
+            }
+        } catch (e) {
+            // 解析失败就保留原样
+        }
+    }
 
-    /*
-     * 判断是不是普通 MP4
-     */
+    // 判断是不是 HLS（.m3u8）
+    const isHlsUrl =
+        rawVideoUrl.includes(".m3u8") ||
+        item.streamType === "hls";
+
+    // 判断是不是普通 MP4
     const isMp4Url =
         rawVideoUrl.includes(".mp4");
 
-    /*
-     * 综合判断是不是视频
-     */
+    // 综合判断是不是视频
     const isVideo =
         item.media_type === "video" ||
         item.type === "video" ||
         isHlsUrl ||
         isMp4Url;
 
-
     if (isVideo) {
 
-        /*
-         * 如果没有视频地址，显示错误
-         */
+        // 没有视频地址
         if (!rawVideoUrl) {
             modalContent.innerHTML =
                 `
-                <div
-                    class="media-error"
-                    style="
-                        width:100%;
-                        max-width:500px;
-                        color:#fff;
-                        background:#222;
-                    "
-                >
+                <div class="media-error" style="width:100%;max-width:500px;color:#fff;background:#222;">
                     该视频暂无可用播放地址
                 </div>
                 `;
@@ -4444,36 +4427,8 @@ function openModal(
         video.preload = "metadata";
 
         video.onerror = function() {
-            modalContent.innerHTML =
-                `
-                <div
-                    class="media-error"
-                    style="
-                        width:100%;
-                        max-width:500px;
-                        color:#fff;
-                        background:#222;
-                    "
-                >
-                    视频暂时无法加载
-                </div>
-                `;
-        };
-
-        /*
-         * =============================================
-         * 关键修复：HLS（.m3u8）用 hls.js 播放
-         * =============================================
-         */
-        if (isHlsUrl) {
-
-            // 检查 Safari 是否原生支持 HLS
-            if (video.canPlayType("application/vnd.apple.mpegurl")) {
-                // Safari / iOS 直接用 src
-                video.src = rawVideoUrl;
-            } else if (typeof Hls !== "undefined" && Hls.isSupported()) {
-                // Chrome / Firefox / Android 用 hls.js
-                // 先销毁旧实例
+            // 如果原生播放失败，尝试用 hls.js（仅当不是 Safari 原生 HLS 时）
+            if (!video.canPlayType("application/vnd.apple.mpegurl") && typeof Hls !== "undefined" && Hls.isSupported()) {
                 if (currentHls) {
                     currentHls.destroy();
                     currentHls = null;
@@ -4485,33 +4440,52 @@ function openModal(
                     if (data.fatal) {
                         modalContent.innerHTML =
                             `
-                            <div
-                                class="media-error"
-                                style="
-                                    width:100%;
-                                    max-width:500px;
-                                    color:#fff;
-                                    background:#222;
-                                "
-                            >
+                            <div class="media-error" style="width:100%;max-width:500px;color:#fff;background:#222;">
                                 视频暂时无法加载
                             </div>
                             `;
                     }
                 });
             } else {
-                // 都不支持
                 modalContent.innerHTML =
                     `
-                    <div
-                        class="media-error"
-                        style="
-                            width:100%;
-                            max-width:500px;
-                            color:#fff;
-                            background:#222;
-                        "
-                    >
+                    <div class="media-error" style="width:100%;max-width:500px;color:#fff;background:#222;">
+                        视频暂时无法加载
+                    </div>
+                    `;
+            }
+        };
+
+        // =============================================
+        // 关键修复：Safari 原生 HLS 直接用 src
+        // =============================================
+        if (isHlsUrl) {
+            // Safari 原生支持 HLS，直接用 src
+            if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                video.src = rawVideoUrl;
+            } else if (typeof Hls !== "undefined" && Hls.isSupported()) {
+                // 非 Safari 浏览器用 hls.js
+                if (currentHls) {
+                    currentHls.destroy();
+                    currentHls = null;
+                }
+                currentHls = new Hls();
+                currentHls.loadSource(rawVideoUrl);
+                currentHls.attachMedia(video);
+                currentHls.on(Hls.Events.ERROR, function(_event, data) {
+                    if (data.fatal) {
+                        modalContent.innerHTML =
+                            `
+                            <div class="media-error" style="width:100%;max-width:500px;color:#fff;background:#222;">
+                                视频暂时无法加载
+                            </div>
+                            `;
+                    }
+                });
+            } else {
+                modalContent.innerHTML =
+                    `
+                    <div class="media-error" style="width:100%;max-width:500px;color:#fff;background:#222;">
                         当前浏览器不支持该视频格式
                     </div>
                     `;
@@ -4519,9 +4493,8 @@ function openModal(
                 modal.classList.remove("hidden");
                 return;
             }
-
         } else {
-            // MP4 或其他普通格式，直接播放
+            // MP4 或其他格式，直接播放
             video.src = rawVideoUrl;
         }
 
@@ -4530,12 +4503,7 @@ function openModal(
 
     } else {
 
-        /*
-         * =============================================
-         * 图片显示（保持不变）
-         * =============================================
-         */
-
+        // 图片显示
         const img = document.createElement("img");
         img.src = item.media_url || item.url || item.originalUrl || "";
         img.alt = item.alt || "";
@@ -4549,15 +4517,7 @@ function openModal(
             }
             modalContent.innerHTML =
                 `
-                <div
-                    class="media-error"
-                    style="
-                        width:100%;
-                        max-width:500px;
-                        color:#fff;
-                        background:#222;
-                    "
-                >
+                <div class="media-error" style="width:100%;max-width:500px;color:#fff;background:#222;">
                     图片暂时无法加载
                 </div>
                 `;
@@ -4565,12 +4525,9 @@ function openModal(
 
         modalContent.appendChild(img);
         downloadButton.textContent = "⬇ 下载原图";
-
     }
 
-
     modal.classList.remove("hidden");
-
 }
 
 
