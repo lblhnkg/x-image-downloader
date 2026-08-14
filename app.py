@@ -19,15 +19,13 @@ from starlette.background import BackgroundTask
 
 app = FastAPI(title="万能媒体下载器")
 
-# =========================================================
-# CORS 配置 - 允许 X、Twitter 和你的 Render 域名
-# =========================================================
+# CORS 配置
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://x.com",
         "https://twitter.com",
-        "https://x-v1.onrender.com",  # 你的网站域名
+        "https://x-v1.onrender.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -501,7 +499,7 @@ def make_media_id(tweet_id, media_type, idx):
 
 
 # =========================================================
-# API：导入媒体（开发者专用）
+# API：导入媒体（使用 API Key 验证）
 # =========================================================
 
 def normalize_import_item(item):
@@ -556,9 +554,10 @@ def normalize_import_item(item):
 
 @app.post("/api/import-media")
 async def import_media(request: Request, payload: dict = Body(...)):
-    session = request.cookies.get("session")
-    if session != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="未登录")
+    # 从 Header 获取 API Key
+    api_key = request.headers.get("X-API-Key")
+    if api_key != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="无效的 API Key")
 
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="上传数据格式错误")
@@ -788,7 +787,7 @@ async def download(url: str = Query(...), filename: str = Query("x-media")):
 
     headers = {
         "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
-        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         "Referer": "https://x.com/",
         "Origin": "https://x.com",
