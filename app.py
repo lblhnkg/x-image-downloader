@@ -19,10 +19,16 @@ from starlette.background import BackgroundTask
 
 app = FastAPI(title="万能媒体下载器")
 
-# 配置 CORS
+# =========================================================
+# CORS 配置 - 允许 X、Twitter 和你的 Render 域名
+# =========================================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://x-v1.onrender.com"],
+    allow_origins=[
+        "https://x.com",
+        "https://twitter.com",
+        "https://x-v1.onrender.com",  # 你的网站域名
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -782,7 +788,7 @@ async def download(url: str = Query(...), filename: str = Query("x-media")):
 
     headers = {
         "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
-        "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         "Referer": "https://x.com/",
         "Origin": "https://x.com",
