@@ -973,8 +973,10 @@ async def check_favorite(request: Request, username: str):
     
     exists = await is_favorite(username)
     return {"ok": True, "username": username, "favorited": exists}
+
+
 # =========================================================
-# API：Neon 存储用量（修复版）
+# API：Neon 存储用量（最终修复版）
 # =========================================================
 
 @app.get("/api/storage")
@@ -998,19 +1000,19 @@ async def get_storage(request: Request):
 
     if NEON_API_KEY and NEON_PROJECT_ID:
         try:
-            # 正确的 API 路径
+            # 使用正确的 /v2 端点
             url = "https://console.neon.tech/api/v2/consumption_history/projects"
             
-            from_date = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
-            to_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            from_date = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT00:00:00Z")
+            to_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT00:00:00Z")
             
-            # 关键修复：添加 metrics 参数
+            # 正确传递 metrics 参数（用 & 连接多个指标，但这里只用一个）
             params = {
-                "project_id": NEON_PROJECT_ID,
+                "project_ids": NEON_PROJECT_ID,
                 "from": from_date,
                 "to": to_date,
                 "granularity": "daily",
-                "metrics": "root_branch_bytes_month"
+                "metrics": "storage_used"  # 正确的指标名称
             }
             
             print(f"[Neon API] 请求: {url}")
@@ -1029,11 +1031,14 @@ async def get_storage(request: Request):
                     data = response.json()
                     if data and isinstance(data, list) and len(data) > 0:
                         project_data = data[0]
-                        metrics = project_data.get("metrics", {})
-                        storage_bytes = metrics.get("root_branch_bytes_month", 0)
-                        if storage_bytes == 0:
-                            storage_bytes = project_data.get("storage_used", 0)
-                        neon_used_bytes = storage_bytes
+                        # 直接从顶层获取 storage_used
+                        neon_used_bytes = project_data.get("storage_used", 0)
+                        if neon_used_bytes == 0:
+                            # 如果顶层没有，尝试从 consumption_history 中提取
+                            history = project_data.get("consumption_history", [])
+                            if history:
+                                latest = history[-1]
+                                neon_used_bytes = latest.get("storage_used", 0)
                         print(f"[Neon API] 存储用量: {neon_used_bytes} bytes")
                     else:
                         neon_error = "未找到项目数据"
@@ -1042,7 +1047,7 @@ async def get_storage(request: Request):
                 elif response.status_code == 401:
                     neon_error = "API Key 无效或权限不足 (401)"
                 elif response.status_code == 404:
-                    neon_error = f"Project ID 不存在: {NEON_PROJECT_ID} (404)"
+                    neon_error = f"API 端点不存在 (404)"
                 else:
                     neon_error = f"HTTP {response.status_code}: {response.text[:200]}"
         except Exception as e:
