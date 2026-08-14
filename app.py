@@ -3,10 +3,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-# 旧的 X 下载器（完整保留，路径不变）
-from x_legacy import app as x_app
+# 旧的 X 路由（已改为 APIRouter）
+from x_legacy import router as x_router
+from x_legacy import startup_db, shutdown_db
 
-# 新的 MissAV 下载器（独立路由）
+# 新的 MissAV 路由
 from missav_routes import router as missav_router
 
 # ============================================================
@@ -14,7 +15,7 @@ from missav_routes import router as missav_router
 # ============================================================
 app = FastAPI(title="万能媒体下载器")
 
-# CORS 跨域配置
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,20 +25,23 @@ app.add_middleware(
 )
 
 # ============================================================
-# 挂载子应用
+# 注册数据库启动/关闭事件
 # ============================================================
-
-# X 功能挂载到根路径（保持旧前端完全兼容）
-app.mount("/", x_app)
-
-# MissAV 功能挂载到 /missav 路径
-from fastapi import FastAPI
-missav_app = FastAPI()
-missav_app.include_router(missav_router)
-app.mount("/missav", missav_app)
+app.add_event_handler("startup", startup_db)
+app.add_event_handler("shutdown", shutdown_db)
 
 # ============================================================
-# 静态页面
+# 注册路由（都在根路径下，不覆盖）
+# ============================================================
+
+# X 旧功能：/api/search、/api/media 等路径不变
+app.include_router(x_router)
+
+# MissAV 新功能：/missav/search、/missav/info
+app.include_router(missav_router)
+
+# ============================================================
+# 静态页面（两个 HTML 独立）
 # ============================================================
 
 @app.get("/")
@@ -52,7 +56,6 @@ async def missav_page():
 
 @app.get("/health")
 async def health():
-    """健康检查"""
     return {"status": "ok"}
 
 # ============================================================
