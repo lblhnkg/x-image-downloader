@@ -34,11 +34,11 @@ app.add_middleware(
 
 
 # =========================================================
-# 配置
+# 配置 - 从环境变量读取密码
 # =========================================================
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
-APP_PASSWORD = os.environ.get("APP_PASSWORD", "fushengruomeng")
+APP_PASSWORD = os.environ.get("APP_PASSWORD", "fushengruomeng")  # 默认密码，建议在 Render 环境变量中设置
 
 if not DATABASE_URL:
     print("⚠️ 警告：DATABASE_URL 未设置，使用本地 SQLite（重启会丢数据）")
@@ -503,7 +503,7 @@ def make_media_id(tweet_id, media_type, idx):
 
 
 # =========================================================
-# API：导入媒体（使用 API Key 验证，直接操作内存缓存）
+# API：导入媒体（使用 API Key 验证）
 # =========================================================
 
 def normalize_import_item(item):
@@ -560,9 +560,10 @@ def normalize_import_item(item):
 async def import_media(request: Request, payload: dict = Body(...)):
     global media_library
 
-    # 从 Header 获取 API Key
+    # 验证 API Key
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
+        print(f"[AUTH] 无效的 API Key: {api_key}")  # 日志调试
         raise HTTPException(status_code=401, detail="无效的 API Key")
 
     if not isinstance(payload, dict):
@@ -576,7 +577,7 @@ async def import_media(request: Request, payload: dict = Body(...)):
     updated = 0
     duplicates = 0
 
-    # 如果内存缓存为空，从数据库加载
+    # 确保内存缓存加载
     if not media_library:
         media_library = await load_all_media()
 
@@ -605,7 +606,6 @@ async def import_media(request: Request, payload: dict = Body(...)):
             }
             imported += 1
 
-            # 检查内存缓存
             old_item = media_library.get(media_id)
             if old_item:
                 duplicates += 1
@@ -618,7 +618,6 @@ async def import_media(request: Request, payload: dict = Body(...)):
                 if changed:
                     updated += 1
                     media_library[media_id] = old_item
-                    # 同步到数据库
                     if not await save_media_item(media_id, old_item):
                         raise HTTPException(status_code=500, detail=f"数据库保存失败: {media_id}")
                 continue
@@ -629,6 +628,7 @@ async def import_media(request: Request, payload: dict = Body(...)):
             if not await save_media_item(media_id, record):
                 raise HTTPException(status_code=500, detail=f"数据库保存失败: {media_id}")
 
+    print(f"[IMPORT] 完成: 导入 {imported}, 新增 {added}, 更新 {updated}, 重复 {duplicates}, 总数 {len(media_library)}")
     return {"ok": True, "imported": imported, "added": added, "updated": updated, "duplicates": duplicates, "total": len(media_library)}
 
 
@@ -649,7 +649,6 @@ async def get_media(
     if session != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="未登录")
 
-    # 如果内存缓存为空，从数据库加载
     if not media_library:
         media_library = await load_all_media()
 
