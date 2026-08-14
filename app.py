@@ -1,6 +1,5 @@
 # ============================================================
 # 完整 app.py - 万能媒体下载器（X + MissAV 合并版）
-# 第一部分：导入、配置、数据库、X 全部路由
 # ============================================================
 
 import re
@@ -41,7 +40,7 @@ database = Database(DATABASE_URL)
 
 async def init_db():
     is_postgres = DATABASE_URL.startswith("postgresql")
-    
+
     if is_postgres:
         await database.execute("""
             CREATE TABLE IF NOT EXISTS media (
@@ -58,7 +57,7 @@ async def init_db():
             )
         """)
         await database.execute("CREATE INDEX IF NOT EXISTS idx_source ON media(data)")
-    
+
     if is_postgres:
         await database.execute("""
             CREATE TABLE IF NOT EXISTS favorites (
@@ -101,7 +100,7 @@ async def save_media_item(media_id, data):
         return False, f"序列化失败: {e}"
 
     is_postgres = DATABASE_URL.startswith("postgresql")
-    
+
     for attempt in range(3):
         try:
             if is_postgres:
@@ -647,9 +646,9 @@ async def import_media(request: Request, payload: dict = Body(...)):
             continue
         for media in item["media"]:
             media_id = make_media_id(item["tweet_id"], media["type"], media["index"])
-            
+
             tweet_created_at = media.get("tweetCreatedAt") or item.get("tweet_created_at") or ""
-            
+
             record = {
                 "id": media_id,
                 "tweet_id": item["tweet_id"],
@@ -846,7 +845,7 @@ async def add_favorite(request: Request, payload: dict = Body(...)):
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="无效的 API Key")
-    
+
     username = payload.get("username")
     if not username:
         raise HTTPException(status_code=400, detail="username 不能为空")
@@ -854,7 +853,7 @@ async def add_favorite(request: Request, payload: dict = Body(...)):
     if not username:
         raise HTTPException(status_code=400, detail="用户名无效")
     name = payload.get("name") or username
-    
+
     await save_favorite(username, name)
     return {"ok": True, "username": username, "name": name}
 
@@ -863,11 +862,11 @@ async def remove_favorite(request: Request, username: str):
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="无效的 API Key")
-    
+
     username = re.sub(r"[^A-Za-z0-9_]", "", username)
     if not username:
         raise HTTPException(status_code=400, detail="用户名无效")
-    
+
     await delete_favorite(username)
     return {"ok": True, "username": username}
 
@@ -876,11 +875,11 @@ async def check_favorite(request: Request, username: str):
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="无效的 API Key")
-    
+
     username = re.sub(r"[^A-Za-z0-9_]", "", username)
     if not username:
         raise HTTPException(status_code=400, detail="用户名无效")
-    
+
     exists = await is_favorite(username)
     return {"ok": True, "username": username, "favorited": exists}
 
@@ -1144,8 +1143,9 @@ async def video_stream(url: str = Query(...)):
         headers={"Content-Disposition": "inline"},
         background=BackgroundTask(cleanup_video_directory, temp_dir)
     )
+
 # ============================================================
-# MissAV 抓取器（独立模块）
+# MissAV 抓取器
 # ============================================================
 
 import cloudscraper
@@ -1277,18 +1277,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
 async def startup_event():
     await database.connect()
     await init_db()
     print("[DB] 数据库连接成功")
     print(f"[DB] 数据库类型: {'PostgreSQL' if DATABASE_URL.startswith('postgresql') else 'SQLite'}")
 
+@app.on_event("shutdown")
 async def shutdown_event():
     await database.disconnect()
     print("[DB] 数据库已断开")
-
-app.add_event_handler("startup", startup_event)
-app.add_event_handler("shutdown", shutdown_event)
 
 # 注册路由
 app.include_router(x_router)
