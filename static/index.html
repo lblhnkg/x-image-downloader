@@ -8,9 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js">
     </script>
     <style>
-        /* =====================================================
-           全局重置 & 基础
-        ===================================================== */
         * {
             margin: 0;
             padding: 0;
@@ -124,14 +121,10 @@
             }
         }
 
-        /* =====================================================
-           页面切换
-        ===================================================== */
         .page {
             display: none;
             animation: fadeIn 0.4s ease;
         }
-
         .page.active {
             display: block;
         }
@@ -147,9 +140,6 @@
             }
         }
 
-        /* =====================================================
-           标题
-        ===================================================== */
         .app-title {
             font-size: 26px;
             font-weight: 600;
@@ -159,9 +149,6 @@
             color: #fff;
         }
 
-        /* =====================================================
-           登录页
-        ===================================================== */
         .login-divider {
             border: 0;
             height: 1px;
@@ -291,7 +278,7 @@
         }
 
         /* =====================================================
-           一级菜单 - 新增存储显示
+           存储统计
         ===================================================== */
         .storage-section {
             margin-top: 20px;
@@ -323,20 +310,16 @@
             border-radius: 3px;
         }
 
-        .storage-bar .segment.images-segment {
+        .storage-bar .segment.used-segment {
             background: #007aff;
-        }
-
-        .storage-bar .segment.videos-segment {
-            background: #ff3b30;
         }
 
         .storage-bar .segment.free-segment {
             background: #34c759;
         }
 
-        .storage-bar .segment.other-segment {
-            background: rgba(255, 255, 255, 0.15);
+        .storage-bar .segment.warning-segment {
+            background: #ff3b30;
         }
 
         .storage-stats {
@@ -364,22 +347,6 @@
             flex-shrink: 0;
         }
 
-        .storage-stats .color-dot.dot-images {
-            background: #007aff;
-        }
-
-        .storage-stats .color-dot.dot-videos {
-            background: #ff3b30;
-        }
-
-        .storage-stats .color-dot.dot-free {
-            background: #34c759;
-        }
-
-        .storage-stats .color-dot.dot-other {
-            background: rgba(255, 255, 255, 0.15);
-        }
-
         .storage-stats .stat-number {
             color: rgba(255, 255, 255, 0.6);
         }
@@ -392,8 +359,12 @@
             letter-spacing: 0.2px;
         }
 
+        .storage-footer .media-count {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
         /* =====================================================
-           菜单卡片
+           菜单
         ===================================================== */
         .menu-grid {
             display: flex;
@@ -533,7 +504,7 @@
         }
 
         /* =====================================================
-           搜索博主面板
+           搜索博主
         ===================================================== */
         .search-section {
             margin-top: 6px;
@@ -707,7 +678,7 @@
         }
 
         /* =====================================================
-           选项行
+           选项
         ===================================================== */
         .option-section {
             margin-top: 18px;
@@ -778,9 +749,6 @@
             filter: invert(0.6);
         }
 
-        /* =====================================================
-           主按钮
-        ===================================================== */
         .primary-btn {
             width: 100%;
             padding: 14px 0;
@@ -811,9 +779,6 @@
             transform: none;
         }
 
-        /* =====================================================
-           状态 & 结果
-        ===================================================== */
         .status-box {
             margin-top: 14px;
             padding: 12px 14px;
@@ -854,7 +819,7 @@
         }
 
         /* =====================================================
-           画廊 Grid
+           画廊
         ===================================================== */
         .gallery {
             display: grid;
@@ -877,7 +842,7 @@
         }
 
         /* =====================================================
-           选择框 - 核心修复
+           选择框
         ===================================================== */
         .select-check {
             position: absolute;
@@ -1006,7 +971,7 @@
         }
 
         /* =====================================================
-           卡片按钮 - 三个等宽
+           卡片按钮
         ===================================================== */
         .item-actions {
             display: grid;
@@ -1023,11 +988,12 @@
             font-family: inherit;
             border: 0;
             transition: all 0.2s ease;
+            pointer-events: auto;
         }
 
         .item.in-select-mode .item-actions button {
             pointer-events: none;
-            opacity: 0.3;
+            opacity: 0.25;
         }
 
         .item-actions .btn-view {
@@ -1061,7 +1027,7 @@
         }
 
         /* =====================================================
-           底部工具栏（选择模式）
+           选择工具栏
         ===================================================== */
         .selection-toolbar {
             position: fixed;
@@ -1131,7 +1097,7 @@
         }
 
         /* =====================================================
-           自定义删除确认弹窗
+           删除确认弹窗
         ===================================================== */
         .delete-confirm-overlay {
             position: fixed;
@@ -1385,7 +1351,7 @@
         }
 
         /* =====================================================
-           访客模式提示弹窗
+           访客提示弹窗
         ===================================================== */
         .guest-tip-overlay {
             position: fixed;
@@ -1449,9 +1415,6 @@
             background: rgba(255, 255, 255, 0.15);
         }
 
-        /* =====================================================
-           敬请期待弹窗
-        ===================================================== */
         .coming-soon-overlay {
             position: fixed;
             inset: 0;
@@ -1515,7 +1478,7 @@
     <div class="app-container" id="app">
 
         <!-- =====================================================
-        页面：登录
+        登录页
         ===================================================== -->
         <div class="page active" id="pageLogin">
             <div class="app-title">万能媒体下载器</div>
@@ -1537,7 +1500,7 @@
         </div>
 
         <!-- =====================================================
-        页面：一级菜单（新增存储显示）
+        一级菜单
         ===================================================== -->
         <div class="page" id="pageMenu">
             <div class="app-title" style="font-size:22px;margin-bottom:4px;">万能媒体下载器</div>
@@ -1559,29 +1522,38 @@
                 </div>
             </div>
 
-            <!-- ========== 存储显示区域（仅开发者可见） ========== -->
+            <!-- ========== 存储统计 ========== -->
             <div class="storage-section" id="storageSection">
-                <div class="storage-title">存储空间</div>
+                <div class="storage-title">📦 Neon 存储用量</div>
                 <div class="storage-bar" id="storageBar">
-                    <div class="segment images-segment" id="imagesSegment" style="width:0%;"></div>
-                    <div class="segment videos-segment" id="videosSegment" style="width:0%;"></div>
+                    <div class="segment used-segment" id="usedSegment" style="width:0%;"></div>
                     <div class="segment free-segment" id="freeSegment" style="width:0%;"></div>
-                    <div class="segment other-segment" id="otherSegment" style="width:0%;"></div>
                 </div>
                 <div class="storage-stats" id="storageStats">
-                    <span class="stat-item"><span class="color-dot dot-images"></span> 图片: <span class="stat-number" id="statImages">0</span></span>
-                    <span class="stat-item"><span class="color-dot dot-videos"></span> 视频: <span class="stat-number" id="statVideos">0</span></span>
-                    <span class="stat-item"><span class="color-dot dot-free"></span> 剩余: <span class="stat-number" id="statFree">0</span></span>
-                    <span class="stat-item"><span class="color-dot dot-other"></span> 其他: <span class="stat-number" id="statOther">0</span></span>
+                    <span class="stat-item">
+                        <span class="color-dot" style="background:#007aff;"></span>
+                        已用: <span class="stat-number" id="statUsed">计算中…</span>
+                    </span>
+                    <span class="stat-item">
+                        <span class="color-dot" style="background:#34c759;"></span>
+                        剩余: <span class="stat-number" id="statFree">计算中…</span>
+                    </span>
+                    <span class="stat-item" style="margin-left:auto;">
+                        总配额: <span class="stat-number" id="statTotal">512 MB</span>
+                    </span>
                 </div>
-                <div class="storage-footer" id="storageFooter">媒体总数: <span id="statTotalMedia">0</span> · 数据库: <span id="statDbSize">0 KB</span></div>
+                <div class="storage-footer" id="storageFooter">
+                    图片: <span class="media-count" id="statImages">0</span> ·
+                    视频: <span class="media-count" id="statVideos">0</span> ·
+                    媒体总数: <span class="media-count" id="statTotalMedia">0</span>
+                </div>
             </div>
 
             <div class="login-dev-signature" style="margin-top:20px;">开发者：浮生若夢</div>
         </div>
 
         <!-- =====================================================
-        页面：X 子菜单
+        X 子菜单
         ===================================================== -->
         <div class="page" id="pageXSub">
             <div class="back-row" id="backFromX">
@@ -1607,7 +1579,7 @@
         </div>
 
         <!-- =====================================================
-        页面：搜索博主
+        搜索博主页
         ===================================================== -->
         <div class="page" id="pageSearch">
             <div class="back-row" id="backFromSearch">
@@ -1676,7 +1648,7 @@
         </div>
 
         <!-- =====================================================
-        页面：我的喜欢 / 我的书签（共用）
+        我的喜欢 / 我的书签
         ===================================================== -->
         <div class="page" id="pageLibrary">
             <div class="back-row" id="backFromLibrary">
@@ -1786,7 +1758,7 @@
     </div>
 
     <!-- =====================================================
-    底部工具栏（选择模式）
+    选择工具栏
     ===================================================== -->
     <div class="selection-toolbar" id="selectionToolbar">
         <div class="toolbar-left">
@@ -1927,18 +1899,16 @@
         var confirmCancel = $('confirmCancel');
         var confirmDelete = $('confirmDelete');
 
-        // 存储显示元素
+        // 存储显示
         var storageSection = $('storageSection');
-        var imagesSegment = $('imagesSegment');
-        var videosSegment = $('videosSegment');
+        var usedSegment = $('usedSegment');
         var freeSegment = $('freeSegment');
-        var otherSegment = $('otherSegment');
+        var statUsed = $('statUsed');
+        var statFree = $('statFree');
+        var statTotal = $('statTotal');
         var statImages = $('statImages');
         var statVideos = $('statVideos');
-        var statFree = $('statFree');
-        var statOther = $('statOther');
         var statTotalMedia = $('statTotalMedia');
-        var statDbSize = $('statDbSize');
 
         /* =====================================================
            页面切换
@@ -1975,7 +1945,6 @@
                 if (data.ok) {
                     currentMode = 'developer';
                     loadFavoritesFromServer();
-                    // 登录后加载存储数据
                     loadStorageData();
                     showPage('pageMenu');
                     loginPassword.value = '';
@@ -2004,7 +1973,6 @@
         guestBtn.addEventListener('click', function() {
             currentMode = 'guest';
             loadFavoritesFromLocal();
-            // 访客模式下隐藏存储显示
             storageSection.classList.add('hidden');
             if (!guestTipShown) {
                 guestTip.classList.remove('hidden');
@@ -2019,7 +1987,7 @@
         });
 
         /* =====================================================
-           存储数据加载
+           Neon 存储统计
         ==================================================== */
         function loadStorageData() {
             if (currentMode === 'guest') {
@@ -2039,6 +2007,8 @@
             })
             .catch(function(e) {
                 console.warn('[Storage] 加载失败:', e);
+                statUsed.textContent = '加载失败';
+                statFree.textContent = '—';
             });
         }
 
@@ -2046,62 +2016,44 @@
             var totalMedia = data.total_media || 0;
             var images = data.images || 0;
             var videos = data.videos || 0;
-            var dbSize = data.db_size || 0;
-            var totalDisk = data.total_disk || 0;
-            var usedDisk = data.used_disk || 0;
-            var freeDisk = data.free_disk || 0;
 
-            // 计算各段百分比
-            var imagesPct = totalDisk > 0 ? (images / totalDisk) * 100 : 0;
-            var videosPct = totalDisk > 0 ? (videos / totalDisk) * 100 : 0;
-            var freePct = totalDisk > 0 ? (freeDisk / totalDisk) * 100 : 0;
-            var otherPct = totalDisk > 0 ? ((usedDisk - images - videos) / totalDisk) * 100 : 0;
-
-            // 限制最小显示宽度
-            var minPct = 0.5;
-            imagesPct = Math.max(imagesPct, minPct);
-            videosPct = Math.max(videosPct, minPct);
-            freePct = Math.max(freePct, minPct);
-            otherPct = Math.max(otherPct, minPct);
-
-            // 确保总和不超过100%
-            var totalPct = imagesPct + videosPct + freePct + otherPct;
-            if (totalPct > 100) {
-                var ratio = 100 / totalPct;
-                imagesPct *= ratio;
-                videosPct *= ratio;
-                freePct *= ratio;
-                otherPct *= ratio;
-            }
-
-            imagesSegment.style.width = imagesPct + '%';
-            videosSegment.style.width = videosPct + '%';
-            freeSegment.style.width = freePct + '%';
-            otherSegment.style.width = otherPct + '%';
-
-            // 格式化显示
             statImages.textContent = images;
             statVideos.textContent = videos;
-            statFree.textContent = formatBytes(freeDisk);
-            statOther.textContent = formatBytes(usedDisk - images - videos);
             statTotalMedia.textContent = totalMedia;
 
-            // 数据库大小
-            if (dbSize < 1024) {
-                statDbSize.textContent = dbSize + ' B';
-            } else if (dbSize < 1024 * 1024) {
-                statDbSize.textContent = (dbSize / 1024).toFixed(1) + ' KB';
-            } else {
-                statDbSize.textContent = (dbSize / 1024 / 1024).toFixed(2) + ' MB';
-            }
-        }
+            var usedBytes = data.neon_used_bytes;
+            var totalBytes = 512 * 1024 * 1024;
 
-        function formatBytes(bytes) {
-            if (bytes < 0) return '0 B';
-            if (bytes < 1024) return bytes + ' B';
-            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-            if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
-            return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+            if (usedBytes === null || usedBytes === undefined || usedBytes < 0) {
+                statUsed.textContent = '暂无法获取';
+                statFree.textContent = '—';
+                usedSegment.style.width = '0%';
+                freeSegment.style.width = '100%';
+                return;
+            }
+
+            var freeBytes = Math.max(0, totalBytes - usedBytes);
+            var usedMB = (usedBytes / 1024 / 1024).toFixed(2);
+            var freeMB = (freeBytes / 1024 / 1024).toFixed(2);
+            var usedPct = Math.min((usedBytes / totalBytes) * 100, 100);
+            var freePct = 100 - usedPct;
+
+            if (usedPct > 80) {
+                usedSegment.className = 'segment warning-segment';
+            } else {
+                usedSegment.className = 'segment used-segment';
+            }
+
+            usedSegment.style.width = Math.max(usedPct, 0.5) + '%';
+            freeSegment.style.width = Math.max(freePct, 0.5) + '%';
+
+            if (usedBytes === 0) {
+                statUsed.textContent = '0 MB';
+                statFree.textContent = '512 MB';
+            } else {
+                statUsed.textContent = usedMB + ' MB';
+                statFree.textContent = freeMB + ' MB';
+            }
         }
 
         /* =====================================================
@@ -2943,9 +2895,6 @@
             return wrapper;
         }
 
-        /* =====================================================
-           数据转换
-        ==================================================== */
         function normalizeLibraryItem(item) {
             var type = item.type || item.media_type || 'image';
             var mediaUrl = item.url || item.media_url || item.sourceUrl || '';
@@ -2969,9 +2918,6 @@
             };
         }
 
-        /* =====================================================
-           下载
-        ==================================================== */
         function downloadItem(item) {
             var url = item.originalUrl || item.media_url || item.url || '';
             if (!url) {
@@ -2992,9 +2938,6 @@
             }
         }
 
-        /* =====================================================
-           Modal
-        ==================================================== */
         function openModal(item) {
             currentItem = item;
             modalContent.innerHTML = '';
@@ -3129,7 +3072,6 @@
         // 初始化
         // =====================================================
         loadFavoritesFromLocal();
-        // 初始状态下存储区域隐藏（访客模式默认）
         storageSection.classList.add('hidden');
         showPage('pageLogin');
         console.log('万能媒体下载器 已加载');
