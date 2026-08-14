@@ -976,7 +976,7 @@ async def check_favorite(request: Request, username: str):
 
 
 # =========================================================
-# API：Neon 存储用量（正确路径）
+# API：Neon 存储用量
 # =========================================================
 
 @app.get("/api/storage")
@@ -1000,49 +1000,31 @@ async def get_storage(request: Request):
 
     if NEON_API_KEY and NEON_PROJECT_ID:
         try:
-            # 正确的 API 路径
-            url = "https://console.neon.tech/api/v2/consumption_history/projects"
+            # 尝试直接获取项目信息
+            url = f"https://console.neon.tech/api/v2/projects/{NEON_PROJECT_ID}"
             
-            # 时间范围（最近30天）
-            from_date = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
-            to_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-            
-            params = {
-                "project_ids": NEON_PROJECT_ID,
-                "from": from_date,
-                "to": to_date,
-                "granularity": "daily"
-            }
-            
-            print(f"[Neon API] 请求: {url}")
-            print(f"[Neon API] 参数: {params}")
+            print(f"[Neon API] 请求项目信息: {url}")
             
             async with httpx.AsyncClient(timeout=10) as client:
                 headers = {
                     "Authorization": f"Bearer {NEON_API_KEY}",
                     "Accept": "application/json"
                 }
-                response = await client.get(url, params=params, headers=headers)
+                response = await client.get(url, headers=headers)
                 print(f"[Neon API] 状态码: {response.status_code}")
+                print(f"[Neon API] 响应内容: {response.text[:500]}")
                 
                 if response.status_code == 200:
                     data = response.json()
-                    # 响应格式是项目列表
-                    if data and isinstance(data, list) and len(data) > 0:
-                        project_data = data[0]
-                        history = project_data.get("consumption_history", [])
-                        if history:
-                            latest = history[-1]
-                            neon_used_bytes = latest.get("storage_used", 0)
-                            print(f"[Neon API] 存储用量: {neon_used_bytes} bytes")
-                        else:
-                            neon_error = "没有消费历史数据"
-                    else:
-                        neon_error = "未找到项目数据"
+                    # 从项目信息中获取存储用量
+                    neon_used_bytes = data.get("storage_used", 0)
+                    print(f"[Neon API] 存储用量: {neon_used_bytes} bytes")
+                    if neon_used_bytes == 0:
+                        neon_error = "存储用量为 0（可能项目为空或未使用）"
                 elif response.status_code == 401:
                     neon_error = "API Key 无效或权限不足 (401)"
                 elif response.status_code == 404:
-                    neon_error = f"API 端点不存在 (404)"
+                    neon_error = f"Project ID 不存在: {NEON_PROJECT_ID} (404)"
                 else:
                     neon_error = f"HTTP {response.status_code}: {response.text[:200]}"
         except Exception as e:
