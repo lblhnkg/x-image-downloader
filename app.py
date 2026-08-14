@@ -34,11 +34,11 @@ app.add_middleware(
 
 
 # =========================================================
-# 配置 - 从环境变量读取密码
+# 配置
 # =========================================================
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
-APP_PASSWORD = os.environ.get("APP_PASSWORD", "fushengruomeng")  # 默认密码，建议在 Render 环境变量中设置
+APP_PASSWORD = os.environ.get("APP_PASSWORD", "fushengruomeng")
 
 if not DATABASE_URL:
     print("⚠️ 警告：DATABASE_URL 未设置，使用本地 SQLite（重启会丢数据）")
@@ -102,15 +102,28 @@ async def load_all_media():
 
 
 async def save_media_item(media_id, data):
+    """保存单条记录，增加重试和详细错误日志"""
+    # 序列化数据，确保所有字段类型正确
     try:
-        await database.execute(
-            "REPLACE INTO media (id, data) VALUES (:id, :data)",
-            {"id": media_id, "data": json.dumps(data, ensure_ascii=False)}
-        )
-        return True
+        serialized = json.dumps(data, ensure_ascii=False)
     except Exception as e:
-        print(f"[DB ERROR] 保存失败 {media_id}: {e}")
-        return False
+        print(f"[DB ERROR] 序列化失败 {media_id}: {e}")
+        return False, f"序列化失败: {e}"
+
+    # 重试逻辑
+    for attempt in range(3):
+        try:
+            await database.execute(
+                "REPLACE INTO media (id, data) VALUES (:id, :data)",
+                {"id": media_id, "data": serialized}
+            )
+            return True, None
+        except Exception as e:
+            print(f"[DB ERROR] 写入失败 (尝试 {attempt+1}/3) {media_id}: {e}")
+            if attempt == 2:  # 最后一次尝试失败
+                return False, str(e)
+            await asyncio.sleep(0.5)  # 短暂等待后重试
+    return False, "未知错误"
 
 
 async def clear_all_media():
@@ -503,7 +516,7 @@ def make_media_id(tweet_id, media_type, idx):
 
 
 # =========================================================
-# API：导入媒体（使用 API Key 验证）
+# API：导入媒体（使用 API Key 验证，单条失败不中断）
 # =========================================================
 
 def normalize_import_item(item):
@@ -563,7 +576,7 @@ async def import_media(request: Request, payload: dict = Body(...)):
     # 验证 API Key
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
-        print(f"[AUTH] 无效的 API Key: {api_key}")  # 日志调试
+        print(f"[AUTH] 无效的 API Key: {api_key}")
         raise HTTPException(status_code=401, detail="无效的 API Key")
 
     if not isinstance(payload, dict):
@@ -576,6 +589,8 @@ async def import_media(request: Request, payload: dict = Body(...)):
     added = 0
     updated = 0
     duplicates = 0
+    failed = 0
+    failed_ids = []
 
     # 确保内存缓存加载
     if not media_library:
@@ -598,14 +613,15 @@ async def import_media(request: Request, payload: dict = Body(...)):
                 "originalUrl": media["originalUrl"],
                 "thumbnail": media["thumbnail"],
                 "streamType": media["streamType"],
-                "width": media["width"],
-                "height": media["height"],
-                "bitrate": media["bitrate"],
+                "width": int(media["width"]) if media["width"] else 0,
+                "height": int(media["height"]) if media["height"] else 0,
+                "bitrate": int(media["bitrate"]) if media["bitrate"] else 0,
                 "downloaded": False,
                 "createdAt": datetime.now(timezone.utc).isoformat(),
             }
             imported += 1
 
+            # 检查内存缓存
             old_item = media_library.get(media_id)
             if old_item:
                 duplicates += 1
@@ -618,18 +634,36 @@ async def import_media(request: Request, payload: dict = Body(...)):
                 if changed:
                     updated += 1
                     media_library[media_id] = old_item
-                    if not await save_media_item(media_id, old_item):
-                        raise HTTPException(status_code=500, detail=f"数据库保存失败: {media_id}")
+                    success, err = await save_media_item(media_id, old_item)
+                    if not success:
+                        failed += 1
+                        failed_ids.append(media_id)
+                        print(f"[IMPORT] 保存失败 (更新) {media_id}: {err}")
                 continue
 
             # 新增
             media_library[media_id] = record
-            added += 1
-            if not await save_media_item(media_id, record):
-                raise HTTPException(status_code=500, detail=f"数据库保存失败: {media_id}")
+            success, err = await save_media_item(media_id, record)
+            if success:
+                added += 1
+            else:
+                failed += 1
+                failed_ids.append(media_id)
+                # 从缓存中移除失败的记录
+                del media_library[media_id]
+                print(f"[IMPORT] 保存失败 (新增) {media_id}: {err}")
 
-    print(f"[IMPORT] 完成: 导入 {imported}, 新增 {added}, 更新 {updated}, 重复 {duplicates}, 总数 {len(media_library)}")
-    return {"ok": True, "imported": imported, "added": added, "updated": updated, "duplicates": duplicates, "total": len(media_library)}
+    print(f"[IMPORT] 完成: 导入 {imported}, 新增 {added}, 更新 {updated}, 重复 {duplicates}, 失败 {failed}")
+    return {
+        "ok": True,
+        "imported": imported,
+        "added": added,
+        "updated": updated,
+        "duplicates": duplicates,
+        "failed": failed,
+        "failed_ids": failed_ids,
+        "total": len(media_library)
+    }
 
 
 # =========================================================
@@ -716,8 +750,9 @@ async def mark_downloaded(request: Request, media_id: str, payload: dict = Body(
         downloaded = bool(payload["downloaded"])
     media_library[media_id]["downloaded"] = downloaded
     media_library[media_id]["downloadedAt"] = datetime.now(timezone.utc).isoformat() if downloaded else None
-    if not await save_media_item(media_id, media_library[media_id]):
-        raise HTTPException(status_code=500, detail="数据库保存失败")
+    success, err = await save_media_item(media_id, media_library[media_id])
+    if not success:
+        raise HTTPException(status_code=500, detail=f"数据库保存失败: {err}")
     return {"ok": True, "id": media_id, "downloaded": downloaded}
 
 
