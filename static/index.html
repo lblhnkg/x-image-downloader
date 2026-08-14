@@ -893,8 +893,10 @@
             cursor: pointer;
         }
 
+        /* ========== 核心修复：选择模式下禁用预览图点击 ========== */
         .item.in-select-mode .media-wrap img {
             cursor: default;
+            pointer-events: none;
         }
 
         .media-error {
@@ -2009,6 +2011,8 @@
                 console.warn('[Storage] 加载失败:', e);
                 statUsed.textContent = '加载失败';
                 statFree.textContent = '—';
+                usedSegment.style.width = '0%';
+                freeSegment.style.width = '100%';
             });
         }
 
@@ -2022,8 +2026,8 @@
             statTotalMedia.textContent = totalMedia;
 
             var usedBytes = data.neon_used_bytes;
-            var totalBytes = 512 * 1024 * 1024;
 
+            // 如果 API 返回 null、undefined 或负数，显示暂无法获取
             if (usedBytes === null || usedBytes === undefined || usedBytes < 0) {
                 statUsed.textContent = '暂无法获取';
                 statFree.textContent = '—';
@@ -2032,6 +2036,7 @@
                 return;
             }
 
+            var totalBytes = 512 * 1024 * 1024; // 512 MB
             var freeBytes = Math.max(0, totalBytes - usedBytes);
             var usedMB = (usedBytes / 1024 / 1024).toFixed(2);
             var freeMB = (freeBytes / 1024 / 1024).toFixed(2);
