@@ -1,6 +1,7 @@
 import re
 import os
 import json
+import shutil
 import asyncio
 import subprocess
 import tempfile
@@ -39,6 +40,7 @@ app.add_middleware(
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 APP_PASSWORD = os.environ.get("APP_PASSWORD", "fushengruomeng")
+DB_PATH = "media.db"  # SQLite 文件路径（用于获取文件大小）
 
 if not DATABASE_URL:
     print("⚠️ 警告：DATABASE_URL 未设置，使用本地 SQLite（重启会丢数据）")
@@ -680,7 +682,7 @@ def normalize_import_item(item):
 
 @app.post("/api/import-media")
 async def import_media(request: Request, payload: dict = Body(...)):
-    global media_library  # ← 添加
+    global media_library
 
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
@@ -787,7 +789,7 @@ async def get_media(
     start_date: str | None = None,
     end_date: str | None = None,
 ):
-    global media_library  # ← 添加
+    global media_library
 
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
@@ -872,7 +874,7 @@ async def get_media(
 
 @app.delete("/api/media")
 async def delete_media(request: Request, media_ids: list[str] = Body(...)):
-    global media_library  # ← 添加
+    global media_library
 
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
@@ -900,7 +902,7 @@ async def delete_media(request: Request, media_ids: list[str] = Body(...)):
 
 @app.delete("/api/media/all")
 async def clear_media(request: Request):
-    global media_library  # ← 添加
+    global media_library
 
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
@@ -968,6 +970,60 @@ async def check_favorite(request: Request, username: str):
     
     exists = await is_favorite(username)
     return {"ok": True, "username": username, "favorited": exists}
+
+
+# =========================================================
+# API：存储空间统计（新增）
+# =========================================================
+
+@app.get("/api/storage")
+async def get_storage(request: Request):
+    global media_library
+
+    # 验证登录状态
+    session = request.cookies.get("session")
+    if session != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    # 统计媒体数量
+    if not media_library:
+        media_library = await load_all_media()
+
+    items = list(media_library.values())
+    total_media = len(items)
+    images = sum(1 for item in items if item.get("type") == "image")
+    videos = sum(1 for item in items if item.get("type") == "video")
+
+    # 数据库文件大小
+    db_size = 0
+    # 检查 SQLite 文件是否存在
+    if os.path.exists(DB_PATH):
+        try:
+            db_size = os.path.getsize(DB_PATH)
+        except:
+            db_size = 0
+
+    # 服务器磁盘使用情况
+    try:
+        disk_usage = shutil.disk_usage("/")
+        total_disk = disk_usage.total
+        used_disk = disk_usage.used
+        free_disk = disk_usage.free
+    except:
+        total_disk = 0
+        used_disk = 0
+        free_disk = 0
+
+    return {
+        "ok": True,
+        "total_media": total_media,
+        "images": images,
+        "videos": videos,
+        "db_size": db_size,
+        "total_disk": total_disk,
+        "used_disk": used_disk,
+        "free_disk": free_disk
+    }
 
 
 # =========================================================
@@ -1044,7 +1100,7 @@ async def media_proxy(request: Request, url: str = Query(...)):
 
 @app.post("/api/media/{media_id}/downloaded")
 async def mark_downloaded(request: Request, media_id: str, payload: dict = Body(default={})):
-    global media_library  # ← 添加
+    global media_library
 
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
