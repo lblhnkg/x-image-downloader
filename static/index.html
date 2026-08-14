@@ -2,4634 +2,2223 @@
 <html lang="zh-CN">
 
 <head>
-
-<meta charset="UTF-8">
-
-<meta
-    name="viewport"
-    content="width=device-width,
-             initial-scale=1,
-             maximum-scale=1,
-             viewport-fit=cover"
->
-
-<title>X 媒体找图器</title>
-
-<style>
-
-* {
-    box-sizing: border-box;
-}
-
-body {
-
-    margin: 0;
-
-    background: #f5f5f7;
-
-    color: #111;
-
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "SF Pro Display",
-        "Helvetica Neue",
-        Arial,
-        sans-serif;
-}
-
-button,
-input {
-
-    font-family: inherit;
-}
-
-button {
-
-    cursor: pointer;
-}
-
-.container {
-
-    width: 100%;
-
-    max-width: 950px;
-
-    margin: auto;
-
-    padding:
-        calc(18px + env(safe-area-inset-top))
-        14px
-        calc(30px + env(safe-area-inset-bottom));
-}
-
-h1 {
-
-    margin: 0 0 5px;
-
-    font-size: 25px;
-
-    letter-spacing: -.5px;
-}
-
-.subtitle {
-
-    color: #777;
-
-    font-size: 13px;
-
-    margin-bottom: 17px;
-}
-
-
-/* =====================================================
-   通用卡片
-===================================================== */
-
-.card {
-
-    background: #fff;
-
-    border-radius: 16px;
-
-    padding: 16px;
-
-    margin-bottom: 14px;
-
-    box-shadow:
-        0 2px 10px rgba(0,0,0,.04);
-}
-
-.hidden {
-
-    display: none !important;
-}
-
-label {
-
-    display: block;
-
-    color: #666;
-
-    font-size: 13px;
-
-    margin-bottom: 7px;
-}
-
-
-/* =====================================================
-   一级模式菜单
-===================================================== */
-
-.mode-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(3, minmax(0, 1fr));
-
-    gap: 10px;
-
-    margin-bottom: 14px;
-}
-
-.mode-button {
-
-    min-height: 92px;
-
-    border: 1px solid #ddd;
-
-    border-radius: 15px;
-
-    background: #fff;
-
-    text-align: left;
-
-    padding: 13px;
-
-    transition:
-        transform .12s,
-        background .12s,
-        border-color .12s;
-}
-
-.mode-button:active {
-
-    transform: scale(.98);
-}
-
-.mode-button.active {
-
-    background: #111;
-
-    color: #fff;
-
-    border-color: #111;
-}
-
-.mode-icon {
-
-    display: block;
-
-    font-size: 24px;
-
-    margin-bottom: 7px;
-}
-
-.mode-title {
-
-    display: block;
-
-    font-size: 14px;
-
-    font-weight: 700;
-}
-
-.mode-desc {
-
-    display: block;
-
-    margin-top: 4px;
-
-    font-size: 11px;
-
-    color: #888;
-}
-
-.mode-button.active .mode-desc {
-
-    color: #bbb;
-}
-
-
-/* =====================================================
-   搜索博主
-===================================================== */
-
-.profile-row {
-
-    display: flex;
-
-    gap: 8px;
-}
-
-.profile-input-wrap {
-
-    flex: 1;
-}
-
-input[type="text"],
-input[type="date"] {
-
-    width: 100%;
-
-    height: 46px;
-
-    border: 1px solid #ddd;
-
-    border-radius: 11px;
-
-    padding: 0 12px;
-
-    font-size: 16px;
-
-    background: #fff;
-
-    outline: none;
-}
-
-input:focus {
-
-    border-color: #111;
-}
-
-.favorite-add {
-
-    height: 46px;
-
-    min-width: 78px;
-
-    border: 1px solid #ddd;
-
-    background: #fff;
-
-    border-radius: 11px;
-
-    font-size: 13px;
-
-    white-space: nowrap;
-}
-
-
-/* =====================================================
-   收藏博主
-===================================================== */
-
-.favorite-entry {
-
-    margin-top: 10px;
-}
-
-.favorite-main-button {
-
-    width: 100%;
-
-    height: 42px;
-
-    border: 1px solid #ddd;
-
-    background: #fafafa;
-
-    border-radius: 11px;
-
-    font-size: 14px;
-
-    text-align: left;
-
-    padding: 0 13px;
-}
-
-.favorites-panel {
-
-    margin-top: 10px;
-
-    border: 1px solid #eee;
-
-    border-radius: 12px;
-
-    overflow: hidden;
-}
-
-.favorite-empty {
-
-    padding: 18px 12px;
-
-    color: #999;
-
-    font-size: 13px;
-
-    text-align: center;
-}
-
-.favorite-item {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 10px;
-
-    padding: 11px 10px;
-
-    border-bottom: 1px solid #eee;
-}
-
-.favorite-item:last-child {
-
-    border-bottom: 0;
-}
-
-.favorite-info {
-
-    flex: 1;
-
-    min-width: 0;
-}
-
-.favorite-name {
-
-    font-size: 14px;
-
-    font-weight: 600;
-
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-.favorite-handle {
-
-    color: #888;
-
-    font-size: 12px;
-
-    margin-top: 2px;
-}
-
-.favorite-actions {
-
-    display: flex;
-
-    gap: 5px;
-}
-
-.favorite-use,
-.favorite-delete {
-
-    height: 32px;
-
-    border-radius: 8px;
-
-    padding: 0 8px;
-
-    font-size: 11px;
-
-    border: 1px solid #ddd;
-
-    background: #fff;
-}
-
-.favorite-use {
-
-    background: #111;
-
-    color: #fff;
-
-    border-color: #111;
-}
-
-
-/* =====================================================
-   时间 / 筛选
-===================================================== */
-
-.section {
-
-    margin-top: 15px;
-}
-
-.option-row {
-
-    display: flex;
-
-    gap: 7px;
-
-    flex-wrap: wrap;
-}
-
-.option {
-
-    border: 1px solid #ddd;
-
-    background: #fafafa;
-
-    border-radius: 20px;
-
-    padding: 8px 12px;
-
-    font-size: 13px;
-}
-
-.option.active {
-
-    background: #111;
-
-    color: #fff;
-
-    border-color: #111;
-}
-
-.date-row {
-
-    display: grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap: 10px;
-}
-
-.custom-dates {
-
-    margin-top: 11px;
-}
-
-
-/* =====================================================
-   主按钮
-===================================================== */
-
-.primary {
-
-    width: 100%;
-
-    height: 48px;
-
-    border: 0;
-
-    border-radius: 12px;
-
-    background: #111;
-
-    color: #fff;
-
-    font-size: 16px;
-
-    font-weight: 600;
-
-    margin-top: 17px;
-}
-
-.primary:disabled {
-
-    opacity: .45;
-}
-
-
-/* =====================================================
-   媒体库工具栏
-===================================================== */
-
-.library-header {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 10px;
-
-    margin-bottom: 12px;
-}
-
-.library-title {
-
-    font-size: 17px;
-
-    font-weight: 700;
-}
-
-.library-count {
-
-    color: #777;
-
-    font-size: 12px;
-
-    margin-top: 3px;
-}
-
-.refresh-button {
-
-    border: 1px solid #ddd;
-
-    background: #fff;
-
-    border-radius: 9px;
-
-    padding: 8px 11px;
-
-    font-size: 12px;
-}
-
-
-/* =====================================================
-   状态
-===================================================== */
-
-.status {
-
-    font-size: 14px;
-
-    line-height: 1.6;
-}
-
-.error {
-
-    color: #d00;
-
-    white-space: pre-wrap;
-}
-
-.loader {
-
-    text-align: center;
-
-    padding: 20px;
-
-    color: #777;
-}
-
-
-/* =====================================================
-   结果
-===================================================== */
-
-.result-header {
-
-    display: flex;
-
-    justify-content: space-between;
-
-    align-items: center;
-
-    margin-bottom: 13px;
-}
-
-.result-title {
-
-    font-size: 16px;
-
-    font-weight: 700;
-}
-
-.result-count {
-
-    color: #777;
-
-    font-size: 12px;
-
-    margin-top: 4px;
-}
-
-
-/* =====================================================
-   正常 Grid
-   左 → 右
-   上 → 下
-===================================================== */
-
-.gallery {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(2, minmax(0, 1fr));
-
-    gap: 9px;
-
-    align-items: start;
-}
-
-
-/* =====================================================
-   媒体卡片
-===================================================== */
-
-.item {
-
-    min-width: 0;
-
-    background: #fff;
-
-    border: 1px solid #eee;
-
-    border-radius: 12px;
-
-    overflow: hidden;
-}
-
-.media-wrap {
-
-    position: relative;
-
-    width: 100%;
-
-    background: #eee;
-
-    overflow: hidden;
-}
-
-.media-wrap img {
-
-    display: block;
-
-    width: 100%;
-
-    aspect-ratio: 1 / 1;
-
-    object-fit: cover;
-
-    cursor: pointer;
-}
-
-.media-error {
-
-    width: 100%;
-
-    aspect-ratio: 1 / 1;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    background: #eee;
-
-    color: #999;
-
-    font-size: 13px;
-
-    text-align: center;
-
-    padding: 12px;
-}
-
-.video-badge {
-
-    position: absolute;
-
-    left: 7px;
-
-    top: 7px;
-
-    background: rgba(0,0,0,.75);
-
-    color: #fff;
-
-    border-radius: 20px;
-
-    padding: 5px 8px;
-
-    font-size: 10px;
-}
-
-.source-badge {
-
-    position: absolute;
-
-    right: 7px;
-
-    top: 7px;
-
-    background: rgba(0,0,0,.75);
-
-    color: #fff;
-
-    border-radius: 20px;
-
-    padding: 5px 8px;
-
-    font-size: 10px;
-}
-
-.library-badge {
-
-    position: absolute;
-
-    right: 7px;
-
-    top: 7px;
-
-    background: rgba(0,0,0,.75);
-
-    color: #fff;
-
-    border-radius: 20px;
-
-    padding: 5px 8px;
-
-    font-size: 10px;
-}
-
-.item-info {
-
-    padding: 8px;
-}
-
-.item-author {
-
-    font-size: 11px;
-
-    font-weight: 600;
-
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-
-    margin-bottom: 3px;
-}
-
-.item-date {
-
-    color: #888;
-
-    font-size: 10px;
-}
-
-.item-actions {
-
-    display: grid;
-
-    grid-template-columns:
-        1fr 1fr 1fr;
-
-    gap: 4px;
-
-    margin-top: 7px;
-}
-
-.small-btn {
-
-    height: 32px;
-
-    border: 1px solid #ddd;
-
-    background: #fff;
-
-    border-radius: 7px;
-
-    font-size: 10px;
-
-    padding: 0 2px;
-
-    white-space: nowrap;
-}
-
-
-/* =====================================================
-   Modal
-===================================================== */
-
-.modal {
-
-    position: fixed;
-
-    inset: 0;
-
-    z-index: 1000;
-
-    background: rgba(0,0,0,.95);
-
-    display: flex;
-
-    flex-direction: column;
-}
-
-.modal-top {
-
-    min-height: 58px;
-
-    padding:
-        env(safe-area-inset-top)
-        12px
-        0
-        12px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-}
-
-.modal-button {
-
-    border: 0;
-
-    background: rgba(255,255,255,.12);
-
-    color: #fff;
-
-    border-radius: 20px;
-
-    padding: 8px 13px;
-}
-
-.modal-content {
-
-    flex: 1;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    padding: 10px;
-
-    overflow: auto;
-}
-
-.modal-content img {
-
-    max-width: 100%;
-
-    max-height: 100%;
-
-    object-fit: contain;
-}
-
-.modal-content video {
-
-    max-width: 100%;
-
-    max-height: 100%;
-}
-
-.modal-bottom {
-
-    padding:
-        10px
-        12px
-        calc(12px + env(safe-area-inset-bottom));
-
-    display: flex;
-
-    gap: 8px;
-}
-
-.modal-bottom button {
-
-    flex: 1;
-
-    height: 45px;
-
-    border: 0;
-
-    border-radius: 10px;
-
-    font-size: 14px;
-}
-
-.download {
-
-    background: #fff;
-
-    color: #111;
-}
-
-.original {
-
-    background: rgba(255,255,255,.15);
-
-    color: #fff;
-}
-
-
-/* =====================================================
-   大屏
-===================================================== */
-
-@media (min-width: 700px) {
-
-    .gallery {
-
-        grid-template-columns:
-            repeat(4, minmax(0, 1fr));
-    }
-
-}
-
-
-/* =====================================================
-   小屏
-===================================================== */
-
-@media (max-width: 560px) {
-
-    .mode-grid {
-
-        grid-template-columns:
-            1fr;
-    }
-
-    .mode-button {
-
-        min-height: 70px;
-    }
-
-    .mode-icon {
-
-        display: inline;
-
-        margin-right: 6px;
-
-        font-size: 20px;
-    }
-
-}
-
-@media (max-width: 380px) {
-
-    .item-actions {
-
-        grid-template-columns:
-            1fr 1fr;
-    }
-
-    .item-actions
-    .small-btn:last-child {
-
-        grid-column:
-            1 / -1;
-    }
-
-}
-
-</style>
-
-<!-- HLS 视频播放支持（m3u8） -->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+    <title>万能媒体下载器</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js">
+    </script>
+    <style>
+        /* =====================================================
+           全局重置 & 基础
+        ===================================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* =====================================================
+           容器
+        ===================================================== */
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #141414 0%, #1a1a1a 100%);
+            border-radius: 32px;
+            padding: 40px 28px 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            min-height: 560px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        /* =====================================================
+           页面切换
+        ===================================================== */
+        .page {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* =====================================================
+           标题
+        ===================================================== */
+        .app-title {
+            font-size: 26px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            text-align: center;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+
+        .app-title-icon {
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        /* =====================================================
+           登录页
+        ===================================================== */
+        .login-divider {
+            border: 0;
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.15), transparent);
+            margin: 28px 0 32px;
+        }
+
+        .login-section-title {
+            font-size: 13px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.5px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .login-input-group {
+            margin-bottom: 18px;
+        }
+
+        .login-input-group input {
+            width: 100%;
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 12px 0 8px;
+            font-size: 17px;
+            color: #fff;
+            outline: none;
+            transition: border-color 0.25s ease;
+            font-family: inherit;
+            letter-spacing: 0.3px;
+        }
+
+        .login-input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+            font-weight: 300;
+            font-size: 16px;
+        }
+
+        .login-input-group input:focus {
+            border-bottom-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px 0;
+            background: #fff;
+            color: #0a0a0a;
+            border: 0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            letter-spacing: 0.3px;
+            margin-top: 6px;
+        }
+
+        .login-btn:hover {
+            opacity: 0.85;
+            transform: scale(0.98);
+        }
+
+        .login-btn:active {
+            transform: scale(0.96);
+        }
+
+        .login-guest-btn {
+            width: 100%;
+            padding: 14px 0;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            letter-spacing: 0.3px;
+            margin-top: 10px;
+        }
+
+        .login-guest-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .login-guest-btn:active {
+            transform: scale(0.98);
+        }
+
+        .login-footer-text {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            line-height: 1.7;
+            margin-top: 22px;
+            padding: 0 4px;
+        }
+
+        .login-footer-text .highlight {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .login-footer-text .small-note {
+            display: block;
+            margin-top: 4px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        .login-error {
+            color: #ff6b6b;
+            font-size: 13px;
+            text-align: center;
+            margin-top: 10px;
+            min-height: 20px;
+        }
+
+        .login-dev-signature {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.15);
+            margin-top: 32px;
+            letter-spacing: 0.5px;
+            font-weight: 300;
+        }
+
+        /* =====================================================
+           一级菜单
+        ===================================================== */
+        .menu-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 18px;
+        }
+
+        .menu-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 22px 24px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .menu-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .menu-card:active {
+            transform: scale(0.98);
+        }
+
+        .menu-card-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #fff;
+            letter-spacing: -0.2px;
+        }
+
+        .menu-card-desc {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.35);
+            margin-top: 4px;
+            font-weight: 300;
+            letter-spacing: 0.2px;
+        }
+
+        .menu-card .menu-arrow {
+            float: right;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 18px;
+            margin-top: 2px;
+        }
+
+        .menu-card.disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        .menu-card.disabled:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.06);
+            transform: none;
+        }
+
+        /* =====================================================
+           二级菜单（返回 + 子选项）
+        ===================================================== */
+        .back-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 22px;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 15px;
+            transition: color 0.2s ease;
+            font-weight: 400;
+            letter-spacing: 0.2px;
+            padding: 4px 0;
+        }
+
+        .back-row:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .back-row .back-icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .submenu-title {
+            font-size: 20px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 6px;
+            letter-spacing: -0.3px;
+        }
+
+        .submenu-desc {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-bottom: 18px;
+            font-weight: 300;
+        }
+
+        .submenu-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .submenu-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 18px 20px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .submenu-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .submenu-card:active {
+            transform: scale(0.98);
+        }
+
+        .submenu-card-title {
+            font-size: 16px;
+            font-weight: 450;
+            color: #fff;
+        }
+
+        .submenu-card-desc {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 2px;
+            font-weight: 300;
+        }
+
+        /* =====================================================
+           搜索博主面板
+        ===================================================== */
+        .search-section {
+            margin-top: 6px;
+        }
+
+        .search-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 300;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-row input {
+            flex: 1;
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 10px 0 8px;
+            font-size: 16px;
+            color: #fff;
+            outline: none;
+            transition: border-color 0.25s ease;
+            font-family: inherit;
+        }
+
+        .search-row input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+            font-weight: 300;
+        }
+
+        .search-row input:focus {
+            border-bottom-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .search-row .search-btn-icon {
+            background: transparent;
+            border: 0;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 6px 4px 6px 10px;
+            transition: color 0.2s ease;
+        }
+
+        .search-row .search-btn-icon:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .search-favorite-btn {
+            background: transparent;
+            border: 0;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 6px 4px 6px 6px;
+            transition: color 0.2s ease;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+
+        .search-favorite-btn:hover {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-favorite-btn.favorited {
+            color: #ffd700;
+        }
+
+        /* 收藏面板 */
+        .favorites-panel {
+            margin-top: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .favorite-empty {
+            padding: 16px 14px;
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 13px;
+            font-weight: 300;
+            text-align: center;
+        }
+
+        .favorite-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .favorite-item:last-child {
+            border-bottom: 0;
+        }
+
+        .favorite-item .fav-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .favorite-item .fav-name {
+            font-size: 14px;
+            color: #fff;
+            font-weight: 400;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .favorite-item .fav-handle {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 1px;
+        }
+
+        .favorite-item .fav-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .favorite-item .fav-actions button {
+            background: transparent;
+            border: 0;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .favorite-item .fav-actions .fav-use {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .favorite-item .fav-actions .fav-use:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .favorite-item .fav-actions .fav-delete:hover {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.08);
+        }
+
+        .favorite-toggle-btn {
+            width: 100%;
+            background: transparent;
+            border: 0;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 13px;
+            font-weight: 300;
+            padding: 10px 0 6px;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            transition: color 0.2s ease;
+        }
+
+        .favorite-toggle-btn:hover {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* =====================================================
+           选项行（时间/媒体类型/来源）
+        ===================================================== */
+        .option-section {
+            margin-top: 18px;
+        }
+
+        .option-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            font-weight: 300;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .option-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .option-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.4);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            font-weight: 300;
+        }
+
+        .option-btn:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .option-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .date-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .date-row input[type="date"] {
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 0 6px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            outline: none;
+            font-family: inherit;
+            transition: border-color 0.25s ease;
+        }
+
+        .date-row input[type="date"]:focus {
+            border-bottom-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .date-row input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.6);
+        }
+
+        /* =====================================================
+           主按钮
+        ===================================================== */
+        .primary-btn {
+            width: 100%;
+            padding: 14px 0;
+            background: #fff;
+            color: #0a0a0a;
+            border: 0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            margin-top: 18px;
+        }
+
+        .primary-btn:hover {
+            opacity: 0.85;
+            transform: scale(0.98);
+        }
+
+        .primary-btn:active {
+            transform: scale(0.96);
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.3;
+            cursor: default;
+            transform: none;
+        }
+
+        /* =====================================================
+           状态 & 结果
+        ===================================================== */
+        .status-box {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 300;
+            line-height: 1.6;
+            min-height: 20px;
+        }
+
+        .status-box.error {
+            color: #ff6b6b;
+            border-color: rgba(255, 107, 107, 0.15);
+            background: rgba(255, 107, 107, 0.04);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+            margin-bottom: 12px;
+        }
+
+        .result-title {
+            font-size: 15px;
+            font-weight: 450;
+            color: #fff;
+        }
+
+        .result-count {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.25);
+            font-weight: 300;
+        }
+
+        /* =====================================================
+           画廊 Grid
+        ===================================================== */
+        .gallery {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .item {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .media-wrap {
+            position: relative;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            overflow: hidden;
+        }
+
+        .media-wrap img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        .media-error {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 12px;
+            text-align: center;
+            padding: 12px;
+            font-weight: 300;
+        }
+
+        .video-badge {
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 10px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .source-badge {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 10px;
+            font-weight: 300;
+            letter-spacing: 0.3px;
+        }
+
+        .library-badge {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 10px;
+            font-weight: 300;
+            letter-spacing: 0.3px;
+        }
+
+        .item-info {
+            padding: 8px 10px;
+        }
+
+        .item-author {
+            font-size: 11px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.5);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-date {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.2);
+            margin-top: 2px;
+            font-weight: 300;
+        }
+
+        .item-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .item-actions button {
+            background: rgba(255, 255, 255, 0.05);
+            border: 0;
+            color: rgba(255, 255, 255, 0.4);
+            padding: 5px 0;
+            border-radius: 6px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            font-weight: 300;
+        }
+
+        .item-actions button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .loader {
+            text-align: center;
+            padding: 30px 0;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 13px;
+            font-weight: 300;
+            grid-column: 1 / -1;
+        }
+
+        /* =====================================================
+           Modal
+        ===================================================== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+        }
+
+        .modal-overlay.hidden {
+            display: none !important;
+        }
+
+        .modal-top {
+            min-height: 54px;
+            padding: 10px 16px 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .modal-close {
+            background: rgba(255, 255, 255, 0.08);
+            border: 0;
+            color: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+            padding: 6px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            font-weight: 300;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        .modal-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 16px;
+            overflow: auto;
+        }
+
+        .modal-content img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .modal-content video {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .modal-bottom {
+            padding: 10px 16px 16px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-bottom button {
+            flex: 1;
+            padding: 12px 0;
+            border: 0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 450;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .modal-bottom .modal-download {
+            background: #fff;
+            color: #0a0a0a;
+        }
+
+        .modal-bottom .modal-download:hover {
+            opacity: 0.85;
+        }
+
+        .modal-bottom .modal-original {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .modal-bottom .modal-original:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        /* =====================================================
+           响应式
+        ===================================================== */
+        @media (max-width: 420px) {
+            .app-container {
+                padding: 28px 18px 22px;
+                border-radius: 24px;
+            }
+            .app-title {
+                font-size: 22px;
+            }
+            .menu-card {
+                padding: 18px 18px;
+            }
+            .menu-card-title {
+                font-size: 16px;
+            }
+            .submenu-card {
+                padding: 14px 16px;
+            }
+            .gallery {
+                gap: 6px;
+            }
+            .item-actions {
+                grid-template-columns: 1fr 1fr;
+            }
+            .item-actions button:last-child {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .app-container {
+                padding: 20px 12px 16px;
+                border-radius: 20px;
+            }
+            .login-input-group input {
+                font-size: 15px;
+            }
+        }
+
+        /* =====================================================
+           访客模式提示弹窗
+        ===================================================== */
+        .guest-tip-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .guest-tip-overlay.hidden {
+            display: none !important;
+        }
+
+        .guest-tip-box {
+            background: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 30px 28px 24px;
+            max-width: 380px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .guest-tip-box .tip-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .guest-tip-box .tip-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .guest-tip-box .tip-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+            line-height: 1.7;
+            font-weight: 300;
+        }
+
+        .guest-tip-box .tip-btn {
+            margin-top: 18px;
+            padding: 10px 32px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 0;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .guest-tip-box .tip-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* =====================================================
+           Missav 敬请期待弹窗
+        ===================================================== */
+        .coming-soon-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .coming-soon-overlay.hidden {
+            display: none !important;
+        }
+
+        .coming-soon-box {
+            background: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 30px 28px 24px;
+            max-width: 360px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .coming-soon-box .cs-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .coming-soon-box .cs-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.35);
+            line-height: 1.6;
+            font-weight: 300;
+        }
+
+        .coming-soon-box .cs-btn {
+            margin-top: 18px;
+            padding: 10px 32px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 0;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .coming-soon-box .cs-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+    </style>
 </head>
-
 
 <body>
 
-<div class="container">
+    <!-- =====================================================
+    主容器
+    ===================================================== -->
+    <div class="app-container" id="app">
 
-<h1>🖼️ X 媒体找图器</h1>
-
-<div class="subtitle">
-    搜索博主媒体，或浏览采集器上传的 Likes / Bookmarks
-</div>
-
-
-<!-- =====================================================
-     一级入口
-===================================================== -->
-
-<div class="mode-grid">
-
-    <button
-        id="modeSearch"
-        class="mode-button active"
-    >
-
-        <span class="mode-icon">
-            🔎
-        </span>
-
-        <span class="mode-title">
-            搜索博主下载
-        </span>
-
-        <span class="mode-desc">
-            搜索指定博主的媒体
-        </span>
-
-    </button>
-
-
-    <button
-        id="modeLikes"
-        class="mode-button"
-    >
-
-        <span class="mode-icon">
-            ❤️
-        </span>
-
-        <span class="mode-title">
-            我的喜欢
-        </span>
-
-        <span class="mode-desc">
-            查看采集器上传的 Likes
-        </span>
-
-    </button>
-
-
-    <button
-        id="modeBookmarks"
-        class="mode-button"
-    >
-
-        <span class="mode-icon">
-            🔖
-        </span>
-
-        <span class="mode-title">
-            我的书签
-        </span>
-
-        <span class="mode-desc">
-            查看采集器上传的 Bookmarks
-        </span>
-
-    </button>
-
-</div>
-
-
-<!-- =====================================================
-     搜索博主区域
-===================================================== -->
-
-<div
-    id="searchPanel"
-    class="card"
->
-
-    <label>
-        博主
-    </label>
-
-
-    <div class="profile-row">
-
-        <div class="profile-input-wrap">
-
-            <input
-                id="profile"
-                type="text"
-                placeholder="@NASA / NASA / x.com/NASA"
-                autocomplete="off"
-                autocapitalize="off"
-                spellcheck="false"
-            />
-
-        </div>
-
-
-        <button
-            id="favoriteAdd"
-            class="favorite-add"
-        >
-            ☆ 收藏
-        </button>
-
-    </div>
-
-
-    <div class="favorite-entry">
-
-        <button
-            id="favoriteToggle"
-            class="favorite-main-button"
-        >
-            ⭐ 我的收藏
-        </button>
-
-
-        <div
-            id="favoritesPanel"
-            class="favorites-panel hidden"
-        ></div>
-
-    </div>
-
-
-    <div class="section">
-
-        <label>
-            时间范围
-        </label>
-
-        <div class="option-row">
-
-            <button
-                class="option active"
-                data-group="range"
-                data-value="all"
-            >
-                全部
-            </button>
-
-            <button
-                class="option"
-                data-group="range"
-                data-value="7"
-            >
-                最近7天
-            </button>
-
-            <button
-                class="option"
-                data-group="range"
-                data-value="30"
-            >
-                最近30天
-            </button>
-
-            <button
-                class="option"
-                data-group="range"
-                data-value="365"
-            >
-                最近1年
-            </button>
-
-            <button
-                class="option"
-                data-group="range"
-                data-value="custom"
-            >
-                自定义
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <div
-        id="customDates"
-        class="custom-dates hidden"
-    >
-
-        <div class="date-row">
-
-            <div>
-
-                <label>
-                    开始日期
-                </label>
-
-                <input
-                    id="startDate"
-                    type="date"
-                />
-
+        <!-- =====================================================
+        页面：登录
+        ===================================================== -->
+        <div class="page active" id="pageLogin">
+            <div class="app-title">
+                <span class="app-title-icon">🖼️</span>万能媒体下载器
             </div>
 
+            <hr class="login-divider">
 
-            <div>
+            <div class="login-section-title">开发者通道</div>
 
-                <label>
-                    结束日期
-                </label>
-
-                <input
-                    id="endDate"
-                    type="date"
-                />
-
+            <div class="login-input-group">
+                <input type="password" id="loginPassword" placeholder="密码" autocomplete="off">
             </div>
 
-        </div>
+            <button class="login-btn" id="loginBtn">进入</button>
 
-    </div>
+            <div id="loginError" class="login-error"></div>
 
+            <div class="login-section-title" style="margin-top:24px;margin-bottom:12px;">— 或 —</div>
 
-    <div class="section">
+            <button class="login-guest-btn" id="guestBtn">以访客身份浏览</button>
 
-        <label>
-            媒体类型
-        </label>
-
-        <div class="option-row">
-
-            <button
-                class="option active"
-                data-group="media"
-                data-value="photo"
-            >
-                🖼️ 图片
-            </button>
-
-            <button
-                class="option"
-                data-group="media"
-                data-value="video"
-            >
-                🎬 视频
-            </button>
-
-            <button
-                class="option"
-                data-group="media"
-                data-value="all"
-            >
-                🖼️+🎬 全部
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <div class="section">
-
-        <label>
-            帖子来源
-        </label>
-
-        <div class="option-row">
-
-            <button
-                class="option active"
-                data-group="source"
-                data-value="all"
-            >
-                全部
-            </button>
-
-            <button
-                class="option"
-                data-group="source"
-                data-value="original"
-            >
-                原创
-            </button>
-
-            <button
-                class="option"
-                data-group="source"
-                data-value="repost"
-            >
-                转帖 / 引用
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <button
-        id="searchButton"
-        class="primary"
-    >
-        开始找图
-    </button>
-
-</div>
-
-
-<!-- =====================================================
-     Likes / Bookmarks
-===================================================== -->
-
-<div
-    id="libraryPanel"
-    class="card hidden"
->
-
-    <div class="library-header">
-
-        <div>
-
-            <div
-                id="libraryTitle"
-                class="library-title"
-            >
-                ❤️ 我的喜欢
+            <div class="login-footer-text">
+                访客数据仅保存在本地浏览器中
+                <span class="small-note">清除缓存后数据将丢失</span>
+                <span class="small-note" style="margin-top:6px;">“我的喜欢”和“我的书签”需搭配采集器使用</span>
             </div>
 
-            <div
-                id="libraryCount"
-                class="library-count"
-            >
-                正在读取……
+            <div class="login-dev-signature">开发者：浮生若夢</div>
+        </div>
+
+        <!-- =====================================================
+        页面：一级菜单
+        ===================================================== -->
+        <div class="page" id="pageMenu">
+            <div class="app-title" style="font-size:22px;margin-bottom:4px;">
+                <span class="app-title-icon">🖼️</span>万能媒体下载器
             </div>
 
-        </div>
+            <div class="menu-grid">
+                <div class="menu-card" id="menuX">
+                    <span class="menu-arrow">›</span>
+                    <div class="menu-card-title">下载 X 上的媒体</div>
+                    <div class="menu-card-desc">图片 · 视频 · 喜欢 · 书签</div>
+                </div>
 
+                <div class="menu-card" id="menuMissav">
+                    <span class="menu-arrow">›</span>
+                    <div class="menu-card-title">下载 Missav 上的电影</div>
+                    <div class="menu-card-desc">即将上线</div>
+                </div>
 
-        <button
-            id="refreshLibrary"
-            class="refresh-button"
-        >
-            ↻ 刷新
-        </button>
-
-    </div>
-
-
-    <div class="section">
-
-        <label>
-            媒体类型
-        </label>
-
-        <div class="option-row">
-
-            <button
-                class="option active"
-                data-group="libraryMedia"
-                data-value="all"
-            >
-                全部
-            </button>
-
-            <button
-                class="option"
-                data-group="libraryMedia"
-                data-value="image"
-            >
-                🖼️ 图片
-            </button>
-
-            <button
-                class="option"
-                data-group="libraryMedia"
-                data-value="video"
-            >
-                🎬 视频
-            </button>
-
-        </div>
-
-    </div>
-
-</div>
-
-
-<!-- =====================================================
-     状态
-===================================================== -->
-
-<div
-    id="statusCard"
-    class="card hidden"
->
-
-    <div
-        id="status"
-        class="status"
-    ></div>
-
-</div>
-
-
-<!-- =====================================================
-     结果
-===================================================== -->
-
-<div
-    id="resultCard"
-    class="card hidden"
->
-
-    <div class="result-header">
-
-        <div>
-
-            <div
-                id="resultTitle"
-                class="result-title"
-            >
-                媒体
+                <div class="menu-card disabled">
+                    <span class="menu-arrow" style="color:rgba(255,255,255,0.1);">›</span>
+                    <div class="menu-card-title" style="color:rgba(255,255,255,0.3);">敬请期待…</div>
+                    <div class="menu-card-desc">更多网站支持中</div>
+                </div>
             </div>
 
-            <div
-                id="resultCount"
-                class="result-count"
-            ></div>
+            <div class="login-dev-signature" style="margin-top:32px;">开发者：浮生若夢</div>
+        </div>
 
+        <!-- =====================================================
+        页面：X 子菜单
+        ===================================================== -->
+        <div class="page" id="pageXSub">
+            <div class="back-row" id="backFromX">
+                <span class="back-icon">‹</span> 返回
+            </div>
+
+            <div class="submenu-title">下载 X 上的媒体</div>
+            <div class="submenu-desc">图片 · 视频 · 喜欢 · 书签</div>
+
+            <div class="submenu-grid">
+                <div class="submenu-card" id="subSearch">
+                    <div class="submenu-card-title">🔍 搜索博主</div>
+                    <div class="submenu-card-desc">输入用户名，搜索指定博主的媒体</div>
+                </div>
+
+                <div class="submenu-card" id="subLikes">
+                    <div class="submenu-card-title">❤️ 我的喜欢</div>
+                    <div class="submenu-card-desc">查看采集器上传的喜欢列表</div>
+                </div>
+
+                <div class="submenu-card" id="subBookmarks">
+                    <div class="submenu-card-title">🔖 我的书签</div>
+                    <div class="submenu-card-desc">查看采集器上传的书签列表</div>
+                </div>
+            </div>
+
+            <div class="login-dev-signature" style="margin-top:28px;">开发者：浮生若夢</div>
+        </div>
+
+        <!-- =====================================================
+        页面：搜索博主
+        ===================================================== -->
+        <div class="page" id="pageSearch">
+            <div class="back-row" id="backFromSearch">
+                <span class="back-icon">‹</span> 返回
+            </div>
+
+            <div class="submenu-title">搜索博主</div>
+            <div class="submenu-desc">输入 X 用户名，搜索该博主的所有媒体</div>
+
+            <div class="search-section">
+                <label class="search-label">博主</label>
+                <div class="search-row">
+                    <input type="text" id="profileInput" placeholder="@NASA / NASA / x.com/NASA" autocomplete="off" autocapitalize="off" spellcheck="false">
+                    <button class="search-btn-icon" id="searchBtn">⌕</button>
+                    <button class="search-favorite-btn" id="favoriteAddBtn">☆ 收藏</button>
+                </div>
+
+                <div class="favorite-entry" style="margin-top:10px;">
+                    <button class="favorite-toggle-btn" id="favoriteToggleBtn">⭐ 我的收藏</button>
+                    <div class="favorites-panel hidden" id="favoritesPanel"></div>
+                </div>
+
+                <div class="option-section">
+                    <span class="option-label">时间范围</span>
+                    <div class="option-row" data-group="range">
+                        <button class="option-btn active" data-value="all">全部</button>
+                        <button class="option-btn" data-value="7">最近7天</button>
+                        <button class="option-btn" data-value="30">最近30天</button>
+                        <button class="option-btn" data-value="365">最近1年</button>
+                        <button class="option-btn" data-value="custom">自定义</button>
+                    </div>
+                </div>
+
+                <div class="hidden" id="customDates" style="margin-top:10px;">
+                    <div class="date-row">
+                        <div>
+                            <label class="search-label" style="font-size:11px;">开始日期</label>
+                            <input type="date" id="startDate">
+                        </div>
+                        <div>
+                            <label class="search-label" style="font-size:11px;">结束日期</label>
+                            <input type="date" id="endDate">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="option-section">
+                    <span class="option-label">媒体类型</span>
+                    <div class="option-row" data-group="media">
+                        <button class="option-btn active" data-value="photo">图片</button>
+                        <button class="option-btn" data-value="video">视频</button>
+                        <button class="option-btn" data-value="all">全部</button>
+                    </div>
+                </div>
+
+                <div class="option-section">
+                    <span class="option-label">帖子来源</span>
+                    <div class="option-row" data-group="source">
+                        <button class="option-btn active" data-value="all">全部</button>
+                        <button class="option-btn" data-value="original">原创</button>
+                        <button class="option-btn" data-value="repost">转帖 / 引用</button>
+                    </div>
+                </div>
+
+                <button class="primary-btn" id="searchSubmitBtn">开始找图</button>
+
+                <div class="status-box hidden" id="searchStatus"></div>
+                <div class="result-header hidden" id="searchResultHeader">
+                    <span class="result-title" id="searchResultTitle">搜索结果</span>
+                    <span class="result-count" id="searchResultCount"></span>
+                </div>
+                <div class="gallery" id="searchGallery"></div>
+            </div>
+
+            <div class="login-dev-signature" style="margin-top:28px;">开发者：浮生若夢</div>
+        </div>
+
+        <!-- =====================================================
+        页面：我的喜欢 / 我的书签（共用）
+        ===================================================== -->
+        <div class="page" id="pageLibrary">
+            <div class="back-row" id="backFromLibrary">
+                <span class="back-icon">‹</span> 返回
+            </div>
+
+            <div class="submenu-title" id="libraryTitle">我的喜欢</div>
+            <div class="submenu-desc" id="libraryDesc">查看采集器上传的喜欢列表</div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;margin-top:4px;">
+                <span style="font-size:12px;color:rgba(255,255,255,0.25);font-weight:300;" id="libraryCount">正在读取…</span>
+                <button style="background:transparent;border:0;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;" id="refreshLibraryBtn">↻ 刷新</button>
+            </div>
+
+            <div class="option-section" style="margin-top:0;">
+                <span class="option-label">媒体类型</span>
+                <div class="option-row" data-group="libraryMedia">
+                    <button class="option-btn active" data-value="all">全部</button>
+                    <button class="option-btn" data-value="image">图片</button>
+                    <button class="option-btn" data-value="video">视频</button>
+                </div>
+            </div>
+
+            <div class="status-box hidden" id="libraryStatus"></div>
+            <div class="result-header hidden" id="libraryResultHeader">
+                <span class="result-title" id="libraryResultTitle">媒体</span>
+                <span class="result-count" id="libraryResultCount"></span>
+            </div>
+            <div class="gallery" id="libraryGallery"></div>
+
+            <div class="login-dev-signature" style="margin-top:28px;">开发者：浮生若夢</div>
         </div>
 
     </div>
 
-
-    <div
-        id="gallery"
-        class="gallery"
-    ></div>
-
-</div>
-
-
-</div>
-
-
-<!-- =====================================================
-     Modal
-===================================================== -->
-
-<div
-    id="modal"
-    class="modal hidden"
->
-
-    <div class="modal-top">
-
-        <button
-            id="closeModal"
-            class="modal-button"
-        >
-            ✕ 关闭
-        </button>
-
+    <!-- =====================================================
+    访客提示弹窗
+    ===================================================== -->
+    <div class="guest-tip-overlay hidden" id="guestTip">
+        <div class="guest-tip-box">
+            <span class="tip-icon">📌</span>
+            <div class="tip-title">访客模式</div>
+            <div class="tip-desc">
+                数据仅保存在本地浏览器中<br>
+                清除缓存后数据将丢失<br><br>
+                “我的喜欢”和“我的书签”需搭配采集器使用
+            </div>
+            <button class="tip-btn" id="guestTipBtn">我知道了</button>
+        </div>
     </div>
 
-
-    <div
-        id="modalContent"
-        class="modal-content"
-    ></div>
-
-
-    <div class="modal-bottom">
-
-        <button
-            id="downloadButton"
-            class="download"
-        >
-            ⬇ 下载
-        </button>
-
-        <button
-            id="originalButton"
-            class="original"
-        >
-            🔗 打开原帖
-        </button>
-
+    <!-- =====================================================
+    敬请期待弹窗
+    ===================================================== -->
+    <div class="coming-soon-overlay hidden" id="comingSoon">
+        <div class="coming-soon-box">
+            <div class="cs-title">敬请期待</div>
+            <div class="cs-desc">更多网站支持中…</div>
+            <button class="cs-btn" id="comingSoonBtn">知道了</button>
+        </div>
     </div>
 
-</div>
+    <!-- =====================================================
+    Missav 提示弹窗
+    ===================================================== -->
+    <div class="coming-soon-overlay hidden" id="missavTip">
+        <div class="coming-soon-box">
+            <div class="cs-title">功能开发中</div>
+            <div class="cs-desc">Missav 电影下载功能即将上线</div>
+            <button class="cs-btn" id="missavTipBtn">知道了</button>
+        </div>
+    </div>
 
+    <!-- =====================================================
+    Modal
+    ===================================================== -->
+    <div class="modal-overlay hidden" id="modal">
+        <div class="modal-top">
+            <button class="modal-close" id="modalCloseBtn">✕ 关闭</button>
+        </div>
+        <div class="modal-content" id="modalContent"></div>
+        <div class="modal-bottom">
+            <button class="modal-download" id="modalDownloadBtn">⬇ 下载</button>
+            <button class="modal-original" id="modalOriginalBtn">🔗 打开原帖</button>
+        </div>
+    </div>
 
+    <script>
+        // =========================================================
+        // JavaScript 核心逻辑（第二段）
+        // =========================================================
+        // 由于代码量较大，第二段将包含所有功能逻辑
+        // 请等待第二段粘贴
+    </script>
+</body>
+
+</html>
 <script>
-/* =====================================================
-   DOM
-===================================================== */
+    /* =====================================================
+       状态
+    ==================================================== */
+    let currentMode = 'guest'; // 'developer' | 'guest'
+    let currentSubPage = '';
+    let currentItem = null;
+    let currentHls = null;
 
-const profileInput =
-    document.getElementById(
-        "profile"
-    );
+    let range = 'all';
+    let mediaType = 'photo';
+    let sourceType = 'all';
+    let libraryMediaType = 'all';
 
-const favoriteAdd =
-    document.getElementById(
-        "favoriteAdd"
-    );
+    let favorites = [];
 
-const favoriteToggle =
-    document.getElementById(
-        "favoriteToggle"
-    );
+    /* =====================================================
+       DOM 引用
+    ==================================================== */
+    const $ = id => document.getElementById(id);
 
-const favoritesPanel =
-    document.getElementById(
-        "favoritesPanel"
-    );
+    const pageLogin = $('pageLogin');
+    const pageMenu = $('pageMenu');
+    const pageXSub = $('pageXSub');
+    const pageSearch = $('pageSearch');
+    const pageLibrary = $('pageLibrary');
 
-const searchButton =
-    document.getElementById(
-        "searchButton"
-    );
+    const loginPassword = $('loginPassword');
+    const loginBtn = $('loginBtn');
+    const loginError = $('loginError');
+    const guestBtn = $('guestBtn');
 
-const searchPanel =
-    document.getElementById(
-        "searchPanel"
-    );
+    const menuX = $('menuX');
+    const menuMissav = $('menuMissav');
 
-const libraryPanel =
-    document.getElementById(
-        "libraryPanel"
-    );
+    const backFromX = $('backFromX');
+    const backFromSearch = $('backFromSearch');
+    const backFromLibrary = $('backFromLibrary');
 
-const libraryTitle =
-    document.getElementById(
-        "libraryTitle"
-    );
+    const subSearch = $('subSearch');
+    const subLikes = $('subLikes');
+    const subBookmarks = $('subBookmarks');
 
-const libraryCount =
-    document.getElementById(
-        "libraryCount"
-    );
+    const profileInput = $('profileInput');
+    const searchBtn = $('searchBtn');
+    const favoriteAddBtn = $('favoriteAddBtn');
+    const favoriteToggleBtn = $('favoriteToggleBtn');
+    const favoritesPanel = $('favoritesPanel');
+    const searchSubmitBtn = $('searchSubmitBtn');
+    const searchStatus = $('searchStatus');
+    const searchResultHeader = $('searchResultHeader');
+    const searchResultTitle = $('searchResultTitle');
+    const searchResultCount = $('searchResultCount');
+    const searchGallery = $('searchGallery');
 
-const refreshLibrary =
-    document.getElementById(
-        "refreshLibrary"
-    );
+    const libraryTitle = $('libraryTitle');
+    const libraryDesc = $('libraryDesc');
+    const libraryCount = $('libraryCount');
+    const refreshLibraryBtn = $('refreshLibraryBtn');
+    const libraryStatus = $('libraryStatus');
+    const libraryResultHeader = $('libraryResultHeader');
+    const libraryResultTitle = $('libraryResultTitle');
+    const libraryResultCount = $('libraryResultCount');
+    const libraryGallery = $('libraryGallery');
 
-const statusCard =
-    document.getElementById(
-        "statusCard"
-    );
+    const startDate = $('startDate');
+    const endDate = $('endDate');
+    const customDates = $('customDates');
 
-const status =
-    document.getElementById(
-        "status"
-    );
+    const modal = $('modal');
+    const modalContent = $('modalContent');
+    const modalCloseBtn = $('modalCloseBtn');
+    const modalDownloadBtn = $('modalDownloadBtn');
+    const modalOriginalBtn = $('modalOriginalBtn');
 
-const resultCard =
-    document.getElementById(
-        "resultCard"
-    );
+    const guestTip = $('guestTip');
+    const guestTipBtn = $('guestTipBtn');
+    const comingSoon = $('comingSoon');
+    const comingSoonBtn = $('comingSoonBtn');
+    const missavTip = $('missavTip');
+    const missavTipBtn = $('missavTipBtn');
 
-const resultTitle =
-    document.getElementById(
-        "resultTitle"
-    );
-
-const resultCount =
-    document.getElementById(
-        "resultCount"
-    );
-
-const gallery =
-    document.getElementById(
-        "gallery"
-    );
-
-const customDates =
-    document.getElementById(
-        "customDates"
-    );
-
-const startDate =
-    document.getElementById(
-        "startDate"
-    );
-
-const endDate =
-    document.getElementById(
-        "endDate"
-    );
-
-const modal =
-    document.getElementById(
-        "modal"
-    );
-
-const modalContent =
-    document.getElementById(
-        "modalContent"
-    );
-
-/*
- * 当前模态框中的 HLS 实例，
- * 关闭时需要销毁以释放内存。
- */
-let currentHls =
-    null;
-
-const closeModal =
-    document.getElementById(
-        "closeModal"
-    );
-
-const downloadButton =
-    document.getElementById(
-        "downloadButton"
-    );
-
-const originalButton =
-    document.getElementById(
-        "originalButton"
-    );
-
-const modeSearch =
-    document.getElementById(
-        "modeSearch"
-    );
-
-const modeLikes =
-    document.getElementById(
-        "modeLikes"
-    );
-
-const modeBookmarks =
-    document.getElementById(
-        "modeBookmarks"
-    );
-
-
-/* =====================================================
-   状态
-===================================================== */
-
-let currentMode =
-    "search";
-
-let range =
-    "all";
-
-let mediaType =
-    "photo";
-
-let sourceType =
-    "all";
-
-let libraryMediaType =
-    "all";
-
-let currentItem =
-    null;
-
-
-/* =====================================================
-   API URL
-===================================================== */
-
-function buildDownloadUrl(
-    url,
-    filename
-) {
-
-    if (!url) {
-
-        return "";
+    /* =====================================================
+       页面切换
+    ==================================================== */
+    function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        const target = document.getElementById(pageId);
+        if (target) target.classList.add('active');
+        // 滚动到顶部
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    return (
-        "/api/download?url=" +
-        encodeURIComponent(
-            url
-        ) +
-        "&filename=" +
-        encodeURIComponent(
-            filename ||
-            "x-media"
-        )
-    );
-
-}
-
-
-function buildVideoDownloadUrl(
-    url,
-    filename
-) {
-
-    if (!url) {
-
-        return "";
-    }
-
-    return (
-        "/api/video-download?url=" +
-        encodeURIComponent(
-            url
-        ) +
-        "&filename=" +
-        encodeURIComponent(
-            filename ||
-            "x-video.mp4"
-        )
-    );
-
-}
-
-
-/* =====================================================
-   收藏博主
-===================================================== */
-
-const FAVORITE_KEY =
-    "x_media_finder_favorites_v31";
-
-
-function getFavorites() {
-
-    try {
-
-        const data =
-            localStorage.getItem(
-                FAVORITE_KEY
-            );
-
-        if (!data) {
-
-            return [];
+    /* =====================================================
+       登录
+    ==================================================== */
+    async function handleLogin() {
+        const password = loginPassword.value.trim();
+        if (!password) {
+            loginError.textContent = '请输入密码';
+            return;
         }
-
-        const parsed =
-            JSON.parse(
-                data
-            );
-
-        return Array.isArray(
-            parsed
-        )
-            ? parsed
-            : [];
-
-    } catch (e) {
-
-        return [];
-
-    }
-
-}
-
-
-function saveFavorites(
-    favorites
-) {
-
-    localStorage.setItem(
-        FAVORITE_KEY,
-        JSON.stringify(
-            favorites
-        )
-    );
-
-}
-
-
-/* =====================================================
-   用户名
-===================================================== */
-
-function normalizeUsername(
-    input
-) {
-
-    let value =
-        input.trim();
-
-    if (!value) {
-
-        return null;
-    }
-
-
-    if (
-        value.includes(
-            "x.com/"
-        )
-        ||
-        value.includes(
-            "twitter.com/"
-        )
-    ) {
-
-        if (
-            !value.startsWith(
-                "http://"
-            )
-            &&
-            !value.startsWith(
-                "https://"
-            )
-        ) {
-
-            value =
-                "https://" +
-                value;
-        }
+        loginError.textContent = '';
+        loginBtn.disabled = true;
+        loginBtn.textContent = '登录中…';
 
         try {
-
-            const url =
-                new URL(
-                    value
-                );
-
-            const parts =
-                url.pathname
-                    .split("/")
-                    .filter(
-                        Boolean
-                    );
-
-            if (
-                parts.length
-            ) {
-
-                value =
-                    parts[0];
-            }
-
-        } catch (e) {
-
-            return null;
-        }
-
-    }
-
-
-    value =
-        value.replace(
-            /^@+/,
-            ""
-        );
-
-    value =
-        value.replace(
-            /\/+$/,
-            ""
-        );
-
-    value =
-        value.replace(
-            /[^A-Za-z0-9_]/g,
-            ""
-        );
-
-    return (
-        value ||
-        null
-    );
-
-}
-
-
-/* =====================================================
-   收藏按钮
-===================================================== */
-
-function updateFavoriteButton() {
-
-    const username =
-        normalizeUsername(
-            profileInput.value
-        );
-
-    if (!username) {
-
-        favoriteAdd.textContent =
-            "☆ 收藏";
-
-        return;
-    }
-
-
-    const favorites =
-        getFavorites();
-
-    const exists =
-        favorites.some(
-            item =>
-                item.username
-                    .toLowerCase()
-                ===
-                username
-                    .toLowerCase()
-        );
-
-
-    favoriteAdd.textContent =
-        exists
-            ? "★ 已收藏"
-            : "☆ 收藏";
-
-}
-
-
-profileInput.addEventListener(
-    "input",
-    updateFavoriteButton
-);
-
-
-/* =====================================================
-   添加 / 删除收藏
-===================================================== */
-
-favoriteAdd.addEventListener(
-    "click",
-    () => {
-
-        const username =
-            normalizeUsername(
-                profileInput.value
-            );
-
-        if (!username) {
-
-            showError(
-                "请先输入博主名，例如 NASA 或 @NASA"
-            );
-
-            return;
-        }
-
-
-        const favorites =
-            getFavorites();
-
-        const index =
-            favorites.findIndex(
-                item =>
-                    item.username
-                        .toLowerCase()
-                    ===
-                    username
-                        .toLowerCase()
-            );
-
-
-        if (
-            index >= 0
-        ) {
-
-            favorites.splice(
-                index,
-                1
-            );
-
-        } else {
-
-            favorites.push({
-
-                username:
-                    username,
-
-                name:
-                    username,
-
-                addedAt:
-                    Date.now()
-
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password })
             });
-
+            const data = await res.json();
+            if (res.ok && data.ok) {
+                currentMode = 'developer';
+                showPage('pageMenu');
+                loginPassword.value = '';
+            } else {
+                loginError.textContent = data.detail || '密码错误';
+            }
+        } catch (e) {
+            loginError.textContent = '连接服务器失败，请稍后重试';
+        } finally {
+            loginBtn.disabled = false;
+            loginBtn.textContent = '进入';
         }
+    }
 
+    loginBtn.addEventListener('click', handleLogin);
 
-        saveFavorites(
-            favorites
-        );
+    loginPassword.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleLogin();
+    });
 
+    guestBtn.addEventListener('click', () => {
+        currentMode = 'guest';
+        guestTip.classList.remove('hidden');
+    });
+
+    guestTipBtn.addEventListener('click', () => {
+        guestTip.classList.add('hidden');
+        showPage('pageMenu');
+    });
+
+    /* =====================================================
+       菜单导航
+    ==================================================== */
+    menuX.addEventListener('click', () => {
+        showPage('pageXSub');
+    });
+
+    menuMissav.addEventListener('click', () => {
+        missavTip.classList.remove('hidden');
+    });
+
+    missavTipBtn.addEventListener('click', () => {
+        missavTip.classList.add('hidden');
+    });
+
+    backFromX.addEventListener('click', () => {
+        showPage('pageMenu');
+    });
+
+    backFromSearch.addEventListener('click', () => {
+        showPage('pageXSub');
+    });
+
+    backFromLibrary.addEventListener('click', () => {
+        showPage('pageXSub');
+    });
+
+    /* =====================================================
+       X 子菜单
+    ==================================================== */
+    subSearch.addEventListener('click', () => {
+        showPage('pageSearch');
+    });
+
+    subLikes.addEventListener('click', () => {
+        openLibrary('likes');
+    });
+
+    subBookmarks.addEventListener('click', () => {
+        openLibrary('bookmarks');
+    });
+
+    function openLibrary(source) {
+        if (currentMode === 'guest') {
+            guestTip.classList.remove('hidden');
+            return;
+        }
+        currentSubPage = source;
+        if (source === 'likes') {
+            libraryTitle.textContent = '我的喜欢';
+            libraryDesc.textContent = '查看采集器上传的喜欢列表';
+        } else {
+            libraryTitle.textContent = '我的书签';
+            libraryDesc.textContent = '查看采集器上传的书签列表';
+        }
+        showPage('pageLibrary');
+        loadLibrary(source);
+    }
+
+    /* =====================================================
+       选项按钮
+    ==================================================== */
+    document.querySelectorAll('.option-row').forEach(row => {
+        row.querySelectorAll('.option-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const group = row.dataset.group;
+                row.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const value = btn.dataset.value;
+
+                if (group === 'range') {
+                    range = value;
+                    customDates.classList.toggle('hidden', value !== 'custom');
+                } else if (group === 'media') {
+                    mediaType = value;
+                } else if (group === 'source') {
+                    sourceType = value;
+                } else if (group === 'libraryMedia') {
+                    libraryMediaType = value;
+                    if (currentSubPage) loadLibrary(currentSubPage);
+                }
+            });
+        });
+    });
+
+    /* =====================================================
+       收藏功能（本地存储）
+    ==================================================== */
+    const FAVORITE_KEY = 'universal_downloader_favorites';
+
+    function loadFavorites() {
+        try {
+            const data = localStorage.getItem(FAVORITE_KEY);
+            favorites = data ? JSON.parse(data) : [];
+        } catch {
+            favorites = [];
+        }
+        renderFavorites();
+    }
+
+    function saveFavorites() {
+        localStorage.setItem(FAVORITE_KEY, JSON.stringify(favorites));
+        renderFavorites();
         updateFavoriteButton();
-
-        renderFavorites();
-
-    }
-);
-
-
-/* =====================================================
-   收藏列表
-===================================================== */
-
-favoriteToggle.addEventListener(
-    "click",
-    () => {
-
-        favoritesPanel.classList.toggle(
-            "hidden"
-        );
-
-        renderFavorites();
-
-    }
-);
-
-
-function renderFavorites() {
-
-    const favorites =
-        getFavorites();
-
-    favoritesPanel.innerHTML =
-        "";
-
-
-    if (
-        !favorites.length
-    ) {
-
-        favoritesPanel.innerHTML =
-            `
-            <div class="favorite-empty">
-                暂时没有收藏的博主
-            </div>
-            `;
-
-        return;
     }
 
+    function isFavorited(username) {
+        return favorites.some(f => f.username.toLowerCase() === username.toLowerCase());
+    }
 
-    favorites.forEach(
-        (
-            favorite,
-            index
-        ) => {
-
-            const item =
-                document.createElement(
-                    "div"
-                );
-
-            item.className =
-                "favorite-item";
-
-
-            const info =
-                document.createElement(
-                    "div"
-                );
-
-            info.className =
-                "favorite-info";
-
-
-            const name =
-                document.createElement(
-                    "div"
-                );
-
-            name.className =
-                "favorite-name";
-
-            name.textContent =
-                favorite.name ||
-                favorite.username;
-
-
-            const handle =
-                document.createElement(
-                    "div"
-                );
-
-            handle.className =
-                "favorite-handle";
-
-            handle.textContent =
-                "@" +
-                favorite.username;
-
-
-            info.appendChild(
-                name
-            );
-
-            info.appendChild(
-                handle
-            );
-
-
-            const actions =
-                document.createElement(
-                    "div"
-                );
-
-            actions.className =
-                "favorite-actions";
-
-
-            const use =
-                document.createElement(
-                    "button"
-                );
-
-            use.className =
-                "favorite-use";
-
-            use.textContent =
-                "查找";
-
-
-            use.addEventListener(
-                "click",
-                () => {
-
-                    profileInput.value =
-                        favorite.username;
-
-                    updateFavoriteButton();
-
-                    favoritesPanel.classList.add(
-                        "hidden"
-                    );
-
-                    window.scrollTo({
-
-                        top: 0,
-
-                        behavior:
-                            "smooth"
-
-                    });
-
-                }
-            );
-
-
-            const remove =
-                document.createElement(
-                    "button"
-                );
-
-            remove.className =
-                "favorite-delete";
-
-            remove.textContent =
-                "删除";
-
-
-            remove.addEventListener(
-                "click",
-                () => {
-
-                    const list =
-                        getFavorites();
-
-                    list.splice(
-                        index,
-                        1
-                    );
-
-                    saveFavorites(
-                        list
-                    );
-
-                    renderFavorites();
-
-                    updateFavoriteButton();
-
-                }
-            );
-
-
-            actions.appendChild(
-                use
-            );
-
-            actions.appendChild(
-                remove
-            );
-
-
-            item.appendChild(
-                info
-            );
-
-            item.appendChild(
-                actions
-            );
-
-
-            favoritesPanel.appendChild(
-                item
-            );
-
+    function renderFavorites() {
+        favoritesPanel.innerHTML = '';
+        if (!favorites.length) {
+            favoritesPanel.innerHTML = `<div class="favorite-empty">暂时没有收藏的博主</div>`;
+            return;
         }
-    );
-
-}
-
-
-/* =====================================================
-   一级模式
-===================================================== */
-
-modeSearch.addEventListener(
-    "click",
-    () => {
-
-        setMode(
-            "search"
-        );
-
-    }
-);
-
-
-modeLikes.addEventListener(
-    "click",
-    () => {
-
-        setMode(
-            "likes"
-        );
-
-    }
-);
-
-
-modeBookmarks.addEventListener(
-    "click",
-    () => {
-
-        setMode(
-            "bookmarks"
-        );
-
-    }
-);
-
-
-function setMode(
-    mode
-) {
-
-    currentMode =
-        mode;
-
-
-    modeSearch.classList.toggle(
-        "active",
-        mode === "search"
-    );
-
-    modeLikes.classList.toggle(
-        "active",
-        mode === "likes"
-    );
-
-    modeBookmarks.classList.toggle(
-        "active",
-        mode === "bookmarks"
-    );
-
-
-    if (
-        mode === "search"
-    ) {
-
-        searchPanel.classList.remove(
-            "hidden"
-        );
-
-        libraryPanel.classList.add(
-            "hidden"
-        );
-
-        resultCard.classList.add(
-            "hidden"
-        );
-
-        statusCard.classList.add(
-            "hidden"
-        );
-
-        return;
-    }
-
-
-    searchPanel.classList.add(
-        "hidden"
-    );
-
-    libraryPanel.classList.remove(
-        "hidden"
-    );
-
-    statusCard.classList.add(
-        "hidden"
-    );
-
-    resultCard.classList.add(
-        "hidden"
-    );
-
-
-    libraryMediaType =
-        "all";
-
-
-    document
-        .querySelectorAll(
-            '.option[data-group="libraryMedia"]'
-        )
-        .forEach(
-            button => {
-
-                button.classList.toggle(
-                    "active",
-                    button.dataset.value ===
-                    "all"
-                );
-
-            }
-        );
-
-
-    updateLibraryTitle();
-
-    loadLibrary();
-
-}
-
-
-/* =====================================================
-   模式标题
-===================================================== */
-
-function updateLibraryTitle() {
-
-    if (
-        currentMode ===
-        "likes"
-    ) {
-
-        libraryTitle.textContent =
-            "❤️ 我的喜欢";
-
-    } else {
-
-        libraryTitle.textContent =
-            "🔖 我的书签";
-
-    }
-
-}
-
-
-/* =====================================================
-   选项菜单
-===================================================== */
-
-document
-    .querySelectorAll(
-        ".option"
-    )
-    .forEach(
-        button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    const group =
-                        button.dataset.group;
-
-                    const value =
-                        button.dataset.value;
-
-
-                    document
-                        .querySelectorAll(
-                            `.option[data-group="${group}"]`
-                        )
-                        .forEach(
-                            b =>
-                                b.classList.remove(
-                                    "active"
-                                )
-                        );
-
-
-                    button.classList.add(
-                        "active"
-                    );
-
-
-                    if (
-                        group ===
-                        "range"
-                    ) {
-
-                        range =
-                            value;
-
-                        customDates.classList.toggle(
-                            "hidden",
-                            value !==
-                            "custom"
-                        );
-
-                    }
-
-
-                    if (
-                        group ===
-                        "media"
-                    ) {
-
-                        mediaType =
-                            value;
-
-                    }
-
-
-                    if (
-                        group ===
-                        "source"
-                    ) {
-
-                        sourceType =
-                            value;
-
-                    }
-
-
-                    if (
-                        group ===
-                        "libraryMedia"
-                    ) {
-
-                        libraryMediaType =
-                            value;
-
-                        loadLibrary();
-
-                    }
-
-                }
-            );
-
-        }
-    );
-
-
-/* =====================================================
-   日期
-===================================================== */
-
-function formatDate(
-    date
-) {
-
-    const y =
-        date.getFullYear();
-
-    const m =
-        String(
-            date.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        );
-
-    const d =
-        String(
-            date.getDate()
-        ).padStart(
-            2,
-            "0"
-        );
-
-    return (
-        `${y}-${m}-${d}`
-    );
-
-}
-
-
-function getDates() {
-
-    if (
-        range ===
-        "all"
-    ) {
-
-        return {
-
-            start:
-                null,
-
-            end:
-                null
-
-        };
-
-    }
-
-
-    if (
-        range ===
-        "custom"
-    ) {
-
-        return {
-
-            start:
-                startDate.value ||
-                null,
-
-            end:
-                endDate.value ||
-                null
-
-        };
-
-    }
-
-
-    const now =
-        new Date();
-
-    const start =
-        new Date(
-            now
-        );
-
-    start.setDate(
-        start.getDate()
-        -
-        Number(
-            range
-        )
-    );
-
-
-    return {
-
-        start:
-            formatDate(
-                start
-            ),
-
-        end:
-            formatDate(
-                now
-            )
-
-    };
-
-}
-
-
-/* =====================================================
-   搜索博主
-===================================================== */
-
-searchButton.addEventListener(
-    "click",
-    search
-);
-
-
-profileInput.addEventListener(
-    "keydown",
-    event => {
-
-        if (
-            event.key ===
-            "Enter"
-        ) {
-
-            search();
-
-        }
-
-    }
-);
-
-
-async function search() {
-
-    const raw =
-        profileInput.value.trim();
-
-    const username =
-        normalizeUsername(
-            raw
-        );
-
-
-    if (!username) {
-
-        showError(
-            "无法识别博主。\n\n" +
-            "可以输入：\n" +
-            "NASA\n" +
-            "@NASA\n" +
-            "x.com/NASA\n" +
-            "https://x.com/NASA"
-        );
-
-        return;
-    }
-
-
-    const profile =
-        `https://x.com/${username}`;
-
-
-    const dates =
-        getDates();
-
-
-    if (
-        dates.start &&
-        dates.end &&
-        dates.start >
-        dates.end
-    ) {
-
-        showError(
-            "开始日期不能晚于结束日期"
-        );
-
-        return;
-    }
-
-
-    searchButton.disabled =
-        true;
-
-    searchButton.textContent =
-        "正在寻找媒体…";
-
-
-    statusCard.classList.remove(
-        "hidden"
-    );
-
-    status.className =
-        "status";
-
-    status.textContent =
-        `正在搜索 @${username}…`;
-
-
-    resultCard.classList.add(
-        "hidden"
-    );
-
-    gallery.innerHTML =
-        "";
-
-
-    try {
-
-        const params =
-            new URLSearchParams();
-
-
-        params.set(
-            "profile",
-            profile
-        );
-
-
-        params.set(
-            "media_type",
-            mediaType
-        );
-
-
-        /*
-         * 搜索博主模式才发送 source_type。
-         * Likes / Bookmarks 完全不经过这里。
-         */
-
-        params.set(
-            "source_type",
-            sourceType
-        );
-
-
-        if (
-            dates.start
-        ) {
-
-            params.set(
-                "start_date",
-                dates.start
-            );
-
-        }
-
-
-        if (
-            dates.end
-        ) {
-
-            params.set(
-                "end_date",
-                dates.end
-            );
-
-        }
-
-
-        const response =
-            await fetch(
-                `/api/search?${params.toString()}`
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (
-            !response.ok
-        ) {
-
-            throw new Error(
-                data.detail ||
-                "搜索失败"
-            );
-
-        }
-
-
-        renderSearchResults(
-            data
-        );
-
-
-    } catch (error) {
-
-        showError(
-            error.message ||
-            "搜索失败"
-        );
-
-
-    } finally {
-
-        searchButton.disabled =
-            false;
-
-        searchButton.textContent =
-            "开始找图";
-
-    }
-
-}
-
-
-/* =====================================================
-   Likes / Bookmarks 媒体库
-===================================================== */
-
-refreshLibrary.addEventListener(
-    "click",
-    loadLibrary
-);
-
-
-async function loadLibrary() {
-
-    if (
-        currentMode !==
-        "likes"
-        &&
-        currentMode !==
-        "bookmarks"
-    ) {
-
-        return;
-    }
-
-
-    updateLibraryTitle();
-
-
-    libraryCount.textContent =
-        "正在读取媒体库……";
-
-
-    statusCard.classList.remove(
-        "hidden"
-    );
-
-    status.className =
-        "status";
-
-    status.textContent =
-        "正在读取服务器媒体库……";
-
-
-    resultCard.classList.add(
-        "hidden"
-    );
-
-    gallery.innerHTML =
-        "";
-
-
-    try {
-
-        const params =
-            new URLSearchParams();
-
-
-        params.set(
-            "source",
-            currentMode
-        );
-
-
-        params.set(
-            "media_type",
-            libraryMediaType
-        );
-
-
-        const response =
-            await fetch(
-                `/api/media?${params.toString()}`
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (
-            !response.ok
-        ) {
-
-            throw new Error(
-                data.detail ||
-                "读取媒体库失败"
-            );
-
-        }
-
-
-        if (
-            !data.ok
-        ) {
-
-            throw new Error(
-                data.detail ||
-                "媒体库返回异常"
-            );
-
-        }
-
-
-        renderLibraryResults(
-            data
-        );
-
-
-    } catch (error) {
-
-        libraryCount.textContent =
-            "读取失败";
-
-        showError(
-            "媒体库读取失败：\n\n" +
-            (
-                error.message ||
-                String(
-                    error
-                )
-            )
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-   错误
-===================================================== */
-
-function showError(
-    message
-) {
-
-    statusCard.classList.remove(
-        "hidden"
-    );
-
-    status.className =
-        "status error";
-
-    status.textContent =
-        message;
-
-}
-
-
-/* =====================================================
-   搜索结果
-   注意：
-   搜索博主原来的返回顺序完全保留。
-===================================================== */
-
-function renderSearchResults(
-    data
-) {
-
-    statusCard.classList.add(
-        "hidden"
-    );
-
-    resultCard.classList.remove(
-        "hidden"
-    );
-
-
-    resultTitle.textContent =
-        `@${data.username}`;
-
-
-    resultCount.textContent =
-        `找到 ${data.count} 个媒体 · 查询 ${data.pages} 页`;
-
-
-    gallery.innerHTML =
-        "";
-
-
-    if (
-        !data.items ||
-        data.items.length === 0
-    ) {
-
-        gallery.innerHTML =
-            `
-            <div
-                class="loader"
-                style="grid-column:1/-1;"
-            >
-                这个条件下没有找到媒体。
-            </div>
-            `;
-
-        return;
-    }
-
-
-    data.items.forEach(
-        item => {
-
-            gallery.appendChild(
-                createSearchItem(
-                    item
-                )
-            );
-
-        }
-    );
-
-}
-
-
-/* =====================================================
-   媒体库结果
-   =====================================================
-   
-   核心修改：
-   
-   Likes / Bookmarks 的数据在这里按照 createdAt
-   从最新 → 最旧排序。
-
-   搜索博主不经过这个排序。
-
-   因此：
-   
-   第一张 = 最新
-   第二张 = 第二新
-   第三张 = 第三新
-   ...
-   
-   同一时间的媒体保持服务器原始顺序。
-===================================================== */
-
-function renderLibraryResults(
-    data
-) {
-
-    statusCard.classList.add(
-        "hidden"
-    );
-
-    resultCard.classList.remove(
-        "hidden"
-    );
-
-
-    const title =
-        currentMode ===
-        "likes"
-            ? "❤️ 我的喜欢"
-            : "🔖 我的书签";
-
-
-    resultTitle.textContent =
-        title;
-
-
-    resultCount.textContent =
-        `共 ${data.count || 0} 个媒体`;
-
-
-    libraryCount.textContent =
-        `共 ${data.count || 0} 个媒体`;
-
-
-    gallery.innerHTML =
-        "";
-
-
-    if (
-        !data.items ||
-        data.items.length === 0
-    ) {
-
-        gallery.innerHTML =
-            `
-            <div
-                class="loader"
-                style="grid-column:1/-1;"
-            >
-                目前还没有上传到这里的媒体。
-            </div>
-            `;
-
-        return;
-    }
-
-
-    /*
-     * =================================================
-     * 最新 → 最旧
-     *
-     * 使用副本排序，绝不修改后端返回的 data.items。
-     *
-     * 服务器返回：
-     *
-     * [
-     *   最新，
-     *   旧，
-     *   更旧，
-     *   ...
-     * ]
-     *
-     * 或者：
-     *
-     * [
-     *   旧，
-     *   新，
-     *   更新，
-     *   ...
-     * ]
-     *
-     * 最终都会被统一整理为：
-     *
-     * 最新 → 最旧
-     * =================================================
-     */
-
-    const sortedItems =
-        [...data.items].sort(
-            (
-                a,
-                b
-            ) => {
-
-                const valueA =
-                    a.createdAt ||
-                    a.created_at ||
-                    a.created ||
-                    a.timestamp ||
-                    "";
-
-                const valueB =
-                    b.createdAt ||
-                    b.created_at ||
-                    b.created ||
-                    b.timestamp ||
-                    "";
-
-
-                const timeA =
-                    Date.parse(
-                        valueA
-                    );
-
-                const timeB =
-                    Date.parse(
-                        valueB
-                    );
-
-
-                const validA =
-                    Number.isFinite(
-                        timeA
-                    );
-
-                const validB =
-                    Number.isFinite(
-                        timeB
-                    );
-
-
-                /*
-                 * 两个都有有效时间：
-                 *
-                 * 新 → 旧
-                 */
-                if (
-                    validA &&
-                    validB
-                ) {
-
-                    return (
-                        timeB -
-                        timeA
-                    );
-
-                }
-
-
-                /*
-                 * A 没有时间，
-                 * B 有时间：
-                 *
-                 * B 应该排前面。
-                 */
-                if (
-                    !validA &&
-                    validB
-                ) {
-
-                    return 1;
-
-                }
-
-
-                /*
-                 * A 有时间，
-                 * B 没有时间：
-                 *
-                 * A 应该排前面。
-                 */
-                if (
-                    validA &&
-                    !validB
-                ) {
-
-                    return -1;
-
-                }
-
-
-                /*
-                 * 两个都没有时间：
-                 *
-                 * 保持原始顺序。
-                 */
-                return 0;
-
-            }
-        );
-
-
-    /*
-     * =================================================
-     * 按照排序后的结果进行渲染。
-     * =================================================
-     */
-
-    sortedItems.forEach(
-        item => {
-
-            gallery.appendChild(
-                createLibraryItem(
-                    item
-                )
-            );
-
-        }
-    );
-
-}
-
-
-/* =====================================================
-   X 日期格式
-===================================================== */
-
-function formatDateFromX(
-    value
-) {
-
-    if (!value) {
-
-        return "";
-    }
-
-
-    const match =
-        value.match(
-            /^\w+\s+(\w+)\s+(\d+).*?(\d{4})$/
-        );
-
-
-    if (!match) {
-
-        return value;
-    }
-
-
-    const months = {
-
-        Jan:
-            "01",
-
-        Feb:
-            "02",
-
-        Mar:
-            "03",
-
-        Apr:
-            "04",
-
-        May:
-            "05",
-
-        Jun:
-            "06",
-
-        Jul:
-            "07",
-
-        Aug:
-            "08",
-
-        Sep:
-            "09",
-
-        Oct:
-            "10",
-
-        Nov:
-            "11",
-
-        Dec:
-            "12"
-
-    };
-
-
-    const month =
-        months[
-            match[1]
-        ];
-
-
-    if (!month) {
-
-        return value;
-    }
-
-
-    return (
-        `${match[3]}-` +
-        `${month}-` +
-        `${String(
-            match[2]
-        ).padStart(
-            2,
-            "0"
-        )}`
-    );
-
-}
-
-
-/* =====================================================
-   文件名
-===================================================== */
-
-function getFilename(
-    item
-) {
-
-    let date =
-        formatDateFromX(
-            item.created_at ||
-            item.createdAt
-        );
-
-
-    if (!date) {
-
-        date =
-            "x-media";
-    }
-
-
-    let suffix =
-        "";
-
-
-    if (
-        item.media_total &&
-        item.media_total > 1
-    ) {
-
-        suffix =
-            `-${item.media_index}`;
-
-    }
-
-
-    let extension =
-        ".jpg";
-
-
-    const type =
-        item.media_type ||
-        item.type;
-
-
-    const rawUrl =
-        item.originalUrl ||
-        item.sourceUrl ||
-        item.media_url ||
-        item.url ||
-        "";
-
-
-    const lower =
-        String(
-            rawUrl
-        ).toLowerCase();
-
-
-    if (
-        type ===
-        "video"
-    ) {
-
-        extension =
-            ".mp4";
-
-    } else if (
-        lower.includes(
-            ".png"
-        )
-    ) {
-
-        extension =
-            ".png";
-
-    } else if (
-        lower.includes(
-            ".webp"
-        )
-    ) {
-
-        extension =
-            ".webp";
-
-    } else if (
-        lower.includes(
-            ".gif"
-        )
-    ) {
-
-        extension =
-            ".gif";
-
-    }
-
-
-    return (
-        `${date}${suffix}${extension}`
-    );
-
-}
-
-
-/* =====================================================
-   媒体错误处理
-===================================================== */
-
-function replaceBrokenMedia(
-    img,
-    mediaWrap
-) {
-
-    if (!img) {
-
-        return;
-    }
-
-
-    if (
-        img.dataset.failed ===
-        "1"
-    ) {
-
-        return;
-    }
-
-
-    img.dataset.failed =
-        "1";
-
-
-    /*
-     * 如果当前地址已经是本地媒体代理，
-     * 再失败一次就显示错误。
-     *
-     * 不再无限循环请求。
-     */
-
-    const currentSrc =
-        img.src ||
-        "";
-
-
-    if (
-        currentSrc.includes(
-            "/api/media-proxy"
-        )
-    ) {
-
-        const error =
-            document.createElement(
-                "div"
-            );
-
-        error.className =
-            "media-error";
-
-        error.textContent =
-            "媒体暂时无法加载";
-
-        img.replaceWith(
-            error
-        );
-
-        return;
-    }
-
-
-    /*
-     * 如果不是代理地址，
-     * 尝试使用后端媒体代理。
-     */
-
-    const source =
-        img.getAttribute(
-            "src"
-        );
-
-
-    if (!source) {
-
-        const error =
-            document.createElement(
-                "div"
-            );
-
-        error.className =
-            "media-error";
-
-        error.textContent =
-            "媒体暂时无法加载";
-
-        img.replaceWith(
-            error
-        );
-
-        return;
-    }
-
-
-    const proxy =
-        "/api/media-proxy?url=" +
-        encodeURIComponent(
-            source
-        );
-
-
-    img.dataset.originalSrc =
-        source;
-
-    img.src =
-        proxy;
-
-
-    img.dataset.proxyAttempted =
-        "1";
-
-
-    img.onerror =
-        () => {
-
-            const error =
-                document.createElement(
-                    "div"
-                );
-
-            error.className =
-                "media-error";
-
-            error.textContent =
-                "媒体暂时无法加载";
-
-            img.replaceWith(
-                error
-            );
-
-        };
-
-}
-
-
-/* =====================================================
-   创建搜索媒体卡片
-===================================================== */
-
-function createSearchItem(
-    item
-) {
-
-    const wrapper =
-        document.createElement(
-            "div"
-        );
-
-    wrapper.className =
-        "item";
-
-
-    const mediaWrap =
-        document.createElement(
-            "div"
-        );
-
-    mediaWrap.className =
-        "media-wrap";
-
-
-    const img =
-        document.createElement(
-            "img"
-        );
-
-
-    if (
-        item.media_type ===
-        "video"
-    ) {
-
-        img.src =
-            item.thumbnail ||
-            "";
-
-    } else {
-
-        img.src =
-            item.media_url ||
-            "";
-
-    }
-
-
-    img.loading =
-        "lazy";
-
-
-    img.alt =
-        item.alt ||
-        "";
-
-
-    img.onerror =
-        () => {
-
-            replaceBrokenMedia(
-                img,
-                mediaWrap
-            );
-
-        };
-
-
-    img.addEventListener(
-        "click",
-        () =>
-            openModal(
-                item
-            )
-    );
-
-
-    mediaWrap.appendChild(
-        img
-    );
-
-
-    if (
-        item.media_type ===
-        "video"
-    ) {
-
-        const badge =
-            document.createElement(
-                "div"
-            );
-
-        badge.className =
-            "video-badge";
-
-        badge.textContent =
-            "▶ 视频";
-
-        mediaWrap.appendChild(
-            badge
-        );
-
-    }
-
-
-    /*
-     * 搜索博主：
-     * 显示原创 / 转帖 / 引用。
-     */
-
-    if (
-        item.source &&
-        item.source !==
-        "original"
-    ) {
-
-        const source =
-            document.createElement(
-                "div"
-            );
-
-        source.className =
-            "source-badge";
-
-        source.textContent =
-            item.source ===
-            "repost"
-                ? "转帖"
-                : "引用";
-
-        mediaWrap.appendChild(
-            source
-        );
-
-    }
-
-
-    wrapper.appendChild(
-        mediaWrap
-    );
-
-
-    const info =
-        document.createElement(
-            "div"
-        );
-
-    info.className =
-        "item-info";
-
-
-    const date =
-        document.createElement(
-            "div"
-        );
-
-    date.className =
-        "item-date";
-
-    date.textContent =
-        formatDateFromX(
-            item.created_at ||
-            item.createdAt
-        );
-
-
-    info.appendChild(
-        date
-    );
-
-
-    const actions =
-        document.createElement(
-            "div"
-        );
-
-    actions.className =
-        "item-actions";
-
-
-    const view =
-        document.createElement(
-            "button"
-        );
-
-    view.className =
-        "small-btn";
-
-    view.textContent =
-        item.media_type ===
-        "video"
-            ? "▶ 播放"
-            : "查看大图";
-
-
-    view.onclick =
-        () =>
-            openModal(
-                item
-            );
-
-
-    const download =
-        document.createElement(
-            "button"
-        );
-
-    download.className =
-        "small-btn";
-
-    download.textContent =
-        item.media_type ===
-        "video"
-            ? "⬇ 下载视频"
-            : "⬇ 下载原图";
-
-
-    download.onclick =
-        () =>
-            downloadItem(
-                item
-            );
-
-
-    const post =
-        document.createElement(
-            "button"
-        );
-
-    post.className =
-        "small-btn";
-
-    post.textContent =
-        "原帖";
-
-
-    post.onclick =
-        () => {
-
-            if (
-                item.tweet_url
-            ) {
-
-                window.open(
-                    item.tweet_url,
-                    "_blank"
-                );
-
-            }
-
-        };
-
-
-    actions.appendChild(
-        view
-    );
-
-    actions.appendChild(
-        download
-    );
-
-    actions.appendChild(
-        post
-    );
-
-
-    info.appendChild(
-        actions
-    );
-
-
-    wrapper.appendChild(
-        info
-    );
-
-
-    return wrapper;
-
-}
-
-
-/* =====================================================
-   Likes / Bookmarks 媒体卡片
-===================================================== */
-
-function createLibraryItem(
-    item
-) {
-
-    const wrapper =
-        document.createElement(
-            "div"
-        );
-
-    wrapper.className =
-        "item";
-
-
-    const mediaWrap =
-        document.createElement(
-            "div"
-        );
-
-    mediaWrap.className =
-        "media-wrap";
-
-
-    const img =
-        document.createElement(
-            "img"
-        );
-
-
-    // 直接使用后端返回的 type 字段来判断
-    const isVideo =
-        item.type === "video";
-
-
-    /*
-     * 当前后端返回：
-     *
-     * url:
-     * /api/media-proxy?url=https%3A...
-     *
-     * thumbnail:
-     * /api/media-proxy?url=https%3A...
-     *
-     * 因此这里直接使用后端代理地址。
-     */
-
-    const mediaUrl =
-        item.url ||
-        "";
-
-
-    const thumbnail =
-        item.thumbnail ||
-        mediaUrl;
-
-
-    img.src =
-        isVideo
-            ? thumbnail
-            : mediaUrl;
-
-
-    img.loading =
-        "lazy";
-
-
-    img.alt =
-        "";
-
-
-    img.onerror =
-        () => {
-
-            replaceBrokenMedia(
-                img,
-                mediaWrap
-            );
-
-        };
-
-
-    const normalized =
-        normalizeLibraryItem(
-            item
-        );
-
-
-    img.addEventListener(
-        "click",
-        () =>
-            openModal(
-                normalized
-            )
-    );
-
-
-    mediaWrap.appendChild(
-        img
-    );
-
-
-    if (
-        isVideo
-    ) {
-
-        const badge =
-            document.createElement(
-                "div"
-            );
-
-        badge.className =
-            "video-badge";
-
-        badge.textContent =
-            "▶ 视频";
-
-        mediaWrap.appendChild(
-            badge
-        );
-
-    }
-
-
-    /*
-     * Likes / Bookmarks：
-     *
-     * 不显示原创 / 转帖。
-     */
-
-    const libraryBadge =
-        document.createElement(
-            "div"
-        );
-
-    libraryBadge.className =
-        "library-badge";
-
-    libraryBadge.textContent =
-        currentMode ===
-        "likes"
-            ? "❤️ 喜欢"
-            : "🔖 书签";
-
-    mediaWrap.appendChild(
-        libraryBadge
-    );
-
-
-    wrapper.appendChild(
-        mediaWrap
-    );
-
-
-    const info =
-        document.createElement(
-            "div"
-        );
-
-    info.className =
-        "item-info";
-
-
-    if (
-        item.author
-    ) {
-
-        const author =
-            document.createElement(
-                "div"
-            );
-
-        author.className =
-            "item-author";
-
-        author.textContent =
-            "@" +
-            item.author;
-
-        info.appendChild(
-            author
-        );
-
-    }
-
-
-    const date =
-        document.createElement(
-            "div"
-        );
-
-    date.className =
-        "item-date";
-
-    date.textContent =
-        formatLibraryDate(
-            item.createdAt ||
-            item.created_at
-        );
-
-
-    info.appendChild(
-        date
-    );
-
-
-    const actions =
-        document.createElement(
-            "div"
-        );
-
-    actions.className =
-        "item-actions";
-
-
-    const view =
-        document.createElement(
-            "button"
-        );
-
-    view.className =
-        "small-btn";
-
-    view.textContent =
-        isVideo
-            ? "▶ 播放"
-            : "查看大图";
-
-
-    view.onclick =
-        () =>
-            openModal(
-                normalized
-            );
-
-
-    const download =
-        document.createElement(
-            "button"
-        );
-
-    download.className =
-        "small-btn";
-
-    download.textContent =
-        isVideo
-            ? "⬇ 下载视频"
-            : "⬇ 下载原图";
-
-
-    download.onclick =
-        () =>
-            downloadItem(
-                normalized
-            );
-
-
-    const post =
-        document.createElement(
-            "button"
-        );
-
-    post.className =
-        "small-btn";
-
-    post.textContent =
-        "原帖";
-
-
-    post.onclick =
-        () => {
-
-            if (
-                item.tweet_url
-            ) {
-
-                window.open(
-                    item.tweet_url,
-                    "_blank"
-                );
-
-            }
-
-        };
-
-
-    actions.appendChild(
-        view
-    );
-
-    actions.appendChild(
-        download
-    );
-
-    actions.appendChild(
-        post
-    );
-
-
-    info.appendChild(
-        actions
-    );
-
-
-    wrapper.appendChild(
-        info
-    );
-
-
-    return wrapper;
-
-}
-
-
-/* =====================================================
-   媒体库数据转换
-===================================================== */
-
-function normalizeLibraryItem(
-    item
-) {
-
-    const type =
-        item.type ||
-        item.media_type ||
-        "image";
-
-
-    const mediaUrl =
-        item.url ||
-        item.media_url ||
-        item.sourceUrl ||
-        "";
-
-
-    const originalUrl =
-        item.originalUrl ||
-        item.sourceUrl ||
-        mediaUrl;
-
-
-    return {
-
-        media_type:
-            type,
-
-        media_url:
-            mediaUrl,
-
-        video_url:
-            type ===
-            "video"
-                ? mediaUrl
-                : "",
-
-        thumbnail:
-            item.thumbnail ||
-            "",
-
-        tweet_url:
-            item.tweet_url ||
-            "",
-
-        author:
-            item.author ||
-            "",
-
-        created_at:
-            item.createdAt ||
-            item.created_at ||
-            "",
-
-        originalUrl:
-            originalUrl,
-
-        libraryId:
-            item.id ||
-            "",
-
-        width:
-            item.width ||
-            0,
-
-        height:
-            item.height ||
-            0,
-
-        bitrate:
-            item.bitrate ||
-            0,
-
-        streamType:
-            item.streamType ||
-            ""
-
-    };
-
-}
-
-
-/* =====================================================
-   媒体库日期
-===================================================== */
-
-function formatLibraryDate(
-    value
-) {
-
-    if (!value) {
-
-        return "";
-    }
-
-
-    try {
-
-        const date =
-            new Date(
-                value
-            );
-
-
-        if (
-            Number.isNaN(
-                date.getTime()
-            )
-        ) {
-
-            return "";
-        }
-
-
-        return (
-            date.getFullYear() +
-            "-" +
-            String(
-                date.getMonth() + 1
-            ).padStart(
-                2,
-                "0"
-            ) +
-            "-" +
-            String(
-                date.getDate()
-            ).padStart(
-                2,
-                "0"
-            )
-        );
-
-    } catch (e) {
-
-        return "";
-
-    }
-
-}
-
-
-/* =====================================================
-   下载
-===================================================== */
-
-function downloadItem(
-    item
-) {
-
-    const url =
-        item.originalUrl ||
-        item.media_url ||
-        item.url ||
-        "";
-
-
-    if (!url) {
-
-        alert(
-            "这个媒体暂时没有可下载地址。"
-        );
-
-        return;
-    }
-
-
-    /*
-     * 扩展视频检测：
-     * type 标记或 URL 后缀为 .m3u8 / .mp4 / .webm
-     */
-    const isVideo =
-        item.media_type ===
-        "video"
-        ||
-        item.type ===
-        "video"
-        ||
-        url.includes(
-            ".m3u8"
-        )
-        ||
-        url.includes(
-            ".mp4"
-        )
-        ||
-        url.includes(
-            ".webm"
-        );
-
-
-    const filename =
-        getFilename(
-            item
-        );
-
-
-    if (
-        isVideo
-    ) {
-
-        const videoFilename =
-            filename.endsWith(
-                ".mp4"
-            )
-                ? filename
-                : filename +
-                  ".mp4";
-
-
-        window.location.href =
-            buildVideoDownloadUrl(
-                url,
-                videoFilename
-            );
-
-        return;
-
-    }
-
-
-    window.location.href =
-        buildDownloadUrl(
-            url,
-            filename
-        );
-
-}
-
-
-/* =====================================================
-   Modal - 核心修复 v4：HLS 转 MP4 在线播放
-   原理：调用 /api/video-stream 接口，后端用 FFmpeg
-   把 .m3u8 转成 .mp4，绕过 X 防盗链
-===================================================== */
-
-function openModal(item) {
-
-    currentItem = item;
-
-    modalContent.innerHTML = "";
-
-    // 获取视频 URL
-    let rawVideoUrl =
-        item.video_url ||
-        item.media_url ||
-        item.url ||
-        "";
-
-    // 判断是不是 HLS（.m3u8）
-    const isHlsUrl =
-        rawVideoUrl.includes(".m3u8") ||
-        item.streamType === "hls";
-
-    // 判断是不是普通 MP4
-    const isMp4Url =
-        rawVideoUrl.includes(".mp4");
-
-    // 综合判断是不是视频
-    const isVideo =
-        item.media_type === "video" ||
-        item.type === "video" ||
-        isHlsUrl ||
-        isMp4Url;
-
-    if (isVideo) {
-
-        if (!rawVideoUrl) {
-            modalContent.innerHTML =
-                `
-                <div class="media-error" style="width:100%;max-width:500px;color:#fff;background:#222;">
-                    该视频暂无可用播放地址
+        favorites.forEach((fav, index) => {
+            const div = document.createElement('div');
+            div.className = 'favorite-item';
+            div.innerHTML = `
+                <div class="fav-info">
+                    <div class="fav-name">${fav.name || fav.username}</div>
+                    <div class="fav-handle">@${fav.username}</div>
                 </div>
-                `;
-            downloadButton.textContent = "⬇ 下载视频";
-            modal.classList.remove("hidden");
+                <div class="fav-actions">
+                    <button class="fav-use" data-index="${index}">查找</button>
+                    <button class="fav-delete" data-index="${index}">删除</button>
+                </div>
+            `;
+            favoritesPanel.appendChild(div);
+        });
+
+        favoritesPanel.querySelectorAll('.fav-use').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.dataset.index);
+                const fav = favorites[idx];
+                if (fav) {
+                    profileInput.value = fav.username;
+                    updateFavoriteButton();
+                    favoritesPanel.classList.add('hidden');
+                }
+            });
+        });
+
+        favoritesPanel.querySelectorAll('.fav-delete').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.dataset.index);
+                favorites.splice(idx, 1);
+                saveFavorites();
+            });
+        });
+    }
+
+    function updateFavoriteButton() {
+        const username = normalizeUsername(profileInput.value);
+        if (!username) {
+            favoriteAddBtn.textContent = '☆ 收藏';
+            favoriteAddBtn.classList.remove('favorited');
+            return;
+        }
+        if (isFavorited(username)) {
+            favoriteAddBtn.textContent = '★ 已收藏';
+            favoriteAddBtn.classList.add('favorited');
+        } else {
+            favoriteAddBtn.textContent = '☆ 收藏';
+            favoriteAddBtn.classList.remove('favorited');
+        }
+    }
+
+    profileInput.addEventListener('input', updateFavoriteButton);
+
+    favoriteAddBtn.addEventListener('click', () => {
+        const username = normalizeUsername(profileInput.value);
+        if (!username) {
+            showSearchStatus('请先输入博主名', 'error');
+            return;
+        }
+        const idx = favorites.findIndex(f => f.username.toLowerCase() === username.toLowerCase());
+        if (idx >= 0) {
+            favorites.splice(idx, 1);
+        } else {
+            favorites.push({ username, name: username, addedAt: Date.now() });
+        }
+        saveFavorites();
+    });
+
+    favoriteToggleBtn.addEventListener('click', () => {
+        favoritesPanel.classList.toggle('hidden');
+    });
+
+    /* =====================================================
+       工具函数
+    ==================================================== */
+    function normalizeUsername(input) {
+        let value = input.trim();
+        if (!value) return null;
+        if (value.includes('x.com/') || value.includes('twitter.com/')) {
+            if (!value.startsWith('http://') && !value.startsWith('https://')) {
+                value = 'https://' + value;
+            }
+            try {
+                const url = new URL(value);
+                const parts = url.pathname.split('/').filter(Boolean);
+                if (parts.length) value = parts[0];
+            } catch {
+                return null;
+            }
+        }
+        value = value.replace(/^@+/, '').replace(/\/+$/, '').replace(/[^A-Za-z0-9_]/g, '');
+        return value || null;
+    }
+
+    function formatDateFromX(value) {
+        if (!value) return '';
+        const match = value.match(/^\w+\s+(\w+)\s+(\d+).*?(\d{4})$/);
+        if (!match) return value;
+        const months = { Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09',
+            Oct: '10', Nov: '11', Dec: '12' };
+        const month = months[match[1]];
+        if (!month) return value;
+        return `${match[3]}-${month}-${String(match[2]).padStart(2, '0')}`;
+    }
+
+    function formatLibraryDate(value) {
+        if (!value) return '';
+        try {
+            const date = new Date(value);
+            if (isNaN(date.getTime())) return '';
+            return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate())
+                .padStart(2, '0');
+        } catch { return ''; }
+    }
+
+    function getDates() {
+        if (range === 'all') return { start: null, end: null };
+        if (range === 'custom') return { start: startDate.value || null, end: endDate.value || null };
+        const now = new Date();
+        const start = new Date(now);
+        start.setDate(start.getDate() - Number(range));
+        return {
+            start: start.getFullYear() + '-' + String(start.getMonth() + 1).padStart(2, '0') + '-' + String(start.getDate())
+                .padStart(2, '0'),
+            end: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(
+                2, '0')
+        };
+    }
+
+    function getFilename(item) {
+        let date = formatDateFromX(item.created_at || item.createdAt) || 'x-media';
+        let suffix = (item.media_total && item.media_total > 1) ? `-${item.media_index}` : '';
+        let extension = '.jpg';
+        const type = item.media_type || item.type;
+        const rawUrl = item.originalUrl || item.sourceUrl || item.media_url || item.url || '';
+        const lower = String(rawUrl).toLowerCase();
+        if (type === 'video') extension = '.mp4';
+        else if (lower.includes('.png')) extension = '.png';
+        else if (lower.includes('.webp')) extension = '.webp';
+        else if (lower.includes('.gif')) extension = '.gif';
+        return `${date}${suffix}${extension}`;
+    }
+
+    function showSearchStatus(msg, type = '') {
+        searchStatus.classList.remove('hidden');
+        searchStatus.textContent = msg;
+        searchStatus.className = 'status-box' + (type === 'error' ? ' error' : '');
+    }
+
+    function hideSearchStatus() {
+        searchStatus.classList.add('hidden');
+        searchStatus.textContent = '';
+        searchStatus.className = 'status-box';
+    }
+
+    /* =====================================================
+       搜索博主
+    ==================================================== */
+    searchBtn.addEventListener('click', performSearch);
+    searchSubmitBtn.addEventListener('click', performSearch);
+
+    profileInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') performSearch();
+    });
+
+    async function performSearch() {
+        const raw = profileInput.value.trim();
+        const username = normalizeUsername(raw);
+        if (!username) {
+            showSearchStatus('无法识别博主。可以输入：NASA / @NASA / x.com/NASA', 'error');
             return;
         }
 
-        const video = document.createElement("video");
-        video.controls = true;
-        video.autoplay = true;
-        video.playsInline = true;
-        video.preload = "metadata";
-
-        // =============================================
-        // 核心修复：HLS（.m3u8）视频走 /api/video-stream
-        // 后端转成 MP4 后返回，浏览器直接播放
-        // 和“下载→显示”效果完全一样
-        // =============================================
-        if (isHlsUrl) {
-            // 用 video-stream 接口转成 MP4 再播放
-            const streamUrl = "/api/video-stream?url=" + encodeURIComponent(rawVideoUrl);
-            video.src = streamUrl;
-            // 给用户提示：正在转码
-            const loadingMsg = document.createElement("div");
-            loadingMsg.style.cssText = "color:#fff;text-align:center;padding:20px;font-size:14px;";
-            loadingMsg.textContent = "⏳ 视频正在转码，请稍候...（约3-5秒）";
-            modalContent.appendChild(loadingMsg);
-            // 等 video 加载完成时移除提示
-            video.onloadedmetadata = function() {
-                if (loadingMsg.parentNode) {
-                    loadingMsg.remove();
-                }
-            };
-        } else if (isMp4Url) {
-            // MP4 直接走代理
-            if (!rawVideoUrl.startsWith("/api/media-proxy")) {
-                rawVideoUrl = "/api/media-proxy?url=" + encodeURIComponent(rawVideoUrl);
-            }
-            video.src = rawVideoUrl;
-        } else {
-            // 兜底
-            video.src = rawVideoUrl;
+        const dates = getDates();
+        if (dates.start && dates.end && dates.start > dates.end) {
+            showSearchStatus('开始日期不能晚于结束日期', 'error');
+            return;
         }
 
-        // 视频加载错误时提示下载
-        video.onerror = function() {
-            modalContent.innerHTML =
-                `
-                <div class="media-error" style="width:100%;max-width:500px;color:#fff;background:#222;">
-                    视频在线预览失败，请点击下方“下载视频”保存到本地观看
-                </div>
-                `;
-        };
+        searchSubmitBtn.disabled = true;
+        searchSubmitBtn.textContent = '正在寻找…';
+        hideSearchStatus();
+        searchResultHeader.classList.add('hidden');
+        searchGallery.innerHTML = '';
 
-        modalContent.appendChild(video);
-        downloadButton.textContent = "⬇ 下载视频";
+        try {
+            const params = new URLSearchParams();
+            params.set('profile', `https://x.com/${username}`);
+            params.set('media_type', mediaType);
+            params.set('source_type', sourceType);
+            if (dates.start) params.set('start_date', dates.start);
+            if (dates.end) params.set('end_date', dates.end);
 
-    } else {
+            const res = await fetch(`/api/search?${params.toString()}`);
+            const data = await res.json();
 
-        // 图片显示（保持不变）
-        const img = document.createElement("img");
-        img.src = item.media_url || item.url || item.originalUrl || "";
-        img.alt = item.alt || "";
+            if (!res.ok || !data.ok) {
+                throw new Error(data.detail || '搜索失败');
+            }
 
-        img.onerror = function() {
-            const proxySource = item.originalUrl || item.sourceUrl || "";
-            if (proxySource && !img.dataset.proxy) {
-                img.dataset.proxy = "1";
-                img.src = "/api/media-proxy?url=" + encodeURIComponent(proxySource);
+            renderSearchResults(data, username);
+
+        } catch (err) {
+            showSearchStatus(err.message || '搜索失败', 'error');
+        } finally {
+            searchSubmitBtn.disabled = false;
+            searchSubmitBtn.textContent = '开始找图';
+        }
+    }
+
+    function renderSearchResults(data, username) {
+        searchResultHeader.classList.remove('hidden');
+        searchResultTitle.textContent = `@${username}`;
+        searchResultCount.textContent = `找到 ${data.count} 个媒体 · 查询 ${data.pages} 页`;
+
+        searchGallery.innerHTML = '';
+        if (!data.items || data.items.length === 0) {
+            searchGallery.innerHTML = `<div class="loader">没有找到媒体</div>`;
+            return;
+        }
+
+        data.items.forEach(item => {
+            searchGallery.appendChild(createMediaItem(item, 'search'));
+        });
+    }
+
+    /* =====================================================
+       媒体库
+    ==================================================== */
+    refreshLibraryBtn.addEventListener('click', () => {
+        if (currentSubPage) loadLibrary(currentSubPage);
+    });
+
+    async function loadLibrary(source) {
+        if (currentMode === 'guest') {
+            guestTip.classList.remove('hidden');
+            return;
+        }
+
+        libraryCount.textContent = '正在读取…';
+        libraryStatus.classList.add('hidden');
+        libraryResultHeader.classList.add('hidden');
+        libraryGallery.innerHTML = '';
+
+        try {
+            const params = new URLSearchParams();
+            params.set('source', source);
+            params.set('media_type', libraryMediaType);
+
+            const res = await fetch(`/api/media?${params.toString()}`);
+            const data = await res.json();
+
+            if (!res.ok || !data.ok) {
+                throw new Error(data.detail || '读取媒体库失败');
+            }
+
+            renderLibraryResults(data);
+
+        } catch (err) {
+            libraryCount.textContent = '读取失败';
+            libraryStatus.classList.remove('hidden');
+            libraryStatus.textContent = err.message || '读取媒体库失败';
+            libraryStatus.className = 'status-box error';
+        }
+    }
+
+    function renderLibraryResults(data) {
+        libraryCount.textContent = `共 ${data.count || 0} 个媒体`;
+        libraryResultHeader.classList.remove('hidden');
+        libraryResultTitle.textContent = currentSubPage === 'likes' ? '我的喜欢' : '我的书签';
+        libraryResultCount.textContent = `共 ${data.count || 0} 个媒体`;
+
+        libraryGallery.innerHTML = '';
+        if (!data.items || data.items.length === 0) {
+            libraryGallery.innerHTML = `<div class="loader">目前还没有上传到这里的媒体</div>`;
+            return;
+        }
+
+        const sorted = [...data.items].sort((a, b) => {
+            const timeA = Date.parse(a.createdAt || a.created_at || a.created || a.timestamp || '');
+            const timeB = Date.parse(b.createdAt || b.created_at || b.created || b.timestamp || '');
+            if (isFinite(timeA) && isFinite(timeB)) return timeB - timeA;
+            if (!isFinite(timeA) && isFinite(timeB)) return 1;
+            if (isFinite(timeA) && !isFinite(timeB)) return -1;
+            return 0;
+        });
+
+        sorted.forEach(item => {
+            libraryGallery.appendChild(createMediaItem(item, 'library'));
+        });
+    }
+
+    /* =====================================================
+       创建媒体卡片
+    ==================================================== */
+    function createMediaItem(item, mode) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'item';
+
+        const isVideo = item.media_type === 'video' || item.type === 'video';
+        const mediaUrl = item.media_url || item.url || '';
+        const thumbnail = item.thumbnail || mediaUrl;
+        const normalized = normalizeLibraryItem(item);
+
+        const mediaWrap = document.createElement('div');
+        mediaWrap.className = 'media-wrap';
+
+        const img = document.createElement('img');
+        img.src = isVideo ? thumbnail : mediaUrl;
+        img.loading = 'lazy';
+        img.alt = item.alt || '';
+        img.onerror = () => {
+            const fallback = item.originalUrl || item.sourceUrl || '';
+            if (fallback && !img.dataset.fallback) {
+                img.dataset.fallback = '1';
+                img.src = '/api/media-proxy?url=' + encodeURIComponent(fallback);
                 return;
             }
-            modalContent.innerHTML =
-                `
-                <div class="media-error" style="width:100%;max-width:500px;color:#fff;background:#222;">
-                    图片暂时无法加载
-                </div>
-                `;
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'media-error';
+            errorDiv.textContent = '媒体暂时无法加载';
+            img.replaceWith(errorDiv);
         };
+        img.addEventListener('click', () => openModal(normalized));
 
-        modalContent.appendChild(img);
-        downloadButton.textContent = "⬇ 下载原图";
-    }
+        mediaWrap.appendChild(img);
 
-    modal.classList.remove("hidden");
-}
-
-
-/* =====================================================
-   Modal 关闭 - 核心修复：停止视频播放
-===================================================== */
-
-closeModal.addEventListener(
-    "click",
-    closeModalWindow
-);
-
-
-modal.addEventListener(
-    "click",
-    event => {
-
-        if (
-            event.target ===
-            modal
-        ) {
-
-            closeModalWindow();
-
+        if (isVideo) {
+            const badge = document.createElement('div');
+            badge.className = 'video-badge';
+            badge.textContent = '▶ 视频';
+            mediaWrap.appendChild(badge);
         }
 
+        if (mode === 'search') {
+            if (item.source && item.source !== 'original') {
+                const badge = document.createElement('div');
+                badge.className = 'source-badge';
+                badge.textContent = item.source === 'repost' ? '转帖' : '引用';
+                mediaWrap.appendChild(badge);
+            }
+        } else {
+            const badge = document.createElement('div');
+            badge.className = 'library-badge';
+            badge.textContent = currentSubPage === 'likes' ? '喜欢' : '书签';
+            mediaWrap.appendChild(badge);
+        }
+
+        wrapper.appendChild(mediaWrap);
+
+        const info = document.createElement('div');
+        info.className = 'item-info';
+
+        if (item.author) {
+            const author = document.createElement('div');
+            author.className = 'item-author';
+            author.textContent = '@' + item.author;
+            info.appendChild(author);
+        }
+
+        const date = document.createElement('div');
+        date.className = 'item-date';
+        const rawDate = item.created_at || item.createdAt || '';
+        date.textContent = mode === 'search' ? formatDateFromX(rawDate) : formatLibraryDate(rawDate);
+        info.appendChild(date);
+
+        const actions = document.createElement('div');
+        actions.className = 'item-actions';
+
+        const viewBtn = document.createElement('button');
+        viewBtn.textContent = isVideo ? '▶ 播放' : '查看大图';
+        viewBtn.onclick = () => openModal(normalized);
+        actions.appendChild(viewBtn);
+
+        const downloadBtn = document.createElement('button');
+        downloadBtn.textContent = isVideo ? '⬇ 下载视频' : '⬇ 下载原图';
+        downloadBtn.onclick = () => downloadItem(normalized);
+        actions.appendChild(downloadBtn);
+
+        const postBtn = document.createElement('button');
+        postBtn.textContent = '原帖';
+        postBtn.onclick = () => {
+            if (item.tweet_url) window.open(item.tweet_url, '_blank');
+        };
+        actions.appendChild(postBtn);
+
+        info.appendChild(actions);
+        wrapper.appendChild(info);
+
+        return wrapper;
     }
-);
 
-
-function closeModalWindow() {
-
-    const existingVideo =
-        modalContent.querySelector("video");
-
-    if (existingVideo) {
-        existingVideo.pause();
-        existingVideo.removeAttribute("src");
-        existingVideo.load();
-        existingVideo.remove();
+    /* =====================================================
+       数据转换
+    ==================================================== */
+    function normalizeLibraryItem(item) {
+        const type = item.type || item.media_type || 'image';
+        const mediaUrl = item.url || item.media_url || item.sourceUrl || '';
+        const originalUrl = item.originalUrl || item.sourceUrl || mediaUrl;
+        return {
+            media_type: type,
+            media_url: mediaUrl,
+            video_url: type === 'video' ? mediaUrl : '',
+            thumbnail: item.thumbnail || '',
+            tweet_url: item.tweet_url || '',
+            author: item.author || '',
+            created_at: item.createdAt || item.created_at || '',
+            originalUrl: originalUrl,
+            libraryId: item.id || '',
+            width: item.width || 0,
+            height: item.height || 0,
+            bitrate: item.bitrate || 0,
+            streamType: item.streamType || '',
+            media_index: item.media_index || 1,
+            media_total: item.media_total || 1
+        };
     }
 
-    if (currentHls) {
-        currentHls.destroy();
-        currentHls = null;
-    }
-
-    modal.classList.add("hidden");
-    modalContent.innerHTML = "";
-    currentItem = null;
-}
-
-
-/* =====================================================
-   Modal 下载
-===================================================== */
-
-downloadButton.addEventListener(
-    "click",
-    () => {
-
-        if (
-            !currentItem
-        ) {
-
+    /* =====================================================
+       下载
+    ==================================================== */
+    function downloadItem(item) {
+        const url = item.originalUrl || item.media_url || item.url || '';
+        if (!url) {
+            alert('这个媒体暂时没有可下载地址。');
             return;
         }
 
+        const isVideo = item.media_type === 'video' || item.type === 'video' ||
+            url.includes('.m3u8') || url.includes('.mp4') || url.includes('.webm');
+        const filename = getFilename(item);
 
-        downloadItem(
-            currentItem
-        );
-
+        if (isVideo) {
+            const videoFilename = filename.endsWith('.mp4') ? filename : filename + '.mp4';
+            window.location.href = '/api/video-download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(
+                videoFilename);
+        } else {
+            window.location.href = '/api/download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(
+            filename);
+        }
     }
-);
 
+    /* =====================================================
+       Modal
+    ==================================================== */
+    function openModal(item) {
+        currentItem = item;
+        modalContent.innerHTML = '';
 
-/* =====================================================
-   Modal 原帖
-===================================================== */
+        let rawVideoUrl = item.video_url || item.media_url || item.url || '';
+        const isHlsUrl = rawVideoUrl.includes('.m3u8') || item.streamType === 'hls';
+        const isMp4Url = rawVideoUrl.includes('.mp4');
+        const isVideo = item.media_type === 'video' || item.type === 'video' || isHlsUrl || isMp4Url;
 
-originalButton.addEventListener(
-    "click",
-    () => {
+        if (isVideo) {
+            if (!rawVideoUrl) {
+                modalContent.innerHTML =
+                    `<div class="media-error" style="color:#fff;background:transparent;">该视频暂无可用播放地址，请点击下载保存到本地</div>`;
+                modalDownloadBtn.textContent = '⬇ 下载视频';
+                modal.classList.remove('hidden');
+                return;
+            }
 
-        if (
-            !currentItem
-        ) {
+            const container = document.createElement('div');
+            container.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;';
 
-            return;
+            const video = document.createElement('video');
+            video.controls = true;
+            video.autoplay = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            video.style.cssText = 'max-width:100%;max-height:100%;';
+
+            const errorMsg = document.createElement('div');
+            errorMsg.style.cssText = 'display:none;color:rgba(255,255,255,0.5);text-align:center;padding:20px;font-size:14px;font-weight:300;';
+            errorMsg.textContent = '视频在线预览失败，请点击下方“下载”保存到本地观看';
+
+            container.appendChild(video);
+            container.appendChild(errorMsg);
+            modalContent.appendChild(container);
+
+            if (isHlsUrl) {
+                const streamUrl = '/api/video-stream?url=' + encodeURIComponent(rawVideoUrl);
+                video.src = streamUrl;
+
+                const loadingMsg = document.createElement('div');
+                loadingMsg.style.cssText =
+                    'position:absolute;color:rgba(255,255,255,0.5);text-align:center;font-size:14px;font-weight:300;';
+                loadingMsg.textContent = '视频正在转码，请稍候…（约3-5秒）';
+                container.appendChild(loadingMsg);
+
+                video.onloadedmetadata = function() {
+                    if (loadingMsg.parentNode) loadingMsg.remove();
+                    if (errorMsg.parentNode) errorMsg.style.display = 'none';
+                };
+            } else if (isMp4Url) {
+                if (!rawVideoUrl.startsWith('/api/media-proxy')) {
+                    rawVideoUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
+                }
+                video.src = rawVideoUrl;
+            } else {
+                video.src = rawVideoUrl;
+            }
+
+            video.onerror = function() {
+                video.style.display = 'none';
+                errorMsg.style.display = 'block';
+                const loading = container.querySelector('div');
+                if (loading && loading.textContent && loading.textContent.includes('转码')) {
+                    loading.remove();
+                }
+            };
+
+            modalDownloadBtn.textContent = '⬇ 下载视频';
+
+        } else {
+            const img = document.createElement('img');
+            img.src = item.media_url || item.url || item.originalUrl || '';
+            img.alt = item.alt || '';
+            img.onerror = function() {
+                const proxySource = item.originalUrl || item.sourceUrl || '';
+                if (proxySource && !img.dataset.proxy) {
+                    img.dataset.proxy = '1';
+                    img.src = '/api/media-proxy?url=' + encodeURIComponent(proxySource);
+                    return;
+                }
+                modalContent.innerHTML =
+                    `<div class="media-error" style="color:#fff;background:transparent;">图片暂时无法加载</div>`;
+            };
+            modalContent.appendChild(img);
+            modalDownloadBtn.textContent = '⬇ 下载原图';
         }
 
-
-        if (
-            currentItem.tweet_url
-        ) {
-
-            window.open(
-                currentItem.tweet_url,
-                "_blank"
-            );
-
-        }
-
+        modal.classList.remove('hidden');
     }
-);
 
+    modalCloseBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
 
-/* =====================================================
-   ESC
-===================================================== */
-
-document.addEventListener(
-    "keydown",
-    event => {
-
-        if (
-            event.key ===
-            "Escape"
-        ) {
-
-            closeModalWindow();
-
+    function closeModal() {
+        const video = modalContent.querySelector('video');
+        if (video) {
+            video.pause();
+            video.removeAttribute('src');
+            video.load();
+            video.remove();
         }
-
+        if (currentHls) {
+            currentHls.destroy();
+            currentHls = null;
+        }
+        modal.classList.add('hidden');
+        modalContent.innerHTML = '';
+        currentItem = null;
     }
-);
 
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    });
 
-/* =====================================================
-   初始化
-===================================================== */
+    modalDownloadBtn.addEventListener('click', () => {
+        if (currentItem) downloadItem(currentItem);
+    });
 
-renderFavorites();
+    modalOriginalBtn.addEventListener('click', () => {
+        if (currentItem && currentItem.tweet_url) {
+            window.open(currentItem.tweet_url, '_blank');
+        }
+    });
 
-updateFavoriteButton();
+    /* =====================================================
+       敬请期待
+    ==================================================== */
+    comingSoonBtn.addEventListener('click', () => {
+        comingSoon.classList.add('hidden');
+    });
 
-setMode(
-    "search"
-);
-
+    /* =====================================================
+       初始化
+    ==================================================== */
+    loadFavorites();
+    showPage('pageLogin');
+    console.log('🖼️ 万能媒体下载器 已加载');
+    console.log('开发者：浮生若夢');
 </script>
-
 </body>
 
 </html>
