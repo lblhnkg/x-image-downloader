@@ -12,7 +12,6 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 复制所有代码
 COPY app.py .
 COPY static ./static
 
