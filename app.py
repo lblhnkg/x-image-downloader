@@ -40,7 +40,10 @@ app.add_middleware(
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 APP_PASSWORD = os.environ.get("APP_PASSWORD", "fushengruomeng")
-DB_PATH = "media.db"  # SQLite 文件路径（用于获取文件大小）
+DB_PATH = "media.db"
+
+NEON_API_KEY = os.environ.get("NEON_API_KEY", "")
+NEON_PROJECT_ID = os.environ.get("NEON_PROJECT_ID", "")
 
 if not DATABASE_URL:
     print("⚠️ 警告：DATABASE_URL 未设置，使用本地 SQLite（重启会丢数据）")
@@ -618,7 +621,7 @@ def make_media_id(tweet_id, media_type, idx):
 
 
 # =========================================================
-# API：导入媒体（支持 tweetCreatedAt）
+# API：导入媒体
 # =========================================================
 
 def normalize_import_item(item):
@@ -777,7 +780,7 @@ async def import_media(request: Request, payload: dict = Body(...)):
 
 
 # =========================================================
-# API：媒体库（支持日期筛选 + 批量删除）
+# API：媒体库
 # =========================================================
 
 @app.get("/api/media")
@@ -973,19 +976,17 @@ async def check_favorite(request: Request, username: str):
 
 
 # =========================================================
-# API：存储空间统计（新增）
+# API：Neon 存储用量
 # =========================================================
 
 @app.get("/api/storage")
 async def get_storage(request: Request):
     global media_library
 
-    # 验证登录状态
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="未登录")
 
-    # 统计媒体数量
     if not media_library:
         media_library = await load_all_media()
 
@@ -994,35 +995,33 @@ async def get_storage(request: Request):
     images = sum(1 for item in items if item.get("type") == "image")
     videos = sum(1 for item in items if item.get("type") == "video")
 
-    # 数据库文件大小
-    db_size = 0
-    # 检查 SQLite 文件是否存在
-    if os.path.exists(DB_PATH):
+    neon_used_bytes = None
+    if NEON_API_KEY and NEON_PROJECT_ID:
         try:
-            db_size = os.path.getsize(DB_PATH)
-        except:
-            db_size = 0
-
-    # 服务器磁盘使用情况
-    try:
-        disk_usage = shutil.disk_usage("/")
-        total_disk = disk_usage.total
-        used_disk = disk_usage.used
-        free_disk = disk_usage.free
-    except:
-        total_disk = 0
-        used_disk = 0
-        free_disk = 0
+            async with httpx.AsyncClient(timeout=10) as client:
+                url = f"https://console.neon.tech/api/v2/projects/{NEON_PROJECT_ID}/consumption_history"
+                headers = {
+                    "Authorization": f"Bearer {NEON_API_KEY}",
+                    "Accept": "application/json"
+                }
+                response = await client.get(url, headers=headers)
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("consumption_history") and len(data["consumption_history"]) > 0:
+                        latest = data["consumption_history"][-1]
+                        neon_used_bytes = latest.get("storage_used", 0)
+                else:
+                    print(f"[Neon API] 请求失败: {response.status_code}")
+        except Exception as e:
+            print(f"[Neon API] 异常: {e}")
+            neon_used_bytes = None
 
     return {
         "ok": True,
         "total_media": total_media,
         "images": images,
         "videos": videos,
-        "db_size": db_size,
-        "total_disk": total_disk,
-        "used_disk": used_disk,
-        "free_disk": free_disk
+        "neon_used_bytes": neon_used_bytes,
     }
 
 
