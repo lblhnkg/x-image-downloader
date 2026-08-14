@@ -6,7 +6,7 @@ import asyncio
 import subprocess
 import tempfile
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from urllib.parse import urlparse, parse_qs, quote
 
 import httpx
@@ -976,16 +976,12 @@ async def check_favorite(request: Request, username: str):
 
 
 # =========================================================
-# API：Neon 存储用量（调试版）
+# API：Neon 存储用量（正确路径）
 # =========================================================
 
 @app.get("/api/storage")
 async def get_storage(request: Request):
     global media_library
-
-    # 打印环境变量（调试用）
-    print(f"[DEBUG] NEON_API_KEY 是否存在: {'有值' if NEON_API_KEY else '空'}")
-    print(f"[DEBUG] NEON_PROJECT_ID: {NEON_PROJECT_ID}")
 
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
@@ -1004,38 +1000,51 @@ async def get_storage(request: Request):
 
     if NEON_API_KEY and NEON_PROJECT_ID:
         try:
-            # 尝试两种 API 地址
-            urls = [
-                f"https://console.neon.tech/api/v2/projects/{NEON_PROJECT_ID}/consumption_history",
-                f"https://api.neon.tech/v2/projects/{NEON_PROJECT_ID}/consumption_history"
-            ]
+            # 正确的 API 路径
+            url = "https://console.neon.tech/api/v2/consumption_history/projects"
             
-            for url in urls:
-                print(f"[Neon API] 尝试: {url}")
-                async with httpx.AsyncClient(timeout=10) as client:
-                    headers = {
-                        "Authorization": f"Bearer {NEON_API_KEY}",
-                        "Accept": "application/json"
-                    }
-                    response = await client.get(url, headers=headers)
-                    print(f"[Neon API] 状态码: {response.status_code}")
-                    
-                    if response.status_code == 200:
-                        data = response.json()
-                        if data.get("consumption_history") and len(data["consumption_history"]) > 0:
-                            latest = data["consumption_history"][-1]
+            # 时间范围（最近30天）
+            from_date = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            to_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            
+            params = {
+                "project_ids": NEON_PROJECT_ID,
+                "from": from_date,
+                "to": to_date,
+                "granularity": "daily"
+            }
+            
+            print(f"[Neon API] 请求: {url}")
+            print(f"[Neon API] 参数: {params}")
+            
+            async with httpx.AsyncClient(timeout=10) as client:
+                headers = {
+                    "Authorization": f"Bearer {NEON_API_KEY}",
+                    "Accept": "application/json"
+                }
+                response = await client.get(url, params=params, headers=headers)
+                print(f"[Neon API] 状态码: {response.status_code}")
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    # 响应格式是项目列表
+                    if data and isinstance(data, list) and len(data) > 0:
+                        project_data = data[0]
+                        history = project_data.get("consumption_history", [])
+                        if history:
+                            latest = history[-1]
                             neon_used_bytes = latest.get("storage_used", 0)
                             print(f"[Neon API] 存储用量: {neon_used_bytes} bytes")
-                            neon_error = None
-                            break
                         else:
                             neon_error = "没有消费历史数据"
-                    elif response.status_code == 401:
-                        neon_error = "API Key 无效或权限不足 (401)"
-                    elif response.status_code == 404:
-                        neon_error = f"Project ID 不存在: {NEON_PROJECT_ID} (404)"
                     else:
-                        neon_error = f"HTTP {response.status_code}"
+                        neon_error = "未找到项目数据"
+                elif response.status_code == 401:
+                    neon_error = "API Key 无效或权限不足 (401)"
+                elif response.status_code == 404:
+                    neon_error = f"API 端点不存在 (404)"
+                else:
+                    neon_error = f"HTTP {response.status_code}: {response.text[:200]}"
         except Exception as e:
             neon_error = f"请求异常: {str(e)}"
             print(f"[Neon API] 异常: {e}")
