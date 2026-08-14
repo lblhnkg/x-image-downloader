@@ -48,7 +48,7 @@ database = Database(DATABASE_URL)
 
 
 # =========================================================
-# 初始化数据库（增加 favorites 表）
+# 初始化数据库（新增 favorites 表）
 # =========================================================
 
 async def init_db():
@@ -106,7 +106,7 @@ async def shutdown():
 
 
 # =========================================================
-# 媒体库操作（不变）
+# 媒体库操作
 # =========================================================
 
 async def load_all_media():
@@ -158,12 +158,36 @@ async def save_media_item(media_id, data):
     return False, "未知错误"
 
 
+async def delete_media_items(media_ids):
+    """批量删除媒体"""
+    if not media_ids:
+        return 0
+    # 分批删除，避免 SQL 过长
+    deleted = 0
+    batch_size = 100
+    for i in range(0, len(media_ids), batch_size):
+        batch = media_ids[i:i+batch_size]
+        placeholders = ','.join(['?'] * len(batch))
+        query = f"DELETE FROM media WHERE id IN ({placeholders})"
+        # 根据数据库类型调整占位符
+        if DATABASE_URL.startswith("postgresql"):
+            # PostgreSQL 使用 $1, $2, ...
+            placeholders_pg = ','.join([f'${j+1}' for j in range(len(batch))])
+            query = f"DELETE FROM media WHERE id IN ({placeholders_pg})"
+            result = await database.execute(query, batch)
+        else:
+            # SQLite
+            result = await database.execute(query, batch)
+        deleted += result
+    return deleted
+
+
 async def clear_all_media():
     await database.execute("DELETE FROM media")
 
 
 # =========================================================
-# 收藏操作（新增）
+# 收藏操作
 # =========================================================
 
 async def load_all_favorites():
@@ -218,7 +242,7 @@ media_library = {}
 
 
 # =========================================================
-# 基础工具（不变）
+# 基础工具
 # =========================================================
 
 def get_username(profile: str):
@@ -279,7 +303,7 @@ def safe_filename(value):
 
 
 # =========================================================
-# URL 处理（不变）
+# URL 处理
 # =========================================================
 
 def normalize_x_media_url(url):
@@ -350,7 +374,7 @@ def validate_hls_url(url):
 
 
 # =========================================================
-# X 数据抓取（不变）
+# X 数据抓取
 # =========================================================
 
 async def fetch_media_page(username, cursor=None, count=100):
@@ -446,9 +470,9 @@ def extract_videos(tweet):
     return result
 
 
-# =====================================================
+# =========================================================
 # API：登录验证
-# =====================================================
+# =========================================================
 
 @app.post("/api/auth/login")
 async def login(response: Response, payload: dict = Body(...)):
@@ -474,9 +498,9 @@ async def check_auth(request: Request):
     return {"ok": True, "authenticated": False}
 
 
-# =====================================================
+# =========================================================
 # API：搜索博主
-# =====================================================
+# =========================================================
 
 @app.get("/api/search")
 async def search(
@@ -590,17 +614,17 @@ async def search(
     return {"ok": True, "username": username, "count": len(items), "pages": pages, "items": items}
 
 
-# =====================================================
+# =========================================================
 # 媒体库 ID
-# =====================================================
+# =========================================================
 
 def make_media_id(tweet_id, media_type, idx):
     return f"tweet_{tweet_id}_{media_type}_{idx}"
 
 
-# =====================================================
-# API：导入媒体（不变）
-# =====================================================
+# =========================================================
+# API：导入媒体（支持 tweetCreatedAt）
+# =========================================================
 
 def normalize_import_item(item):
     if not isinstance(item, dict):
@@ -609,6 +633,7 @@ def normalize_import_item(item):
     tweet_url = item.get("tweetUrl") or item.get("tweet_url") or ""
     author = item.get("author") or ""
     source = item.get("source") or "likes"
+    tweet_created_at = item.get("tweetCreatedAt") or ""
     if source not in {"likes", "bookmarks"}:
         source = "likes"
 
@@ -644,12 +669,20 @@ def normalize_import_item(item):
             "width": int(media.get("width")) if media.get("width") else 0,
             "height": int(media.get("height")) if media.get("height") else 0,
             "bitrate": int(media.get("bitrate")) if media.get("bitrate") else 0,
-            "index": idx
+            "index": idx,
+            "tweetCreatedAt": tweet_created_at  # ← 传递真实发布时间
         })
 
     if not result:
         return None
-    return {"tweet_id": tweet_id, "tweet_url": tweet_url, "author": author, "source": source, "media": result}
+    return {
+        "tweet_id": tweet_id,
+        "tweet_url": tweet_url,
+        "author": author,
+        "source": source,
+        "tweet_created_at": tweet_created_at,
+        "media": result
+    }
 
 
 @app.post("/api/import-media")
@@ -683,6 +716,10 @@ async def import_media(request: Request, payload: dict = Body(...)):
             continue
         for media in item["media"]:
             media_id = make_media_id(item["tweet_id"], media["type"], media["index"])
+            
+            # 处理时间字段
+            tweet_created_at = media.get("tweetCreatedAt") or item.get("tweet_created_at") or ""
+            
             record = {
                 "id": media_id,
                 "tweet_id": item["tweet_id"],
@@ -699,6 +736,7 @@ async def import_media(request: Request, payload: dict = Body(...)):
                 "bitrate": int(media["bitrate"]) if media["bitrate"] else 0,
                 "downloaded": False,
                 "createdAt": datetime.now(timezone.utc).isoformat(),
+                "tweetCreatedAt": tweet_created_at,  # ← 真实发布时间
             }
             imported += 1
 
@@ -706,7 +744,7 @@ async def import_media(request: Request, payload: dict = Body(...)):
             if old_item:
                 duplicates += 1
                 changed = False
-                for key in ["tweet_id", "tweet_url", "author", "source", "url", "thumbnail", "originalUrl", "streamType", "width", "height", "bitrate"]:
+                for key in ["tweet_id", "tweet_url", "author", "source", "url", "thumbnail", "originalUrl", "streamType", "width", "height", "bitrate", "tweetCreatedAt"]:
                     new_value = record.get(key)
                     if new_value and old_item.get(key) != new_value:
                         old_item[key] = new_value
@@ -744,9 +782,9 @@ async def import_media(request: Request, payload: dict = Body(...)):
     }
 
 
-# =====================================================
-# API：媒体库
-# =====================================================
+# =========================================================
+# API：媒体库（支持日期筛选 + 批量删除）
+# =========================================================
 
 @app.get("/api/media")
 async def get_media(
@@ -754,9 +792,9 @@ async def get_media(
     source: str = Query("all"),
     media_type: str = Query("all"),
     downloaded: str = Query("all"),
+    start_date: str | None = None,   # ← 新增
+    end_date: str | None = None,     # ← 新增
 ):
-    global media_library
-
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="未登录")
@@ -777,7 +815,42 @@ async def get_media(
     elif downloaded == "no":
         items = [item for item in items if item.get("downloaded") is not True]
 
-    items.sort(key=lambda x: x.get("createdAt", ""), reverse=True)
+    # ========== 日期筛选 ==========
+    if start_date or end_date:
+        def parse_date(d):
+            try:
+                return datetime.strptime(d, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            except:
+                return None
+        start_dt = parse_date(start_date) if start_date else None
+        end_dt = parse_date(end_date) if end_date else None
+        filtered = []
+        for item in items:
+            # 优先使用 tweetCreatedAt，若无则回退到 createdAt
+            time_str = item.get("tweetCreatedAt") or item.get("createdAt") or ""
+            if time_str:
+                dt = None
+                try:
+                    # 尝试解析 ISO 格式
+                    dt = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
+                except:
+                    # 尝试解析 X 的日期格式（如 "Fri Aug 14 00:00:00 +0000 2020"）
+                    dt = parse_x_date(time_str)
+                if dt:
+                    if start_dt and dt < start_dt:
+                        continue
+                    if end_dt and dt > end_dt:
+                        continue
+                else:
+                    # 如果解析失败，保留该记录（不过滤）
+                    filtered.append(item)
+                    continue
+            # 如果时间解析成功或没有时间信息，保留
+            filtered.append(item)
+        items = filtered
+
+    # 排序（按时间倒序，优先 tweetCreatedAt）
+    items.sort(key=lambda x: x.get("tweetCreatedAt") or x.get("createdAt") or "", reverse=True)
 
     output = []
     for original_item in items:
@@ -806,13 +879,63 @@ async def get_media(
     return {"ok": True, "count": len(output), "items": output}
 
 
-# =====================================================
-# API：收藏（新增）
-# =====================================================
+# =========================================================
+# API：批量删除媒体
+# =========================================================
+
+@app.delete("/api/media")
+async def delete_media(request: Request, media_ids: list[str] = Body(...)):
+    """
+    批量删除媒体
+    请求体: {"media_ids": ["id1", "id2", ...]}
+    """
+    global media_library
+
+    session = request.cookies.get("session")
+    if session != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    if not media_ids or not isinstance(media_ids, list):
+        raise HTTPException(status_code=400, detail="media_ids 必须是字符串数组")
+
+    # 从缓存中移除
+    for media_id in media_ids:
+        if media_id in media_library:
+            del media_library[media_id]
+
+    # 从数据库删除
+    deleted_count = await delete_media_items(media_ids)
+
+    return {
+        "ok": True,
+        "deleted": deleted_count,
+        "requested": len(media_ids)
+    }
+
+
+# =========================================================
+# API：清空媒体库（用于删除旧数据）
+# =========================================================
+
+@app.delete("/api/media/all")
+async def clear_media(request: Request):
+    global media_library
+
+    session = request.cookies.get("session")
+    if session != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    media_library = {}
+    await clear_all_media()
+    return {"ok": True, "count": 0}
+
+
+# =========================================================
+# API：收藏
+# =========================================================
 
 @app.get("/api/favorites")
 async def get_favorites(request: Request):
-    """获取当前用户的收藏列表（使用 API Key 验证）"""
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="无效的 API Key")
@@ -822,7 +945,6 @@ async def get_favorites(request: Request):
 
 @app.post("/api/favorites")
 async def add_favorite(request: Request, payload: dict = Body(...)):
-    """添加收藏"""
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="无效的 API Key")
@@ -841,7 +963,6 @@ async def add_favorite(request: Request, payload: dict = Body(...)):
 
 @app.delete("/api/favorites/{username}")
 async def remove_favorite(request: Request, username: str):
-    """删除收藏"""
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="无效的 API Key")
@@ -856,7 +977,6 @@ async def remove_favorite(request: Request, username: str):
 
 @app.get("/api/favorites/check/{username}")
 async def check_favorite(request: Request, username: str):
-    """检查是否已收藏"""
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="无效的 API Key")
@@ -869,9 +989,9 @@ async def check_favorite(request: Request, username: str):
     return {"ok": True, "username": username, "favorited": exists}
 
 
-# =====================================================
-# API：媒体代理（不变）
-# =====================================================
+# =========================================================
+# API：媒体代理
+# =========================================================
 
 @app.get("/api/media-proxy")
 async def media_proxy(request: Request, url: str = Query(...)):
@@ -937,9 +1057,9 @@ async def media_proxy(request: Request, url: str = Query(...)):
         raise HTTPException(status_code=502, detail=f"媒体代理获取失败：{str(e)}")
 
 
-# =====================================================
-# API：标记下载状态（不变）
-# =====================================================
+# =========================================================
+# API：标记下载状态
+# =========================================================
 
 @app.post("/api/media/{media_id}/downloaded")
 async def mark_downloaded(request: Request, media_id: str, payload: dict = Body(default={})):
@@ -965,26 +1085,9 @@ async def mark_downloaded(request: Request, media_id: str, payload: dict = Body(
     return {"ok": True, "id": media_id, "downloaded": downloaded}
 
 
-# =====================================================
-# API：清空媒体库（不变）
-# =====================================================
-
-@app.delete("/api/media")
-async def clear_media(request: Request):
-    global media_library
-
-    session = request.cookies.get("session")
-    if session != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="未登录")
-
-    media_library = {}
-    await clear_all_media()
-    return {"ok": True, "count": 0}
-
-
-# =====================================================
-# API：下载文件（不变）
-# =====================================================
+# =========================================================
+# API：下载文件
+# =========================================================
 
 @app.get("/api/download")
 async def download(url: str = Query(...), filename: str = Query("x-media")):
@@ -1037,9 +1140,9 @@ async def download(url: str = Query(...), filename: str = Query("x-media")):
     )
 
 
-# =====================================================
-# 视频工具（不变）
-# =====================================================
+# =========================================================
+# 视频工具
+# =========================================================
 
 def cleanup_video_directory(directory):
     try:
@@ -1060,9 +1163,9 @@ def cleanup_video_directory(directory):
         pass
 
 
-# =====================================================
-# API：视频下载（不变）
-# =====================================================
+# =========================================================
+# API：视频下载
+# =========================================================
 
 @app.get("/api/video-download")
 async def video_download(url: str = Query(...), filename: str = Query("x-video.mp4")):
@@ -1118,9 +1221,9 @@ async def video_download(url: str = Query(...), filename: str = Query("x-video.m
     )
 
 
-# =====================================================
+# =========================================================
 # API：视频流（在线预览）
-# =====================================================
+# =========================================================
 
 @app.get("/api/video-stream")
 async def video_stream(url: str = Query(...)):
@@ -1173,9 +1276,9 @@ async def video_stream(url: str = Query(...)):
     )
 
 
-# =====================================================
+# =========================================================
 # 首页 & 健康检查
-# =====================================================
+# =========================================================
 
 @app.get("/")
 async def index():
@@ -1190,9 +1293,9 @@ async def health():
     return {"ok": True, "service": "万能媒体下载器", "media_count": len(media_library)}
 
 
-# =====================================================
+# =========================================================
 # 启动
-# =====================================================
+# =========================================================
 
 if __name__ == "__main__":
     import uvicorn
