@@ -1,7 +1,6 @@
 import re
 import os
 import json
-import sqlite3
 import asyncio
 import subprocess
 import tempfile
@@ -10,108 +9,108 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse, parse_qs, quote
 
 import httpx
+from databases import Database
 
-from fastapi import FastAPI, HTTPException, Query, Body, Request
-from fastapi.responses import FileResponse, StreamingResponse, Response
+from fastapi import FastAPI, HTTPException, Query, Body, Request, Response
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.background import BackgroundTask
 
 
-app = FastAPI(
-    title="X Media Finder"
-)
+app = FastAPI(title="万能媒体下载器")
 
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
 # =========================================================
-# 基础配置
+# 配置
 # =========================================================
 
-FX_API = "https://api.fxtwitter.com"
-DB_PATH = "media.db"
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+APP_PASSWORD = os.environ.get("APP_PASSWORD", "admin123")
 
-USER_AGENT = (
-    "Mozilla/5.0 "
-    "(iPhone; CPU iPhone OS 18_0 like Mac OS X) "
-    "AppleWebKit/605.1.15 "
-    "(KHTML, like Gecko) "
-    "Version/18.0 Mobile/15E148 "
-    "Safari/604.1"
-)
+if not DATABASE_URL:
+    print("⚠️ 警告：DATABASE_URL 未设置，使用本地 SQLite（重启会丢数据）")
+    DATABASE_URL = "sqlite:///media.db"
 
-
-MEDIA_ALLOWED_HOSTS = {
-    "pbs.twimg.com",
-    "pbs.twimg.com.",
-    "video.twimg.com",
-    "video.twimg.com.",
-}
-
-
-HLS_ALLOWED_HOSTS = {
-    "video.twimg.com",
-    "video.twimg.com.",
-}
+database = Database(DATABASE_URL)
 
 
 # =========================================================
-# 数据库
+# 初始化数据库
 # =========================================================
 
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS media (
-            id TEXT PRIMARY KEY,
-            data TEXT NOT NULL
-        )
-    """)
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_source ON media(data)")
-    conn.close()
+async def init_db():
+    if DATABASE_URL.startswith("postgresql"):
+        await database.execute("""
+            CREATE TABLE IF NOT EXISTS media (
+                id TEXT PRIMARY KEY,
+                data TEXT NOT NULL
+            )
+        """)
+        await database.execute("CREATE INDEX IF NOT EXISTS idx_source ON media(data)")
+    else:
+        await database.execute("""
+            CREATE TABLE IF NOT EXISTS media (
+                id TEXT PRIMARY KEY,
+                data TEXT NOT NULL
+            )
+        """)
+        await database.execute("CREATE INDEX IF NOT EXISTS idx_source ON media(data)")
 
-init_db()
 
-def load_all_media():
-    conn = sqlite3.connect(DB_PATH)
-    rows = conn.execute("SELECT id, data FROM media").fetchall()
-    conn.close()
+@app.on_event("startup")
+async def startup():
+    await database.connect()
+    await init_db()
+    print("[DB] 数据库连接成功")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await database.disconnect()
+    print("[DB] 数据库已断开")
+
+
+# =========================================================
+# 媒体库操作
+# =========================================================
+
+async def load_all_media():
+    rows = await database.fetch_all("SELECT id, data FROM media")
     library = {}
     for row in rows:
         try:
-            library[row[0]] = json.loads(row[1])
+            if hasattr(row, "_mapping"):
+                library[row._mapping["id"]] = json.loads(row._mapping["data"])
+            else:
+                library[row[0]] = json.loads(row[1])
         except:
             pass
     return library
 
-def save_media_item(media_id, data):
+
+async def save_media_item(media_id, data):
     try:
-        conn = sqlite3.connect(DB_PATH)
-        conn.execute(
-            "REPLACE INTO media (id, data) VALUES (?, ?)",
-            (media_id, json.dumps(data, ensure_ascii=False))
+        await database.execute(
+            "REPLACE INTO media (id, data) VALUES (:id, :data)",
+            {"id": media_id, "data": json.dumps(data, ensure_ascii=False)}
         )
-        conn.commit()
-        conn.close()
         return True
     except Exception as e:
         print(f"[DB ERROR] 保存失败 {media_id}: {e}")
         return False
 
-def clear_all_media():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("DELETE FROM media")
-    conn.commit()
-    conn.close()
 
-media_library = load_all_media()
+async def clear_all_media():
+    await database.execute("DELETE FROM media")
 
 
 # =========================================================
@@ -176,37 +175,7 @@ def safe_filename(value):
 
 
 # =========================================================
-# URL 安全检查
-# =========================================================
-
-def validate_media_url(url):
-    try:
-        parsed = urlparse(url)
-    except Exception:
-        raise HTTPException(status_code=400, detail="媒体地址格式错误")
-    if parsed.scheme != "https":
-        raise HTTPException(status_code=400, detail="媒体地址必须使用 HTTPS")
-    hostname = (parsed.hostname or "").lower()
-    if hostname not in MEDIA_ALLOWED_HOSTS:
-        raise HTTPException(status_code=400, detail="不是有效的 X 媒体地址")
-    return url
-
-
-def validate_hls_url(url):
-    try:
-        parsed = urlparse(url)
-    except Exception:
-        raise HTTPException(status_code=400, detail="视频地址格式错误")
-    if parsed.scheme != "https":
-        raise HTTPException(status_code=400, detail="视频地址必须使用 HTTPS")
-    hostname = (parsed.hostname or "").lower()
-    if hostname not in HLS_ALLOWED_HOSTS:
-        raise HTTPException(status_code=400, detail="不是有效的 X 视频地址")
-    return url
-
-
-# =========================================================
-# X 图片 URL 修复
+# URL 处理
 # =========================================================
 
 def normalize_x_media_url(url):
@@ -227,10 +196,6 @@ def normalize_x_media_url(url):
         return url + "?format=jpg&name=orig"
     return url
 
-
-# =========================================================
-# 代理地址
-# =========================================================
 
 def make_proxy_url(media_url):
     if not media_url:
@@ -254,16 +219,42 @@ def resolve_proxy_url(url):
     return real_url
 
 
+def validate_media_url(url):
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        raise HTTPException(status_code=400, detail="媒体地址格式错误")
+    if parsed.scheme != "https":
+        raise HTTPException(status_code=400, detail="媒体地址必须使用 HTTPS")
+    hostname = (parsed.hostname or "").lower()
+    if hostname not in {"pbs.twimg.com", "pbs.twimg.com.", "video.twimg.com", "video.twimg.com."}:
+        raise HTTPException(status_code=400, detail="不是有效的 X 媒体地址")
+    return url
+
+
+def validate_hls_url(url):
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        raise HTTPException(status_code=400, detail="视频地址格式错误")
+    if parsed.scheme != "https":
+        raise HTTPException(status_code=400, detail="视频地址必须使用 HTTPS")
+    hostname = (parsed.hostname or "").lower()
+    if hostname not in {"video.twimg.com", "video.twimg.com."}:
+        raise HTTPException(status_code=400, detail="不是有效的 X 视频地址")
+    return url
+
+
 # =========================================================
-# X 数据
+# X 数据抓取
 # =========================================================
 
 async def fetch_media_page(username, cursor=None, count=100):
     params = {"count": min(count, 100)}
     if cursor:
         params["cursor"] = cursor
-    url = f"{FX_API}/2/profile/{username}/media"
-    headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
+    url = f"https://api.fxtwitter.com/2/profile/{username}/media"
+    headers = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1", "Accept": "application/json"}
     try:
         async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=headers) as client:
             response = await client.get(url, params=params)
@@ -349,6 +340,27 @@ def extract_videos(tweet):
             "total": len(videos),
         })
     return result
+
+
+# =========================================================
+# API：登录验证
+# =========================================================
+
+@app.post("/api/auth/login")
+async def login(payload: dict = Body(...)):
+    password = payload.get("password", "")
+    if password == APP_PASSWORD:
+        return {"ok": True, "message": "登录成功"}
+    raise HTTPException(status_code=401, detail="密码错误")
+
+
+@app.get("/api/auth/check")
+async def check_auth(request: Request):
+    # 简单校验：检查 cookie 中是否有 session
+    session = request.cookies.get("session")
+    if session == APP_PASSWORD:
+        return {"ok": True, "authenticated": True}
+    return {"ok": True, "authenticated": False}
 
 
 # =========================================================
@@ -476,7 +488,7 @@ def make_media_id(tweet_id, media_type, idx):
 
 
 # =========================================================
-# API：导入媒体
+# API：导入媒体（开发者专用）
 # =========================================================
 
 def normalize_import_item(item):
@@ -530,7 +542,12 @@ def normalize_import_item(item):
 
 
 @app.post("/api/import-media")
-async def import_media(payload: dict = Body(...)):
+async def import_media(request: Request, payload: dict = Body(...)):
+    # 验证登录状态
+    session = request.cookies.get("session")
+    if session != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="未登录")
+
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="上传数据格式错误")
     items = payload.get("items") or payload.get("records") or []
@@ -566,24 +583,24 @@ async def import_media(payload: dict = Body(...)):
                 "createdAt": datetime.now(timezone.utc).isoformat(),
             }
             imported += 1
-            old = media_library.get(media_id)
-            if old:
+            old = await load_all_media()
+            old_item = old.get(media_id)
+            if old_item:
                 duplicates += 1
                 changed = False
                 for key in ["tweet_id", "tweet_url", "author", "source", "url", "thumbnail", "originalUrl", "streamType", "width", "height", "bitrate"]:
                     new_value = record.get(key)
-                    if new_value and old.get(key) != new_value:
-                        old[key] = new_value
+                    if new_value and old_item.get(key) != new_value:
+                        old_item[key] = new_value
                         changed = True
                 if changed:
                     updated += 1
-                    save_media_item(media_id, old)
+                    await save_media_item(media_id, old_item)
                 continue
-            media_library[media_id] = record
             added += 1
-            save_media_item(media_id, record)
+            await save_media_item(media_id, record)
 
-    return {"ok": True, "imported": imported, "added": added, "updated": updated, "duplicates": duplicates, "total": len(media_library)}
+    return {"ok": True, "imported": imported, "added": added, "updated": updated, "duplicates": duplicates, "total": len(await load_all_media())}
 
 
 # =========================================================
@@ -592,10 +609,17 @@ async def import_media(payload: dict = Body(...)):
 
 @app.get("/api/media")
 async def get_media(
+    request: Request,
     source: str = Query("all"),
     media_type: str = Query("all"),
     downloaded: str = Query("all"),
 ):
+    # 验证登录状态
+    session = request.cookies.get("session")
+    if session != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    media_library = await load_all_media()
     items = list(media_library.values())
 
     if source in {"likes", "bookmarks"}:
@@ -648,10 +672,8 @@ async def media_proxy(request: Request, url: str = Query(...)):
     url = normalize_x_media_url(url)
     validate_media_url(url)
 
-    print(f"[MEDIA PROXY] {url}")
-
     headers = {
-        "User-Agent": USER_AGENT,
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         "Referer": "https://x.com/",
@@ -664,13 +686,8 @@ async def media_proxy(request: Request, url: str = Query(...)):
         headers["Range"] = range_header
 
     try:
-        async with httpx.AsyncClient(
-            timeout=httpx.Timeout(120.0, connect=15.0),
-            follow_redirects=True,
-            headers=headers
-        ) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=15.0), follow_redirects=True, headers=headers) as client:
             response = await client.get(url)
-
             content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
             if not content_type or content_type == "application/octet-stream":
                 path = urlparse(url).path.lower()
@@ -707,7 +724,6 @@ async def media_proxy(request: Request, url: str = Query(...)):
                         "Cross-Origin-Resource-Policy": "cross-origin",
                     }
                 )
-
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=502, detail=f"X 服务器返回错误：{e.response.status_code}")
     except Exception as e:
@@ -719,7 +735,12 @@ async def media_proxy(request: Request, url: str = Query(...)):
 # =========================================================
 
 @app.post("/api/media/{media_id}/downloaded")
-async def mark_downloaded(media_id: str, payload: dict = Body(default={})):
+async def mark_downloaded(request: Request, media_id: str, payload: dict = Body(default={})):
+    session = request.cookies.get("session")
+    if session != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    media_library = await load_all_media()
     if media_id not in media_library:
         raise HTTPException(status_code=404, detail="媒体不存在")
     downloaded = True
@@ -727,7 +748,7 @@ async def mark_downloaded(media_id: str, payload: dict = Body(default={})):
         downloaded = bool(payload["downloaded"])
     media_library[media_id]["downloaded"] = downloaded
     media_library[media_id]["downloadedAt"] = datetime.now(timezone.utc).isoformat() if downloaded else None
-    save_media_item(media_id, media_library[media_id])
+    await save_media_item(media_id, media_library[media_id])
     return {"ok": True, "id": media_id, "downloaded": downloaded}
 
 
@@ -736,9 +757,11 @@ async def mark_downloaded(media_id: str, payload: dict = Body(default={})):
 # =========================================================
 
 @app.delete("/api/media")
-async def clear_media():
-    media_library.clear()
-    clear_all_media()
+async def clear_media(request: Request):
+    session = request.cookies.get("session")
+    if session != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="未登录")
+    await clear_all_media()
     return {"ok": True, "count": 0}
 
 
@@ -753,7 +776,7 @@ async def download(url: str = Query(...), filename: str = Query("x-media")):
     validate_media_url(url)
 
     headers = {
-        "User-Agent": USER_AGENT,
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
         "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         "Referer": "https://x.com/",
@@ -762,11 +785,7 @@ async def download(url: str = Query(...), filename: str = Query("x-media")):
     }
 
     try:
-        async with httpx.AsyncClient(
-            timeout=httpx.Timeout(120.0, connect=20.0),
-            follow_redirects=True,
-            headers=headers
-        ) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=20.0), follow_redirects=True, headers=headers) as client:
             response = await client.get(url)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"下载失败：{str(e)}")
@@ -802,7 +821,7 @@ async def download(url: str = Query(...), filename: str = Query("x-media")):
 
 
 # =========================================================
-# 视频临时目录清理
+# 视频工具
 # =========================================================
 
 def cleanup_video_directory(directory):
@@ -825,7 +844,7 @@ def cleanup_video_directory(directory):
 
 
 # =========================================================
-# API：视频下载（MP4 转换）
+# API：视频下载
 # =========================================================
 
 @app.get("/api/video-download")
@@ -840,7 +859,7 @@ async def video_download(url: str = Query(...), filename: str = Query("x-video.m
     temp_dir = tempfile.mkdtemp(prefix="x-video-")
     output_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp4")
 
-    headers_str = f"User-Agent: {USER_AGENT}\r\nReferer: https://x.com/\r\nOrigin: https://x.com\r\n"
+    headers_str = "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1\r\nReferer: https://x.com/\r\nOrigin: https://x.com\r\n"
 
     command = [
         "ffmpeg",
@@ -857,13 +876,7 @@ async def video_download(url: str = Query(...), filename: str = Query("x-video.m
     ]
 
     try:
-        process = await asyncio.to_thread(
-            subprocess.run,
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=180,
-        )
+        process = await asyncio.to_thread(subprocess.run, command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=180)
     except subprocess.TimeoutExpired:
         cleanup_video_directory(temp_dir)
         raise HTTPException(status_code=504, detail="视频转换超时")
@@ -889,23 +902,18 @@ async def video_download(url: str = Query(...), filename: str = Query("x-video.m
 
 
 # =========================================================
-# API：视频流式播放（在线预览）- 核心新增
+# API：视频流（在线预览）
 # =========================================================
 
 @app.get("/api/video-stream")
 async def video_stream(url: str = Query(...)):
-    """
-    在线预览视频，返回 MP4 流（不触发下载）
-    和 video-download 一样，但 Content-Disposition 是 inline
-    绕过 X 防盗链，让浏览器直接播放
-    """
     url = resolve_proxy_url(url)
     validate_hls_url(url)
 
     temp_dir = tempfile.mkdtemp(prefix="x-video-")
     output_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp4")
 
-    headers_str = f"User-Agent: {USER_AGENT}\r\nReferer: https://x.com/\r\nOrigin: https://x.com\r\n"
+    headers_str = "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1\r\nReferer: https://x.com/\r\nOrigin: https://x.com\r\n"
 
     command = [
         "ffmpeg",
@@ -922,13 +930,7 @@ async def video_stream(url: str = Query(...)):
     ]
 
     try:
-        process = await asyncio.to_thread(
-            subprocess.run,
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=180,
-        )
+        process = await asyncio.to_thread(subprocess.run, command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=180)
     except subprocess.TimeoutExpired:
         cleanup_video_directory(temp_dir)
         raise HTTPException(status_code=504, detail="视频转换超时")
@@ -945,7 +947,6 @@ async def video_stream(url: str = Query(...)):
         cleanup_video_directory(temp_dir)
         raise HTTPException(status_code=500, detail="生成的 MP4 文件异常")
 
-    # 关键区别：Content-Disposition 是 inline，浏览器直接播放
     return FileResponse(
         path=output_path,
         media_type="video/mp4",
@@ -956,7 +957,7 @@ async def video_stream(url: str = Query(...)):
 
 
 # =========================================================
-# 首页
+# 首页 & 健康检查
 # =========================================================
 
 @app.get("/")
@@ -964,13 +965,10 @@ async def index():
     return FileResponse("static/index.html")
 
 
-# =========================================================
-# 健康检查
-# =========================================================
-
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "X Media Finder", "media_count": len(media_library)}
+    media_count = len(await load_all_media())
+    return {"ok": True, "service": "万能媒体下载器", "media_count": media_count}
 
 
 # =========================================================
