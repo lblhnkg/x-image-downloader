@@ -117,6 +117,10 @@ async def clear_all_media():
     await database.execute("DELETE FROM media")
 
 
+# 内存缓存
+media_library = {}
+
+
 # =========================================================
 # 基础工具
 # =========================================================
@@ -499,7 +503,7 @@ def make_media_id(tweet_id, media_type, idx):
 
 
 # =========================================================
-# API：导入媒体（使用 API Key 验证）
+# API：导入媒体（使用 API Key 验证，直接操作内存缓存）
 # =========================================================
 
 def normalize_import_item(item):
@@ -554,6 +558,8 @@ def normalize_import_item(item):
 
 @app.post("/api/import-media")
 async def import_media(request: Request, payload: dict = Body(...)):
+    global media_library
+
     # 从 Header 获取 API Key
     api_key = request.headers.get("X-API-Key")
     if api_key != APP_PASSWORD:
@@ -569,6 +575,10 @@ async def import_media(request: Request, payload: dict = Body(...)):
     added = 0
     updated = 0
     duplicates = 0
+
+    # 如果内存缓存为空，从数据库加载
+    if not media_library:
+        media_library = await load_all_media()
 
     for raw_item in items:
         item = normalize_import_item(raw_item)
@@ -594,8 +604,9 @@ async def import_media(request: Request, payload: dict = Body(...)):
                 "createdAt": datetime.now(timezone.utc).isoformat(),
             }
             imported += 1
-            old = await load_all_media()
-            old_item = old.get(media_id)
+
+            # 检查内存缓存
+            old_item = media_library.get(media_id)
             if old_item:
                 duplicates += 1
                 changed = False
@@ -606,12 +617,19 @@ async def import_media(request: Request, payload: dict = Body(...)):
                         changed = True
                 if changed:
                     updated += 1
-                    await save_media_item(media_id, old_item)
+                    media_library[media_id] = old_item
+                    # 同步到数据库
+                    if not await save_media_item(media_id, old_item):
+                        raise HTTPException(status_code=500, detail=f"数据库保存失败: {media_id}")
                 continue
-            added += 1
-            await save_media_item(media_id, record)
 
-    return {"ok": True, "imported": imported, "added": added, "updated": updated, "duplicates": duplicates, "total": len(await load_all_media())}
+            # 新增
+            media_library[media_id] = record
+            added += 1
+            if not await save_media_item(media_id, record):
+                raise HTTPException(status_code=500, detail=f"数据库保存失败: {media_id}")
+
+    return {"ok": True, "imported": imported, "added": added, "updated": updated, "duplicates": duplicates, "total": len(media_library)}
 
 
 # =========================================================
@@ -625,11 +643,16 @@ async def get_media(
     media_type: str = Query("all"),
     downloaded: str = Query("all"),
 ):
+    global media_library
+
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="未登录")
 
-    media_library = await load_all_media()
+    # 如果内存缓存为空，从数据库加载
+    if not media_library:
+        media_library = await load_all_media()
+
     items = list(media_library.values())
 
     if source in {"likes", "bookmarks"}:
@@ -670,6 +693,50 @@ async def get_media(
         output.append(item)
 
     return {"ok": True, "count": len(output), "items": output}
+
+
+# =========================================================
+# API：标记下载状态
+# =========================================================
+
+@app.post("/api/media/{media_id}/downloaded")
+async def mark_downloaded(request: Request, media_id: str, payload: dict = Body(default={})):
+    global media_library
+
+    session = request.cookies.get("session")
+    if session != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    if not media_library:
+        media_library = await load_all_media()
+
+    if media_id not in media_library:
+        raise HTTPException(status_code=404, detail="媒体不存在")
+    downloaded = True
+    if isinstance(payload, dict) and "downloaded" in payload:
+        downloaded = bool(payload["downloaded"])
+    media_library[media_id]["downloaded"] = downloaded
+    media_library[media_id]["downloadedAt"] = datetime.now(timezone.utc).isoformat() if downloaded else None
+    if not await save_media_item(media_id, media_library[media_id]):
+        raise HTTPException(status_code=500, detail="数据库保存失败")
+    return {"ok": True, "id": media_id, "downloaded": downloaded}
+
+
+# =========================================================
+# API：清空媒体库
+# =========================================================
+
+@app.delete("/api/media")
+async def clear_media(request: Request):
+    global media_library
+
+    session = request.cookies.get("session")
+    if session != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    media_library = {}
+    await clear_all_media()
+    return {"ok": True, "count": 0}
 
 
 # =========================================================
@@ -738,41 +805,6 @@ async def media_proxy(request: Request, url: str = Query(...)):
         raise HTTPException(status_code=502, detail=f"X 服务器返回错误：{e.response.status_code}")
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"媒体代理获取失败：{str(e)}")
-
-
-# =========================================================
-# API：标记下载状态
-# =========================================================
-
-@app.post("/api/media/{media_id}/downloaded")
-async def mark_downloaded(request: Request, media_id: str, payload: dict = Body(default={})):
-    session = request.cookies.get("session")
-    if session != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="未登录")
-
-    media_library = await load_all_media()
-    if media_id not in media_library:
-        raise HTTPException(status_code=404, detail="媒体不存在")
-    downloaded = True
-    if isinstance(payload, dict) and "downloaded" in payload:
-        downloaded = bool(payload["downloaded"])
-    media_library[media_id]["downloaded"] = downloaded
-    media_library[media_id]["downloadedAt"] = datetime.now(timezone.utc).isoformat() if downloaded else None
-    await save_media_item(media_id, media_library[media_id])
-    return {"ok": True, "id": media_id, "downloaded": downloaded}
-
-
-# =========================================================
-# API：清空媒体库
-# =========================================================
-
-@app.delete("/api/media")
-async def clear_media(request: Request):
-    session = request.cookies.get("session")
-    if session != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="未登录")
-    await clear_all_media()
-    return {"ok": True, "count": 0}
 
 
 # =========================================================
@@ -977,8 +1009,10 @@ async def index():
 
 @app.get("/api/health")
 async def health():
-    media_count = len(await load_all_media())
-    return {"ok": True, "service": "万能媒体下载器", "media_count": media_count}
+    global media_library
+    if not media_library:
+        media_library = await load_all_media()
+    return {"ok": True, "service": "万能媒体下载器", "media_count": len(media_library)}
 
 
 # =========================================================
