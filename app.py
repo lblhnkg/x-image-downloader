@@ -19,10 +19,10 @@ from starlette.background import BackgroundTask
 
 app = FastAPI(title="万能媒体下载器")
 
-
+# 配置 CORS - 允许你的 Render 域名
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://x-v1.onrender.com"],  # 如果是自定义域名请替换
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -34,7 +34,7 @@ app.add_middleware(
 # =========================================================
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
-APP_PASSWORD = os.environ.get("APP_PASSWORD", "admin123")
+APP_PASSWORD = os.environ.get("APP_PASSWORD", "fushengruomeng")
 
 if not DATABASE_URL:
     print("⚠️ 警告：DATABASE_URL 未设置，使用本地 SQLite（重启会丢数据）")
@@ -347,16 +347,24 @@ def extract_videos(tweet):
 # =========================================================
 
 @app.post("/api/auth/login")
-async def login(payload: dict = Body(...)):
+async def login(payload: dict = Body(...), response: Response):
     password = payload.get("password", "")
     if password == APP_PASSWORD:
+        # 设置 Cookie，跨域共享
+        response.set_cookie(
+            key="session",
+            value=APP_PASSWORD,
+            httponly=False,
+            secure=True,
+            samesite="none",
+            max_age=3600*24*7  # 7天
+        )
         return {"ok": True, "message": "登录成功"}
     raise HTTPException(status_code=401, detail="密码错误")
 
 
 @app.get("/api/auth/check")
 async def check_auth(request: Request):
-    # 简单校验：检查 cookie 中是否有 session
     session = request.cookies.get("session")
     if session == APP_PASSWORD:
         return {"ok": True, "authenticated": True}
@@ -708,7 +716,7 @@ async def media_proxy(request: Request, url: str = Query(...)):
                     media_type=content_type,
                     headers={
                         "Cache-Control": "public, max-age=86400",
-                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Origin": "https://x-v1.onrender.com",
                         "Cross-Origin-Resource-Policy": "cross-origin",
                         "Accept-Ranges": "bytes",
                         "Content-Length": str(len(response.content)),
@@ -720,7 +728,7 @@ async def media_proxy(request: Request, url: str = Query(...)):
                     media_type=content_type,
                     headers={
                         "Cache-Control": "public, max-age=86400",
-                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Origin": "https://x-v1.onrender.com",
                         "Cross-Origin-Resource-Policy": "cross-origin",
                     }
                 )
