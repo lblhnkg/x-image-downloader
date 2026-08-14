@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+    <title>X 媒体下载器</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 80px;
+        }
+        .hidden { display: none !important; }
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #141414 0%, #1a1a1a 100%);
+            border-radius: 32px;
+            padding: 40px 28px 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            min-height: 560px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        @media (min-width: 700px) {
+            .app-container { max-width: 900px; padding: 50px 40px 40px; border-radius: 36px; }
+            .gallery { grid-template-columns: repeat(4, 1fr) !important; gap: 14px; }
+            .search-row input { font-size: 18px; }
+            .option-btn { padding: 8px 18px; font-size: 13px; }
+        }
+        @media (min-width: 1024px) {
+            .app-container { max-width: 1100px; padding: 60px 50px 50px; border-radius: 40px; }
+            .gallery { grid-template-columns: repeat(4, 1fr) !important; gap: 18px; }
+        }
+        @media (max-width: 420px) {
+            .app-container { padding: 28px 18px 22px; border-radius: 24px; }
+            .gallery { gap: 6px; }
+            .item-actions button { font-size: 9px; padding: 4px 0; }
+        }
+        @media (max-width: 360px) {
+            .app-container { padding: 20px 12px 16px; border-radius: 20px; }
+            .item-actions button { font-size: 8px; padding: 3px 0; }
+        }
+
+        .page { display: none; animation: fadeIn 0.4s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        .back-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 22px;
+            cursor: pointer;
+            color: rgba(255,255,255,0.5);
+            font-size: 15px;
+            transition: color 0.2s ease;
+            font-weight: 400;
+        }
+        .back-row:hover { color: rgba(255,255,255,0.8); }
+        .back-row .back-icon { font-size: 18px; line-height: 1; }
+
+        .submenu-title { font-size: 20px; font-weight: 500; color: #fff; margin-bottom: 6px; }
+        .submenu-desc { font-size: 13px; color: rgba(255,255,255,0.3); margin-bottom: 18px; font-weight: 300; }
+
+        .search-section { margin-top: 6px; }
+        .search-label { font-size: 13px; color: rgba(255,255,255,0.4); font-weight: 300; margin-bottom: 6px; display: block; }
+        .search-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .search-row input {
+            flex: 1;
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            padding: 10px 0 8px;
+            font-size: 16px;
+            color: #fff;
+            outline: none;
+            transition: border-color 0.25s ease;
+            font-family: inherit;
+        }
+        .search-row input::placeholder { color: rgba(255,255,255,0.2); font-weight: 300; }
+        .search-row input:focus { border-bottom-color: rgba(255,255,255,0.5); }
+        .search-row .search-btn-icon {
+            background: transparent;
+            border: 0;
+            color: rgba(255,255,255,0.4);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 6px 4px 6px 10px;
+            transition: color 0.2s ease;
+        }
+        .search-row .search-btn-icon:hover { color: rgba(255,255,255,0.7); }
+
+        .search-favorite-btn {
+            background: transparent;
+            border: 0;
+            color: rgba(255,255,255,0.3);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 6px 4px 6px 6px;
+            transition: color 0.2s ease;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .search-favorite-btn:hover { color: rgba(255,255,255,0.6); }
+        .search-favorite-btn.favorited { color: #ffd700; }
+
+        .favorites-panel {
+            margin-top: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.02);
+        }
+        .favorite-empty {
+            padding: 16px 14px;
+            color: rgba(255,255,255,0.25);
+            font-size: 13px;
+            font-weight: 300;
+            text-align: center;
+        }
+        .favorite-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .favorite-item:last-child { border-bottom: 0; }
+        .favorite-item .fav-info { flex: 1; min-width: 0; }
+        .favorite-item .fav-name {
+            font-size: 14px;
+            color: #fff;
+            font-weight: 400;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .favorite-item .fav-handle {
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+            margin-top: 1px;
+        }
+        .favorite-item .fav-actions { display: flex; gap: 6px; }
+        .favorite-item .fav-actions button {
+            background: transparent;
+            border: 0;
+            color: rgba(255,255,255,0.3);
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        .favorite-item .fav-actions .fav-use { color: rgba(255,255,255,0.6); }
+        .favorite-item .fav-actions .fav-use:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .favorite-item .fav-actions .fav-delete:hover { color: #ff6b6b; background: rgba(255,107,107,0.08); }
+
+        .favorite-toggle-btn {
+            width: 100%;
+            background: transparent;
+            border: 0;
+            color: rgba(255,255,255,0.3);
+            font-size: 13px;
+            font-weight: 300;
+            padding: 10px 0 6px;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            transition: color 0.2s ease;
+        }
+        .favorite-toggle-btn:hover { color: rgba(255,255,255,0.5); }
+
+        .option-section { margin-top: 18px; }
+        .option-label {
+            font-size: 12px;
+            color: rgba(255,255,255,0.3);
+            font-weight: 300;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .option-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .option-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.4);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            font-weight: 300;
+        }
+        .option-btn:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); }
+        .option-btn.active { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: #fff; }
+
+        .date-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .date-row input[type="date"] {
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 8px 0 6px;
+            font-size: 14px;
+            color: rgba(255,255,255,0.6);
+            outline: none;
+            font-family: inherit;
+            transition: border-color 0.25s ease;
+        }
+        .date-row input[type="date"]:focus { border-bottom-color: rgba(255,255,255,0.4); }
+        .date-row input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); }
+
+        .primary-btn {
+            width: 100%;
+            padding: 14px 0;
+            background: #fff;
+            color: #0a0a0a;
+            border: 0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            margin-top: 18px;
+        }
+        .primary-btn:hover { opacity: 0.85; transform: scale(0.98); }
+        .primary-btn:active { transform: scale(0.96); }
+        .primary-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
+
+        .status-box {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.04);
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            font-weight: 300;
+            line-height: 1.6;
+            min-height: 20px;
+        }
+        .status-box.error { color: #ff6b6b; border-color: rgba(255,107,107,0.15); background: rgba(255,107,107,0.04); }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+            margin-bottom: 12px;
+        }
+        .result-title { font-size: 15px; font-weight: 450; color: #fff; }
+        .result-count { font-size: 12px; color: rgba(255,255,255,0.25); font-weight: 300; }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .item {
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.04);
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        .item.selected { border-color: #007aff; background: rgba(0,122,255,0.08); }
+        .select-check {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 10;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.5);
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #fff;
+            transition: all 0.2s ease;
+            pointer-events: none;
+        }
+        .item.in-select-mode .select-check { display: flex; }
+        .item.selected .select-check { background: #007aff; border-color: #007aff; }
+        .item.selected .select-check::after { content: "✓"; font-weight: 600; }
+
+        .media-wrap {
+            position: relative;
+            width: 100%;
+            background: rgba(255,255,255,0.03);
+            overflow: hidden;
+        }
+        .media-wrap img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        .item.in-select-mode .media-wrap img { cursor: default; pointer-events: none; }
+        .media-error {
+            width: 100%;
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.03);
+            color: rgba(255,255,255,0.2);
+            font-size: 12px;
+            text-align: center;
+            padding: 12px;
+            font-weight: 300;
+        }
+        .video-badge {
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 10px;
+            font-weight: 400;
+        }
+        .source-badge {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            background: rgba(0,0,0,0.7);
+            color: rgba(255,255,255,0.7);
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 10px;
+            font-weight: 300;
+        }
+        .library-badge {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            background: rgba(0,0,0,0.7);
+            color: rgba(255,255,255,0.7);
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 10px;
+            font-weight: 300;
+        }
+
+        .item-info { padding: 8px 10px; }
+        .item-author {
+            font-size: 11px;
+            font-weight: 400;
+            color: rgba(255,255,255,0.5);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .item-date {
+            font-size: 10px;
+            color: rgba(255,255,255,0.2);
+            margin-top: 2px;
+            font-weight: 300;
+        }
+        .item-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        .item-actions button {
+            padding: 5px 0;
+            border-radius: 6px;
+            font-size: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            border: 0;
+            transition: all 0.2s ease;
+            pointer-events: auto;
+        }
+        .item.in-select-mode .item-actions button { pointer-events: none; opacity: 0.25; }
+        .item-actions .btn-view { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4); }
+        .item-actions .btn-view:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+        .item-actions .btn-download { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4); }
+        .item-actions .btn-download:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+        .item-actions .btn-original { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4); }
+        .item-actions .btn-original:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+
+        .selection-toolbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(20,20,22,0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding: 12px 20px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .selection-toolbar.active { display: flex; }
+        .selection-toolbar .toolbar-left { display: flex; gap: 16px; align-items: center; }
+        .selection-toolbar .toolbar-btn {
+            background: transparent;
+            border: 0;
+            color: rgba(255,255,255,0.6);
+            font-size: 15px;
+            font-weight: 450;
+            padding: 8px 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: color 0.2s ease;
+        }
+        .selection-toolbar .toolbar-btn:hover { color: #fff; }
+        .selection-toolbar .toolbar-btn.danger {
+            background: #fff;
+            color: #ff3b30;
+            padding: 8px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .selection-toolbar .toolbar-btn.danger:hover { opacity: 0.85; }
+        .selection-toolbar .toolbar-btn.danger:active { transform: scale(0.96); }
+        .selection-toolbar .selected-count { color: rgba(255,255,255,0.4); font-size: 13px; font-weight: 300; }
+
+        .delete-confirm-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .delete-confirm-overlay.active { display: flex; }
+        .delete-confirm-box {
+            background: #1c1c1e;
+            border-radius: 14px;
+            padding: 28px 24px 20px;
+            max-width: 340px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        }
+        .delete-confirm-box .confirm-icon { font-size: 48px; margin-bottom: 12px; display: block; color: #ff3b30; }
+        .delete-confirm-box .confirm-title { font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+        .delete-confirm-box .confirm-desc {
+            font-size: 14px;
+            color: rgba(255,255,255,0.4);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+        .delete-confirm-box .confirm-actions { display: flex; gap: 8px; }
+        .delete-confirm-box .confirm-actions button {
+            flex: 1;
+            padding: 12px 0;
+            border: 0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+        .delete-confirm-box .confirm-actions .confirm-cancel { background: transparent; color: #007aff; }
+        .delete-confirm-box .confirm-actions .confirm-cancel:hover { background: rgba(0,122,255,0.1); }
+        .delete-confirm-box .confirm-actions .confirm-delete { background: #fff; color: #ff3b30; }
+        .delete-confirm-box .confirm-actions .confirm-delete:hover { opacity: 0.85; }
+        .delete-confirm-box .confirm-actions .confirm-delete:active { transform: scale(0.96); }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            flex-direction: column;
+            padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+        }
+        .modal-overlay.hidden { display: none !important; }
+        .modal-top {
+            min-height: 54px;
+            padding: 10px 16px 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .modal-close {
+            background: rgba(255,255,255,0.08);
+            border: 0;
+            color: rgba(255,255,255,0.5);
+            border-radius: 16px;
+            padding: 6px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            font-weight: 300;
+        }
+        .modal-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
+        .modal-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 16px;
+            overflow: auto;
+        }
+        .modal-content img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .modal-content video { max-width: 100%; max-height: 100%; }
+
+        .modal-bottom {
+            padding: 10px 16px 16px;
+            display: flex;
+            gap: 10px;
+        }
+        .modal-bottom button {
+            flex: 1;
+            padding: 12px 0;
+            border: 0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 450;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+        .modal-bottom .modal-download { background: #fff; color: #0a0a0a; }
+        .modal-bottom .modal-download:hover { opacity: 0.85; }
+        .modal-bottom .modal-original { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); }
+        .modal-bottom .modal-original:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+        .dev-signature {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255,255,255,0.15);
+            margin-top: 32px;
+            letter-spacing: 0.5px;
+            font-weight: 300;
+        }
+        .back-home {
+            display: inline-block;
+            color: rgba(255,255,255,0.4);
+            font-size: 14px;
+            text-decoration: none;
+            margin-bottom: 18px;
+            transition: color 0.2s ease;
+            cursor: pointer;
+        }
+        .back-home:hover { color: rgba(255,255,255,0.7); }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <!-- ========== 搜索页面 ========== -->
+    <div class="page active" id="pageSearch">
+        <a class="back-home" id="backToHome">‹ 返回首页</a>
+        <div class="submenu-title">搜索博主</div>
+        <div class="submenu-desc">输入 X 用户名，搜索该博主的所有媒体</div>
+        <div class="search-section">
+            <label class="search-label">博主</label>
+            <div class="search-row">
+                <input type="text" id="profileInput" placeholder="@NASA / NASA / x.com/NASA" autocomplete="off" autocapitalize="off" spellcheck="false">
+                <button class="search-btn-icon" id="searchBtn">⌕</button>
+                <button class="search-favorite-btn" id="favoriteAddBtn">☆ 收藏</button>
+            </div>
+            <div class="favorite-entry" style="margin-top:10px;">
+                <button class="favorite-toggle-btn" id="favoriteToggleBtn">我的收藏</button>
+                <div class="favorites-panel hidden" id="favoritesPanel"></div>
+            </div>
+            <div class="option-section">
+                <span class="option-label">时间范围</span>
+                <div class="option-row" data-group="range">
+                    <button class="option-btn active" data-value="all">全部</button>
+                    <button class="option-btn" data-value="7">最近7天</button>
+                    <button class="option-btn" data-value="30">最近30天</button>
+                    <button class="option-btn" data-value="365">最近1年</button>
+                    <button class="option-btn" data-value="custom">自定义</button>
+                </div>
+            </div>
+            <div class="hidden" id="customDates" style="margin-top:10px;">
+                <div class="date-row">
+                    <div><label class="search-label" style="font-size:11px;">开始日期</label><input type="date" id="startDate"></div>
+                    <div><label class="search-label" style="font-size:11px;">结束日期</label><input type="date" id="endDate"></div>
+                </div>
+            </div>
+            <div class="option-section">
+                <span class="option-label">媒体类型</span>
+                <div class="option-row" data-group="media">
+                    <button class="option-btn active" data-value="photo">图片</button>
+                    <button class="option-btn" data-value="video">视频</button>
+                    <button class="option-btn" data-value="all">全部</button>
+                </div>
+            </div>
+            <div class="option-section">
+                <span class="option-label">帖子来源</span>
+                <div class="option-row" data-group="source">
+                    <button class="option-btn active" data-value="all">全部</button>
+                    <button class="option-btn" data-value="original">原创</button>
+                    <button class="option-btn" data-value="repost">转帖 / 引用</button>
+                </div>
+            </div>
+            <button class="primary-btn" id="searchSubmitBtn">开始找图</button>
+            <div class="status-box hidden" id="searchStatus"></div>
+            <div class="result-header hidden" id="searchResultHeader">
+                <span class="result-title" id="searchResultTitle">搜索结果</span>
+                <span class="result-count" id="searchResultCount"></span>
+            </div>
+            <div class="gallery" id="searchGallery"></div>
+        </div>
+        <div class="dev-signature">开发者：浮生若夢</div>
+    </div>
+
+    <!-- ========== 我的喜欢 / 我的书签 ========== -->
+    <div class="page" id="pageLibrary">
+        <div class="back-row" id="backFromLibrary">
+            <span class="back-icon">‹</span> 返回
+        </div>
+        <div class="submenu-title" id="libraryTitle">我的喜欢</div>
+        <div class="submenu-desc" id="libraryDesc">查看采集器上传的喜欢列表</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:4px;flex-wrap:wrap;gap:6px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:12px;color:rgba(255,255,255,0.25);font-weight:300;" id="libraryCount">正在读取…</span>
+                <button style="background:transparent;border:0;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;" id="refreshLibraryBtn">刷新</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <button id="selectToggleBtn" style="background:transparent;border:0;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;">选择</button>
+            </div>
+        </div>
+
+        <div class="option-section" style="margin-top:0;">
+            <span class="option-label">时间范围</span>
+            <div class="option-row" data-group="libraryRange">
+                <button class="option-btn active" data-value="all">全部</button>
+                <button class="option-btn" data-value="7">最近7天</button>
+                <button class="option-btn" data-value="30">最近30天</button>
+                <button class="option-btn" data-value="365">最近1年</button>
+                <button class="option-btn" data-value="custom">自定义</button>
+            </div>
+        </div>
+        <div class="hidden" id="libraryCustomDates" style="margin-top:8px;">
+            <div class="date-row">
+                <div><label class="search-label" style="font-size:11px;">开始日期</label><input type="date" id="libraryStartDate"></div>
+                <div><label class="search-label" style="font-size:11px;">结束日期</label><input type="date" id="libraryEndDate"></div>
+            </div>
+        </div>
+
+        <div class="option-section" style="margin-top:12px;">
+            <span class="option-label">媒体类型</span>
+            <div class="option-row" data-group="libraryMedia">
+                <button class="option-btn active" data-value="all">全部</button>
+                <button class="option-btn" data-value="image">图片</button>
+                <button class="option-btn" data-value="video">视频</button>
+            </div>
+        </div>
+
+        <div class="status-box hidden" id="libraryStatus"></div>
+        <div class="result-header hidden" id="libraryResultHeader">
+            <span class="result-title" id="libraryResultTitle">媒体</span>
+            <span class="result-count" id="libraryResultCount"></span>
+        </div>
+        <div class="gallery" id="libraryGallery"></div>
+        <div class="dev-signature">开发者：浮生若夢</div>
+    </div>
+
+</div>
+
+<!-- ========== Modal ========== -->
+<div class="modal-overlay hidden" id="modal">
+    <div class="modal-top">
+        <button class="modal-close" id="modalCloseBtn">关闭</button>
+    </div>
+    <div class="modal-content" id="modalContent"></div>
+    <div class="modal-bottom">
+        <button class="modal-download" id="modalDownloadBtn">下载</button>
+        <button class="modal-original" id="modalOriginalBtn">打开原帖</button>
+    </div>
+</div>
+
+<!-- ========== 选择工具栏 ========== -->
+<div class="selection-toolbar" id="selectionToolbar">
+    <div class="toolbar-left">
+        <button class="toolbar-btn" id="toolbarCancel">取消</button>
+        <button class="toolbar-btn" id="toolbarSelectAll">全选</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+        <span class="selected-count" id="selectedCount">已选 0 个</span>
+        <button class="toolbar-btn danger" id="toolbarDelete">删除</button>
+    </div>
+</div>
+
+<!-- ========== 删除确认弹窗 ========== -->
+<div class="delete-confirm-overlay" id="deleteConfirm">
+    <div class="delete-confirm-box">
+        <span class="confirm-icon">🗑️</span>
+        <div class="confirm-title" id="confirmTitle">确定删除？</div>
+        <div class="confirm-desc" id="confirmDesc">这些媒体将被永久删除，无法恢复。</div>
+        <div class="confirm-actions">
+            <button class="confirm-cancel" id="confirmCancel">取消</button>
+            <button class="confirm-delete" id="confirmDelete">确定删除</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // X 下载器 - 全部功能
+    // ============================================================
+
+    // 状态
+    let currentSubPage = '';
+    let currentItem = null;
+    let currentHls = null;
+
+    let range = 'all';
+    let mediaType = 'photo';
+    let sourceType = 'all';
+    let libraryMediaType = 'all';
+    let libraryRange = 'all';
+
+    let favorites = [];
+    let favoritesLoaded = false;
+
+    let isSelectMode = false;
+    let selectedIds = new Set();
+
+    const API_KEY = 'fushengruomeng';
+
+    let cachedLibraryItems = [];
+    let cachedLibrarySource = '';
+    let allFilteredItems = [];
+    let currentBatch = 0;
+    const BATCH_SIZE = 50;
+    let isLoadingMore = false;
+    let allLoaded = false;
+    let scrollListenerAttached = false;
+
+    // DOM 引用
+    function $(id) { return document.getElementById(id); }
+
+    var pageSearch = $('pageSearch');
+    var pageLibrary = $('pageLibrary');
+    var backToHome = $('backToHome');
+    var backFromLibrary = $('backFromLibrary');
+
+    var profileInput = $('profileInput');
+    var searchBtn = $('searchBtn');
+    var favoriteAddBtn = $('favoriteAddBtn');
+    var favoriteToggleBtn = $('favoriteToggleBtn');
+    var favoritesPanel = $('favoritesPanel');
+    var searchSubmitBtn = $('searchSubmitBtn');
+    var searchStatus = $('searchStatus');
+    var searchResultHeader = $('searchResultHeader');
+    var searchResultTitle = $('searchResultTitle');
+    var searchResultCount = $('searchResultCount');
+    var searchGallery = $('searchGallery');
+
+    var libraryTitle = $('libraryTitle');
+    var libraryDesc = $('libraryDesc');
+    var libraryCount = $('libraryCount');
+    var refreshLibraryBtn = $('refreshLibraryBtn');
+    var libraryStatus = $('libraryStatus');
+    var libraryResultHeader = $('libraryResultHeader');
+    var libraryResultTitle = $('libraryResultTitle');
+    var libraryResultCount = $('libraryResultCount');
+    var libraryGallery = $('libraryGallery');
+    var selectToggleBtn = $('selectToggleBtn');
+
+    var startDate = $('startDate');
+    var endDate = $('endDate');
+    var customDates = $('customDates');
+    var libraryCustomDates = $('libraryCustomDates');
+    var libraryStartDate = $('libraryStartDate');
+    var libraryEndDate = $('libraryEndDate');
+
+    var modal = $('modal');
+    var modalContent = $('modalContent');
+    var modalCloseBtn = $('modalCloseBtn');
+    var modalDownloadBtn = $('modalDownloadBtn');
+    var modalOriginalBtn = $('modalOriginalBtn');
+
+    var selectionToolbar = $('selectionToolbar');
+    var toolbarCancel = $('toolbarCancel');
+    var toolbarSelectAll = $('toolbarSelectAll');
+    var toolbarDelete = $('toolbarDelete');
+    var selectedCount = $('selectedCount');
+    var deleteConfirm = $('deleteConfirm');
+    var confirmTitle = $('confirmTitle');
+    var confirmDesc = $('confirmDesc');
+    var confirmCancel = $('confirmCancel');
+    var confirmDelete = $('confirmDelete');
+
+    // ============================================================
+    // 页面切换
+    // ============================================================
+    function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+        var target = document.getElementById(pageId);
+        if (target) target.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (isSelectMode) exitSelectMode();
+    }
+
+    // ============================================================
+    // 收藏功能
+    // ============================================================
+    var FAVORITE_KEY = 'universal_downloader_favorites';
+
+    function loadFavoritesFromServer() {
+        fetch('/api/favorites', {
+            headers: { 'X-API-Key': API_KEY },
+            credentials: 'include'
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.ok && Array.isArray(data.items)) {
+                favorites = data.items;
+                favoritesLoaded = true;
+                localStorage.setItem(FAVORITE_KEY, JSON.stringify(favorites));
+                renderFavorites();
+                updateFavoriteButton();
+            } else {
+                loadFavoritesFromLocal();
+            }
+        })
+        .catch(function() { loadFavoritesFromLocal(); });
+    }
+
+    function loadFavoritesFromLocal() {
+        try {
+            var data = localStorage.getItem(FAVORITE_KEY);
+            favorites = data ? JSON.parse(data) : [];
+            favoritesLoaded = true;
+            renderFavorites();
+            updateFavoriteButton();
+        } catch (e) {
+            favorites = [];
+        }
+    }
+
+    function renderFavorites() {
+        favoritesPanel.innerHTML = '';
+        if (!favorites || favorites.length === 0) {
+            favoritesPanel.innerHTML = '<div class="favorite-empty">暂时没有收藏的博主</div>';
+            return;
+        }
+        favorites.forEach(function(fav, index) {
+            var div = document.createElement('div');
+            div.className = 'favorite-item';
+            div.innerHTML =
+                '<div class="fav-info"><div class="fav-name">' + (fav.name || fav.username) +
+                '</div><div class="fav-handle">@' + fav.username + '</div></div>' +
+                '<div class="fav-actions">' +
+                '<button class="fav-use" data-index="' + index + '">查找</button>' +
+                '<button class="fav-delete" data-index="' + index + '">删除</button>' +
+                '</div>';
+            favoritesPanel.appendChild(div);
+        });
+
+        favoritesPanel.querySelectorAll('.fav-use').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var idx = parseInt(btn.dataset.index);
+                var fav = favorites[idx];
+                if (fav) {
+                    profileInput.value = fav.username;
+                    updateFavoriteButton();
+                    favoritesPanel.classList.add('hidden');
+                }
+            });
+        });
+
+        favoritesPanel.querySelectorAll('.fav-delete').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var idx = parseInt(btn.dataset.index);
+                var fav = favorites[idx];
+                if (fav) {
+                    removeFavorite(fav.username);
+                }
+            });
+        });
+    }
+
+    function updateFavoriteButton() {
+        var username = normalizeUsername(profileInput.value);
+        if (!username) {
+            favoriteAddBtn.textContent = '☆ 收藏';
+            favoriteAddBtn.classList.remove('favorited');
+            return;
+        }
+        var exists = favorites.some(function(f) { return f.username.toLowerCase() === username.toLowerCase(); });
+        favoriteAddBtn.textContent = exists ? '★ 已收藏' : '☆ 收藏';
+        if (exists) {
+            favoriteAddBtn.classList.add('favorited');
+        } else {
+            favoriteAddBtn.classList.remove('favorited');
+        }
+    }
+
+    profileInput.addEventListener('input', updateFavoriteButton);
+
+    favoriteAddBtn.addEventListener('click', function() {
+        var username = normalizeUsername(profileInput.value);
+        if (!username) {
+            showSearchStatus('请先输入博主名', 'error');
+            return;
+        }
+        var exists = favorites.some(function(f) { return f.username.toLowerCase() === username.toLowerCase(); });
+        if (exists) {
+            removeFavorite(username);
+        } else {
+            addFavorite(username);
+        }
+    });
+
+    favoriteToggleBtn.addEventListener('click', function() {
+        favoritesPanel.classList.toggle('hidden');
+    });
+
+    function addFavorite(username) {
+        fetch('/api/favorites', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': API_KEY
+            },
+            body: JSON.stringify({ username: username, name: username }),
+            credentials: 'include'
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.ok) {
+                loadFavoritesFromServer();
+            } else {
+                addFavoriteLocal(username);
+            }
+        })
+        .catch(function() { addFavoriteLocal(username); });
+    }
+
+    function addFavoriteLocal(username) {
+        if (!favorites.some(function(f) { return f.username.toLowerCase() === username.toLowerCase(); })) {
+            favorites.push({ username: username, name: username, addedAt: new Date().toISOString() });
+            localStorage.setItem(FAVORITE_KEY, JSON.stringify(favorites));
+            renderFavorites();
+            updateFavoriteButton();
+        }
+    }
+
+    function removeFavorite(username) {
+        fetch('/api/favorites/' + encodeURIComponent(username), {
+            method: 'DELETE',
+            headers: { 'X-API-Key': API_KEY },
+            credentials: 'include'
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.ok) {
+                loadFavoritesFromServer();
+            } else {
+                removeFavoriteLocal(username);
+            }
+        })
+        .catch(function() { removeFavoriteLocal(username); });
+    }
+
+    function removeFavoriteLocal(username) {
+        var idx = favorites.findIndex(function(f) { return f.username.toLowerCase() === username.toLowerCase(); });
+        if (idx >= 0) {
+            favorites.splice(idx, 1);
+            localStorage.setItem(FAVORITE_KEY, JSON.stringify(favorites));
+            renderFavorites();
+            updateFavoriteButton();
+        }
+    }
+
+    // ============================================================
+    // 工具函数
+    // ============================================================
+    function normalizeUsername(input) {
+        var value = input.trim();
+        if (!value) return null;
+        if (value.includes('x.com/') || value.includes('twitter.com/')) {
+            if (!value.startsWith('http://') && !value.startsWith('https://')) {
+                value = 'https://' + value;
+            }
+            try {
+                var url = new URL(value);
+                var parts = url.pathname.split('/').filter(function(p) { return p; });
+                if (parts.length) value = parts[0];
+            } catch (e) {
+                return null;
+            }
+        }
+        value = value.replace(/^@+/, '').replace(/\/+$/, '').replace(/[^A-Za-z0-9_]/g, '');
+        return value || null;
+    }
+
+    function formatDateFromX(value) {
+        if (!value) return '';
+        var match = value.match(/^\w+\s+(\w+)\s+(\d+).*?(\d{4})$/);
+        if (!match) return value;
+        var months = { Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12' };
+        var month = months[match[1]];
+        if (!month) return value;
+        return match[3] + '-' + month + '-' + String(match[2]).padStart(2, '0');
+    }
+
+    function formatLibraryDate(value) {
+        if (!value) return '';
+        try {
+            var date = new Date(value);
+            if (isNaN(date.getTime())) return '';
+            return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+        } catch (e) { return ''; }
+    }
+
+    function getLibraryDateRange() {
+        if (libraryRange === 'all') return { start: null, end: null };
+        if (libraryRange === 'custom') {
+            return { start: libraryStartDate.value || null, end: libraryEndDate.value || null };
+        }
+        var now = new Date();
+        var start = new Date(now);
+        start.setDate(start.getDate() - Number(libraryRange));
+        return {
+            start: start.getFullYear() + '-' + String(start.getMonth() + 1).padStart(2, '0') + '-' + String(start.getDate()).padStart(2, '0'),
+            end: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0')
+        };
+    }
+
+    function getDates() {
+        if (range === 'all') return { start: null, end: null };
+        if (range === 'custom') return { start: startDate.value || null, end: endDate.value || null };
+        var now = new Date();
+        var start = new Date(now);
+        start.setDate(start.getDate() - Number(range));
+        return {
+            start: start.getFullYear() + '-' + String(start.getMonth() + 1).padStart(2, '0') + '-' + String(start.getDate()).padStart(2, '0'),
+            end: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0')
+        };
+    }
+
+    function getFilename(item) {
+        var date = formatDateFromX(item.created_at || item.createdAt) || 'x-media';
+        var suffix = (item.media_total && item.media_total > 1) ? '-' + item.media_index : '';
+        var extension = '.jpg';
+        var type = item.media_type || item.type;
+        var rawUrl = item.originalUrl || item.sourceUrl || item.media_url || item.url || '';
+        var lower = String(rawUrl).toLowerCase();
+        if (type === 'video') extension = '.mp4';
+        else if (lower.includes('.png')) extension = '.png';
+        else if (lower.includes('.webp')) extension = '.webp';
+        else if (lower.includes('.gif')) extension = '.gif';
+        return date + suffix + extension;
+    }
+
+    function showSearchStatus(msg, type) {
+        type = type || '';
+        searchStatus.classList.remove('hidden');
+        searchStatus.textContent = msg;
+        searchStatus.className = 'status-box' + (type === 'error' ? ' error' : '');
+    }
+
+    function hideSearchStatus() {
+        searchStatus.classList.add('hidden');
+        searchStatus.textContent = '';
+        searchStatus.className = 'status-box';
+    }
+
+    // ============================================================
+    // 搜索博主
+    // ============================================================
+    searchBtn.addEventListener('click', performSearch);
+    searchSubmitBtn.addEventListener('click', performSearch);
+    profileInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') performSearch();
+    });
+
+    function performSearch() {
+        var raw = profileInput.value.trim();
+        var username = normalizeUsername(raw);
+        if (!username) {
+            showSearchStatus('无法识别博主。可以输入：NASA / @NASA / x.com/NASA', 'error');
+            return;
+        }
+        var dates = getDates();
+        if (dates.start && dates.end && dates.start > dates.end) {
+            showSearchStatus('开始日期不能晚于结束日期', 'error');
+            return;
+        }
+        searchSubmitBtn.disabled = true;
+        searchSubmitBtn.textContent = '正在寻找…';
+        hideSearchStatus();
+        searchResultHeader.classList.add('hidden');
+        searchGallery.innerHTML = '';
+
+        var params = new URLSearchParams();
+        params.set('profile', 'https://x.com/' + username);
+        params.set('media_type', mediaType);
+        params.set('source_type', sourceType);
+        if (dates.start) params.set('start_date', dates.start);
+        if (dates.end) params.set('end_date', dates.end);
+
+        fetch('/api/search?' + params.toString())
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (!data.ok) throw new Error(data.detail || '搜索失败');
+                renderSearchResults(data, username);
+            })
+            .catch(function(err) {
+                showSearchStatus(err.message || '搜索失败', 'error');
+            })
+            .finally(function() {
+                searchSubmitBtn.disabled = false;
+                searchSubmitBtn.textContent = '开始找图';
+            });
+    }
+
+    function renderSearchResults(data, username) {
+        searchResultHeader.classList.remove('hidden');
+        searchResultTitle.textContent = '@' + username;
+        searchResultCount.textContent = '找到 ' + data.count + ' 个媒体 · 查询 ' + data.pages + ' 页';
+        searchGallery.innerHTML = '';
+        if (!data.items || data.items.length === 0) {
+            searchGallery.innerHTML = '<div class="loader">没有找到媒体</div>';
+            return;
+        }
+        data.items.forEach(function(item) {
+            searchGallery.appendChild(createMediaItem(item, 'search'));
+        });
+    }
+
+    // ============================================================
+    // 媒体库
+    // ============================================================
+    function openLibrary(source) {
+        currentSubPage = source;
+        if (source === 'likes') {
+            libraryTitle.textContent = '我的喜欢';
+            libraryDesc.textContent = '查看采集器上传的喜欢列表';
+        } else {
+            libraryTitle.textContent = '我的书签';
+            libraryDesc.textContent = '查看采集器上传的书签列表';
+        }
+        showPage('pageLibrary');
+
+        // 检查登录状态
+        fetch('/api/auth/check', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.authenticated) {
+                    libraryCount.textContent = '请先登录';
+                    libraryGallery.innerHTML = '<div class="loader">请返回首页登录后使用此功能</div>';
+                    selectToggleBtn.classList.add('hidden');
+                    return;
+                }
+                selectToggleBtn.classList.remove('hidden');
+                loadLibrary(source);
+            })
+            .catch(() => {
+                libraryCount.textContent = '请先登录';
+                libraryGallery.innerHTML = '<div class="loader">请返回首页登录后使用此功能</div>';
+                selectToggleBtn.classList.add('hidden');
+            });
+    }
+
+    function loadLibrary(source) {
+        if (source !== cachedLibrarySource || cachedLibraryItems.length === 0) {
+            libraryCount.textContent = '正在读取…';
+            libraryStatus.classList.add('hidden');
+            libraryResultHeader.classList.add('hidden');
+            libraryGallery.innerHTML = '';
+
+            var params = new URLSearchParams();
+            params.set('source', source);
+            params.set('media_type', 'all');
+
+            fetch('/api/media?' + params.toString(), { credentials: 'include' })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (!data.ok) throw new Error(data.detail || '读取媒体库失败');
+                    cachedLibraryItems = data.items || [];
+                    cachedLibrarySource = source;
+                    resetPagination();
+                    renderLibraryResults();
+                })
+                .catch(function(err) {
+                    libraryCount.textContent = '读取失败';
+                    libraryStatus.classList.remove('hidden');
+                    libraryStatus.textContent = err.message || '读取媒体库失败';
+                    libraryStatus.className = 'status-box error';
+                });
+            return;
+        }
+
+        resetPagination();
+        renderLibraryResults();
+    }
+
+    function renderLibraryResults() {
+        var filtered = cachedLibraryItems;
+        if (libraryMediaType === 'image') {
+            filtered = cachedLibraryItems.filter(function(item) { return item.type === 'image'; });
+        } else if (libraryMediaType === 'video') {
+            filtered = cachedLibraryItems.filter(function(item) { return item.type === 'video'; });
+        }
+
+        var dateRange = getLibraryDateRange();
+        if (dateRange.start || dateRange.end) {
+            var startDt = dateRange.start ? new Date(dateRange.start + 'T00:00:00Z') : null;
+            var endDt = dateRange.end ? new Date(dateRange.end + 'T23:59:59Z') : null;
+            filtered = filtered.filter(function(item) {
+                var timeStr = item.tweetCreatedAt || item.createdAt || '';
+                if (!timeStr) return true;
+                try {
+                    var dt = new Date(timeStr);
+                    if (isNaN(dt.getTime())) return true;
+                    if (startDt && dt < startDt) return false;
+                    if (endDt && dt > endDt) return false;
+                    return true;
+                } catch (e) { return true; }
+            });
+        }
+
+        allFilteredItems = filtered;
+        libraryCount.textContent = '共 ' + allFilteredItems.length + ' 个媒体';
+        libraryResultHeader.classList.remove('hidden');
+        libraryResultTitle.textContent = currentSubPage === 'likes' ? '我的喜欢' : '我的书签';
+        libraryResultCount.textContent = '共 ' + allFilteredItems.length + ' 个媒体';
+
+        libraryGallery.innerHTML = '';
+        if (!allFilteredItems || allFilteredItems.length === 0) {
+            libraryGallery.innerHTML = '<div class="loader">没有符合条件的媒体</div>';
+            return;
+        }
+
+        allFilteredItems.sort(function(a, b) {
+            var timeA = a.tweetCreatedAt || a.createdAt || '';
+            var timeB = b.tweetCreatedAt || b.createdAt || '';
+            if (timeA && timeB) return timeB.localeCompare(timeA);
+            if (timeA && !timeB) return -1;
+            if (!timeA && timeB) return 1;
+            return 0;
+        });
+
+        currentBatch = 0;
+        allLoaded = false;
+        isLoadingMore = false;
+        if (isSelectMode) exitSelectMode();
+        loadNextBatch();
+
+        if (!scrollListenerAttached) {
+            window.addEventListener('scroll', handleScroll);
+            scrollListenerAttached = true;
+        }
+    }
+
+    function resetPagination() {
+        allFilteredItems = [];
+        currentBatch = 0;
+        allLoaded = false;
+        isLoadingMore = false;
+    }
+
+    function resetPaginationAndRender() {
+        resetPagination();
+        renderLibraryResults();
+    }
+
+    function loadNextBatch() {
+        if (allLoaded || isLoadingMore) return;
+        if (currentBatch * BATCH_SIZE >= allFilteredItems.length) {
+            allLoaded = true;
+            return;
+        }
+
+        isLoadingMore = true;
+        requestAnimationFrame(function() {
+            var start = currentBatch * BATCH_SIZE;
+            var end = Math.min(start + BATCH_SIZE, allFilteredItems.length);
+            var fragment = document.createDocumentFragment();
+            for (var i = start; i < end; i++) {
+                var el = createMediaItem(allFilteredItems[i], 'library');
+                fragment.appendChild(el);
+            }
+            libraryGallery.appendChild(fragment);
+            currentBatch++;
+            isLoadingMore = false;
+            if (currentBatch * BATCH_SIZE >= allFilteredItems.length) {
+                allLoaded = true;
+            }
+        });
+    }
+
+    var scrollTimeout = null;
+
+    function handleScroll() {
+        if (scrollTimeout) return;
+        scrollTimeout = setTimeout(function() {
+            scrollTimeout = null;
+            var scrollY = window.scrollY || window.pageYOffset;
+            var windowHeight = window.innerHeight;
+            var docHeight = document.documentElement.scrollHeight;
+            if (scrollY + windowHeight >= docHeight - 300) {
+                if (!allLoaded && !isLoadingMore) {
+                    loadNextBatch();
+                }
+            }
+        }, 150);
+    }
+
+    refreshLibraryBtn.addEventListener('click', function() {
+        cachedLibraryItems = [];
+        cachedLibrarySource = '';
+        resetPagination();
+        if (currentSubPage) {
+            loadLibrary(currentSubPage);
+        }
+    });
+
+    // ============================================================
+    // 选项按钮
+    // ============================================================
+    document.querySelectorAll('.option-row').forEach(function(row) {
+        row.querySelectorAll('.option-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var group = row.dataset.group;
+                row.querySelectorAll('.option-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                var value = btn.dataset.value;
+
+                if (group === 'range') {
+                    range = value;
+                    customDates.classList.toggle('hidden', value !== 'custom');
+                } else if (group === 'media') {
+                    mediaType = value;
+                } else if (group === 'source') {
+                    sourceType = value;
+                } else if (group === 'libraryRange') {
+                    libraryRange = value;
+                    libraryCustomDates.classList.toggle('hidden', value !== 'custom');
+                    resetPaginationAndRender();
+                } else if (group === 'libraryMedia') {
+                    libraryMediaType = value;
+                    resetPaginationAndRender();
+                }
+            });
+        });
+    });
+
+    libraryStartDate.addEventListener('change', function() {
+        if (libraryRange === 'custom') resetPaginationAndRender();
+    });
+    libraryEndDate.addEventListener('change', function() {
+        if (libraryRange === 'custom') resetPaginationAndRender();
+    });
+
+    // ============================================================
+    // 选择模式
+    // ============================================================
+    selectToggleBtn.addEventListener('click', function() {
+        enterSelectMode();
+    });
+
+    function enterSelectMode() {
+        if (isSelectMode) return;
+        isSelectMode = true;
+        selectedIds.clear();
+
+        selectionToolbar.classList.add('active');
+        selectToggleBtn.textContent = '取消选择';
+        selectToggleBtn.style.color = 'rgba(255,255,255,0.6)';
+
+        var items = document.querySelectorAll('#libraryGallery .item');
+        items.forEach(function(el) {
+            el.classList.add('in-select-mode');
+            el.removeEventListener('click', handleItemClick);
+            el.addEventListener('click', handleItemClick);
+        });
+
+        updateSelectedCount();
+    }
+
+    function exitSelectMode() {
+        if (!isSelectMode) return;
+        isSelectMode = false;
+        selectedIds.clear();
+
+        selectionToolbar.classList.remove('active');
+        selectToggleBtn.textContent = '选择';
+        selectToggleBtn.style.color = 'rgba(255,255,255,0.4)';
+
+        var items = document.querySelectorAll('#libraryGallery .item');
+        items.forEach(function(el) {
+            el.classList.remove('in-select-mode', 'selected');
+            el.removeEventListener('click', handleItemClick);
+        });
+
+        updateSelectedCount();
+    }
+
+    function handleItemClick(e) {
+        var item = e.currentTarget;
+        if (e.target.closest('button') || e.target.closest('a')) return;
+
+        var mediaId = item.dataset.mediaId;
+        if (!mediaId) return;
+
+        if (selectedIds.has(mediaId)) {
+            selectedIds.delete(mediaId);
+            item.classList.remove('selected');
+        } else {
+            selectedIds.add(mediaId);
+            item.classList.add('selected');
+        }
+        updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+        var count = selectedIds.size;
+        selectedCount.textContent = '已选 ' + count + ' 个';
+        toolbarDelete.style.display = count > 0 ? 'block' : 'none';
+    }
+
+    toolbarSelectAll.addEventListener('click', function() {
+        var items = document.querySelectorAll('#libraryGallery .item');
+        var allSelected = true;
+        items.forEach(function(el) {
+            var id = el.dataset.mediaId;
+            if (id && !selectedIds.has(id)) {
+                allSelected = false;
+            }
+        });
+        if (allSelected) {
+            items.forEach(function(el) {
+                var id = el.dataset.mediaId;
+                if (id) {
+                    selectedIds.delete(id);
+                    el.classList.remove('selected');
+                }
+            });
+        } else {
+            items.forEach(function(el) {
+                var id = el.dataset.mediaId;
+                if (id) {
+                    selectedIds.add(id);
+                    el.classList.add('selected');
+                }
+            });
+        }
+        updateSelectedCount();
+    });
+
+    toolbarCancel.addEventListener('click', exitSelectMode);
+
+    toolbarDelete.addEventListener('click', function() {
+        var count = selectedIds.size;
+        if (count === 0) return;
+        confirmTitle.textContent = '删除 ' + count + ' 个媒体？';
+        confirmDesc.textContent = '这些媒体将被永久删除，无法恢复。';
+        deleteConfirm.classList.add('active');
+    });
+
+    confirmCancel.addEventListener('click', function() {
+        deleteConfirm.classList.remove('active');
+    });
+
+    confirmDelete.addEventListener('click', function() {
+        var ids = Array.from(selectedIds);
+        if (ids.length === 0) return;
+        deleteConfirm.classList.remove('active');
+
+        fetch('/api/media', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ media_ids: ids }),
+            credentials: 'include'
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.ok) {
+                var deletedSet = new Set(ids);
+                cachedLibraryItems = cachedLibraryItems.filter(function(item) { return !deletedSet.has(item.id); });
+                exitSelectMode();
+                renderLibraryResults();
+            } else {
+                alert('删除失败：' + (data.detail || '未知错误'));
+            }
+        })
+        .catch(function(e) {
+            alert('删除请求失败：' + e.message);
+        });
+    });
+
+    deleteConfirm.addEventListener('click', function(e) {
+        if (e.target === deleteConfirm) {
+            deleteConfirm.classList.remove('active');
+        }
+    });
+
+    // ============================================================
+    // 创建媒体卡片
+    // ============================================================
+    function createMediaItem(item, mode) {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'item';
+        wrapper.dataset.mediaId = item.id || '';
+
+        var isVideo = item.media_type === 'video' || item.type === 'video';
+        var mediaUrl = item.media_url || item.url || '';
+        var thumbnail = item.thumbnail || mediaUrl;
+        var normalized = normalizeLibraryItem(item);
+
+        var mediaWrap = document.createElement('div');
+        mediaWrap.className = 'media-wrap';
+
+        var checkBox = document.createElement('div');
+        checkBox.className = 'select-check';
+        mediaWrap.appendChild(checkBox);
+
+        var img = document.createElement('img');
+        img.src = isVideo ? thumbnail : mediaUrl;
+        img.loading = 'lazy';
+        img.alt = item.alt || '';
+        img.onerror = function() {
+            var fallback = item.originalUrl || item.sourceUrl || '';
+            if (fallback && !img.dataset.fallback) {
+                img.dataset.fallback = '1';
+                img.src = '/api/media-proxy?url=' + encodeURIComponent(fallback);
+                return;
+            }
+            var errorDiv = document.createElement('div');
+            errorDiv.className = 'media-error';
+            errorDiv.textContent = '媒体暂时无法加载';
+            img.replaceWith(errorDiv);
+        };
+        img.addEventListener('click', function() { openModal(normalized); });
+
+        mediaWrap.appendChild(img);
+
+        if (isVideo) {
+            var badge = document.createElement('div');
+            badge.className = 'video-badge';
+            badge.textContent = '视频';
+            mediaWrap.appendChild(badge);
+        }
+
+        if (mode === 'search') {
+            if (item.source && item.source !== 'original') {
+                var badge2 = document.createElement('div');
+                badge2.className = 'source-badge';
+                badge2.textContent = item.source === 'repost' ? '转帖' : '引用';
+                mediaWrap.appendChild(badge2);
+            }
+        } else {
+            var badge2 = document.createElement('div');
+            badge2.className = 'library-badge';
+            badge2.textContent = currentSubPage === 'likes' ? '喜欢' : '书签';
+            mediaWrap.appendChild(badge2);
+        }
+
+        wrapper.appendChild(mediaWrap);
+
+        var info = document.createElement('div');
+        info.className = 'item-info';
+
+        if (item.author) {
+            var author = document.createElement('div');
+            author.className = 'item-author';
+            author.textContent = '@' + item.author;
+            info.appendChild(author);
+        }
+
+        var date = document.createElement('div');
+        date.className = 'item-date';
+        var rawDate = item.tweetCreatedAt || item.created_at || item.createdAt || '';
+        date.textContent = mode === 'search' ? formatDateFromX(rawDate) : formatLibraryDate(rawDate);
+        info.appendChild(date);
+
+        var actions = document.createElement('div');
+        actions.className = 'item-actions';
+
+        var viewBtn = document.createElement('button');
+        viewBtn.className = 'btn-view';
+        viewBtn.textContent = isVideo ? '播放' : '查看';
+        viewBtn.onclick = function(e) { e.stopPropagation(); openModal(normalized); };
+        actions.appendChild(viewBtn);
+
+        var downloadBtn = document.createElement('button');
+        downloadBtn.className = 'btn-download';
+        downloadBtn.textContent = '下载';
+        downloadBtn.onclick = function(e) { e.stopPropagation(); downloadItem(normalized); };
+        actions.appendChild(downloadBtn);
+
+        var postBtn = document.createElement('button');
+        postBtn.className = 'btn-original';
+        postBtn.textContent = '原帖';
+        postBtn.onclick = function(e) { e.stopPropagation(); if (item.tweet_url) window.open(item.tweet_url, '_blank'); };
+        actions.appendChild(postBtn);
+
+        info.appendChild(actions);
+        wrapper.appendChild(info);
+
+        return wrapper;
+    }
+
+    function normalizeLibraryItem(item) {
+        var type = item.type || item.media_type || 'image';
+        var mediaUrl = item.url || item.media_url || item.sourceUrl || '';
+        var originalUrl = item.originalUrl || item.sourceUrl || mediaUrl;
+        return {
+            media_type: type,
+            media_url: mediaUrl,
+            video_url: type === 'video' ? mediaUrl : '',
+            thumbnail: item.thumbnail || '',
+            tweet_url: item.tweet_url || '',
+            author: item.author || '',
+            created_at: item.tweetCreatedAt || item.createdAt || item.created_at || '',
+            originalUrl: originalUrl,
+            libraryId: item.id || '',
+            width: item.width || 0,
+            height: item.height || 0,
+            bitrate: item.bitrate || 0,
+            streamType: item.streamType || '',
+            media_index: item.media_index || 1,
+            media_total: item.media_total || 1
+        };
+    }
+
+    function downloadItem(item) {
+        var url = item.originalUrl || item.media_url || item.url || '';
+        if (!url) {
+            alert('这个媒体暂时没有可下载地址。');
+            return;
+        }
+        var isVideo = item.media_type === 'video' || item.type === 'video' ||
+            url.includes('.m3u8') || url.includes('.mp4') || url.includes('.webm');
+        var filename = getFilename(item);
+
+        if (isVideo) {
+            var videoFilename = filename.endsWith('.mp4') ? filename : filename + '.mp4';
+            window.location.href = '/api/video-download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(videoFilename);
+        } else {
+            window.location.href = '/api/download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(filename);
+        }
+    }
+
+    function openModal(item) {
+        currentItem = item;
+        modalContent.innerHTML = '';
+
+        var rawVideoUrl = item.video_url || item.media_url || item.url || '';
+        var isHlsUrl = rawVideoUrl.includes('.m3u8') || item.streamType === 'hls';
+        var isMp4Url = rawVideoUrl.includes('.mp4');
+        var isVideo = item.media_type === 'video' || item.type === 'video' || isHlsUrl || isMp4Url;
+
+        if (isVideo) {
+            if (!rawVideoUrl) {
+                modalContent.innerHTML = '<div class="media-error" style="color:#fff;background:transparent;">该视频暂无可用播放地址，请点击下载保存到本地</div>';
+                modalDownloadBtn.textContent = '下载视频';
+                modal.classList.remove('hidden');
+                return;
+            }
+
+            var container = document.createElement('div');
+            container.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;';
+
+            var video = document.createElement('video');
+            video.controls = true;
+            video.autoplay = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            video.style.cssText = 'max-width:100%;max-height:100%;';
+
+            var errorMsg = document.createElement('div');
+            errorMsg.style.cssText = 'display:none;color:rgba(255,255,255,0.5);text-align:center;padding:20px;font-size:14px;font-weight:300;';
+            errorMsg.textContent = '视频在线预览失败，请点击下方"下载"保存到本地观看';
+
+            container.appendChild(video);
+            container.appendChild(errorMsg);
+            modalContent.appendChild(container);
+
+            if (isHlsUrl) {
+                var streamUrl = '/api/video-stream?url=' + encodeURIComponent(rawVideoUrl);
+                video.src = streamUrl;
+                var loadingMsg = document.createElement('div');
+                loadingMsg.style.cssText = 'position:absolute;color:rgba(255,255,255,0.5);text-align:center;font-size:14px;font-weight:300;';
+                loadingMsg.textContent = '视频正在转码，请稍候…（约3-5秒）';
+                container.appendChild(loadingMsg);
+                video.onloadedmetadata = function() {
+                    if (loadingMsg.parentNode) loadingMsg.remove();
+                    if (errorMsg.parentNode) errorMsg.style.display = 'none';
+                };
+            } else if (isMp4Url) {
+                if (!rawVideoUrl.startsWith('/api/media-proxy')) {
+                    rawVideoUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
+                }
+                video.src = rawVideoUrl;
+            } else {
+                video.src = rawVideoUrl;
+            }
+
+            video.onerror = function() {
+                video.style.display = 'none';
+                errorMsg.style.display = 'block';
+                var loading = container.querySelector('div');
+                if (loading && loading.textContent && loading.textContent.includes('转码')) {
+                    loading.remove();
+                }
+            };
+
+            modalDownloadBtn.textContent = '下载视频';
+        } else {
+            var img = document.createElement('img');
+            img.src = item.media_url || item.url || item.originalUrl || '';
+            img.alt = item.alt || '';
+            img.onerror = function() {
+                var proxySource = item.originalUrl || item.sourceUrl || '';
+                if (proxySource && !img.dataset.proxy) {
+                    img.dataset.proxy = '1';
+                    img.src = '/api/media-proxy?url=' + encodeURIComponent(proxySource);
+                    return;
+                }
+                modalContent.innerHTML = '<div class="media-error" style="color:#fff;background:transparent;">图片暂时无法加载</div>';
+            };
+            modalContent.appendChild(img);
+            modalDownloadBtn.textContent = '下载原图';
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    modalCloseBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeModal();
+    });
+
+    function closeModal() {
+        var video = modalContent.querySelector('video');
+        if (video) {
+            video.pause();
+            video.removeAttribute('src');
+            video.load();
+            video.remove();
+        }
+        if (currentHls) {
+            currentHls.destroy();
+            currentHls = null;
+        }
+        modal.classList.add('hidden');
+        modalContent.innerHTML = '';
+        currentItem = null;
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeModal();
+    });
+
+    modalDownloadBtn.addEventListener('click', function() {
+        if (currentItem) downloadItem(currentItem);
+    });
+
+    modalOriginalBtn.addEventListener('click', function() {
+        if (currentItem && currentItem.tweet_url) {
+            window.open(currentItem.tweet_url, '_blank');
+        }
+    });
+
+    // ============================================================
+    // 导航
+    // ============================================================
+    backToHome.addEventListener('click', function() {
+        window.location.href = '/';
+    });
+
+    backFromLibrary.addEventListener('click', function() {
+        showPage('pageSearch');
+        if (isSelectMode) exitSelectMode();
+    });
+
+    // 子菜单入口（在搜索页底部或由外部调用）
+    window.openLibrary = openLibrary;
+
+    // ============================================================
+    // 初始化
+    // ============================================================
+    loadFavoritesFromLocal();
+    showPage('pageSearch');
+
+    // 检查登录状态（如果未登录，收藏等功能会受限）
+    fetch('/api/auth/check', { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.authenticated) {
+                console.log('未登录，部分功能受限');
+            }
+        })
+        .catch(() => {});
+
+    console.log('🐦 X 下载器已加载');
+    console.log('开发者：浮生若夢');
+</script>
+</body>
+</html>
