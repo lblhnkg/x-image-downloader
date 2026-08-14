@@ -298,31 +298,6 @@
             color: rgba(0, 200, 255, 0.5);
         }
 
-        .switch-mode-btn {
-            width: 100%;
-            padding: 12px 0;
-            margin-top: 18px;
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 14px;
-            font-weight: 400;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
-        }
-
-        .switch-mode-btn:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.15);
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .switch-mode-btn:active {
-            transform: scale(0.98);
-        }
-
         .guest-tip-overlay {
             position: fixed;
             inset: 0;
@@ -384,13 +359,6 @@
         .guest-tip-box .tip-btn:hover {
             background: rgba(255, 255, 255, 0.15);
         }
-
-        .menu-footer {
-            margin-top: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
     </style>
 </head>
 <body>
@@ -400,7 +368,7 @@
         <!-- =====================================================
         登录页
         ===================================================== -->
-        <div class="page active" id="pageLogin">
+        <div class="page" id="pageLogin">
             <div class="app-title">万能媒体下载器</div>
             <hr class="login-divider">
             <div class="login-section-title">开发者通道</div>
@@ -442,10 +410,7 @@
                     <div class="menu-card-desc">即将上线</div>
                 </div>
             </div>
-            <div class="menu-footer">
-                <button class="switch-mode-btn" id="switchToGuestBtn">🔓 切换为访客模式</button>
-                <div class="login-dev-signature" style="margin-top:8px;">开发者：浮生若夢</div>
-            </div>
+            <div class="login-dev-signature" style="margin-top:32px;">开发者：浮生若夢</div>
         </div>
 
     </div>
@@ -476,7 +441,6 @@
         const guestTip = document.getElementById('guestTip');
         const guestTipBtn = document.getElementById('guestTipBtn');
         const menuModeBanner = document.getElementById('menuModeBanner');
-        const switchToGuestBtn = document.getElementById('switchToGuestBtn');
 
         let currentMode = 'guest';
         let guestTipShown = false;
@@ -523,8 +487,6 @@
                     showDeveloperBanner();
                     showPage('pageMenu');
                     loginPassword.value = '';
-                    switchToGuestBtn.textContent = '🔓 切换为访客模式';
-                    switchToGuestBtn.style.opacity = '1';
                 } else {
                     loginError.textContent = data.detail || '密码错误';
                 }
@@ -553,8 +515,6 @@
             // 清除可能残留的 session cookie
             document.cookie = 'session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
             showGuestBanner();
-            switchToGuestBtn.textContent = '🔓 已处于访客模式';
-            switchToGuestBtn.style.opacity = '0.4';
             if (!guestTipShown) {
                 guestTip.classList.remove('hidden');
             } else {
@@ -566,26 +526,6 @@
             guestTip.classList.add('hidden');
             guestTipShown = true;
             showPage('pageMenu');
-        });
-
-        // ============================================================
-        // 切换为访客模式（从菜单页底部按钮）
-        // ============================================================
-
-        switchToGuestBtn.addEventListener('click', function() {
-            var mode = localStorage.getItem('userMode') || 'guest';
-            if (mode === 'guest') {
-                alert('当前已经是访客模式');
-                return;
-            }
-            if (confirm('切换到访客模式后，需要重新登录才能回到开发者模式。确定切换吗？')) {
-                // 清除 session cookie
-                document.cookie = 'session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-                // 设置 localStorage 为 guest
-                localStorage.setItem('userMode', 'guest');
-                // 强制刷新页面（回到登录页，因为初始化不再自动跳转）
-                window.location.reload();
-            }
         });
 
         // ============================================================
@@ -605,24 +545,64 @@
         });
 
         // ============================================================
-        // 初始化：始终显示登录页，不自动跳转
+        // 初始化：根据 localStorage 决定显示登录页还是菜单页
         // ============================================================
 
-        // 显式显示登录页（默认 active 已存在，但以防万一）
-        showPage('pageLogin');
+        function initPage() {
+            var savedMode = localStorage.getItem('userMode');
 
-        // 清除可能残留的 localStorage 模式（除非我们希望保留？）
-        // 为了用户每次都能看到登录页，我们保留 localStorage 记录，但不用于自动跳转。
-        // 但点击访客按钮时我们会写入，登录时也会写入，以便子页面读取。
-        // 这里只是确保登录页显示，不做自动跳转。
+            if (savedMode === 'developer') {
+                // 开发者模式：验证 session 是否有效
+                fetch('/api/auth/check', { credentials: 'include' })
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        if (data.authenticated) {
+                            currentMode = 'developer';
+                            showDeveloperBanner();
+                            showPage('pageMenu');
+                        } else {
+                            // session 过期，降级为访客模式
+                            localStorage.setItem('userMode', 'guest');
+                            currentMode = 'guest';
+                            showGuestBanner();
+                            showPage('pageMenu');
+                            if (!guestTipShown) {
+                                guestTip.classList.remove('hidden');
+                            }
+                        }
+                    })
+                    .catch(function() {
+                        // 网络错误，降级为访客
+                        localStorage.setItem('userMode', 'guest');
+                        currentMode = 'guest';
+                        showGuestBanner();
+                        showPage('pageMenu');
+                    });
+                return;
+            }
 
-        console.log('📱 万能媒体下载器 已加载（登录页）');
-        console.log('开发者：浮生若夢');
-        // 如果 localStorage 有模式，打印出来供调试
-        var savedMode = localStorage.getItem('userMode');
-        if (savedMode) {
-            console.log('上次模式：' + savedMode + '（需手动登录或访客进入）');
+            if (savedMode === 'guest') {
+                // 访客模式：直接进入菜单
+                currentMode = 'guest';
+                showGuestBanner();
+                showPage('pageMenu');
+                if (!guestTipShown) {
+                    guestTip.classList.remove('hidden');
+                }
+                return;
+            }
+
+            // 无记录：显示登录页
+            showPage('pageLogin');
         }
+
+        // 执行初始化
+        initPage();
+
+        console.log('📱 万能媒体下载器 已加载');
+        console.log('开发者：浮生若夢');
+        var mode = localStorage.getItem('userMode');
+        console.log('当前模式：' + (mode || '未登录'));
     </script>
 
 </body>
