@@ -3846,17 +3846,9 @@ function createLibraryItem(
         );
 
 
+    // 直接使用后端返回的 type 字段，不再瞎猜
     const isVideo =
-        item.type ===
-        "video"
-        ||
-        (item.url || "").includes(
-            ".m3u8"
-        )
-        ||
-        (item.url || "").includes(
-            ".mp4"
-        );
+        item.type === "video";
 
 
     /*
