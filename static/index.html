@@ -871,7 +871,7 @@
         }
 
         /* =====================================================
-           卡片按钮 - 核心修改：下载按钮最大 + 炫彩边框
+           卡片按钮 - 下载按钮最大 + 炫彩边框
         ===================================================== */
         .item-actions {
             display: grid;
@@ -1671,7 +1671,7 @@
         });
 
         /* =====================================================
-           X 子菜单
+           X 子菜单 - 修复访客模式
         ==================================================== */
         subSearch.addEventListener('click', () => {
             showPage('pageSearch');
@@ -2149,14 +2149,12 @@
             const actions = document.createElement('div');
             actions.className = 'item-actions';
 
-            // 查看按钮
             const viewBtn = document.createElement('button');
             viewBtn.className = 'btn-view';
             viewBtn.textContent = isVideo ? '▶ 播放' : '查看';
             viewBtn.onclick = () => openModal(normalized);
             actions.appendChild(viewBtn);
 
-            // 下载按钮（最大 + 炫彩边框）
             const downloadBtn = document.createElement('button');
             downloadBtn.className = 'btn-download';
             downloadBtn.textContent = '下载原图';
@@ -2164,7 +2162,6 @@
             downloadBtn.onclick = () => downloadItem(normalized);
             actions.appendChild(downloadBtn);
 
-            // 原帖按钮
             const postBtn = document.createElement('button');
             postBtn.className = 'btn-original';
             postBtn.textContent = '原帖';
