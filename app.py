@@ -1,5 +1,6 @@
 # ============================================================
 # 完整 app.py - 万能媒体下载器（X + MissAV 合并版）
+# 第一部分：导入、配置、数据库、X 全部路由
 # ============================================================
 
 import re
@@ -15,7 +16,6 @@ from urllib.parse import urlparse, parse_qs, quote
 import httpx
 from databases import Database
 
-# FastAPI 核心
 from fastapi import FastAPI, APIRouter, HTTPException, Query, Body, Request, Response
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -36,7 +36,7 @@ if not DATABASE_URL:
 database = Database(DATABASE_URL)
 
 # ============================================================
-# 数据库初始化（原 X 部分）
+# 数据库初始化
 # ============================================================
 
 async def init_db():
@@ -77,7 +77,7 @@ async def init_db():
         """)
 
 # ============================================================
-# 媒体库操作（原 X 部分）
+# 媒体库操作
 # ============================================================
 
 async def load_all_media():
@@ -149,7 +149,7 @@ async def clear_all_media():
     await database.execute("DELETE FROM media")
 
 # ============================================================
-# 收藏操作（原 X 部分）
+# 收藏操作
 # ============================================================
 
 async def load_all_favorites():
@@ -316,9 +316,10 @@ def validate_hls_url(url):
     if parsed.scheme != "https":
         raise HTTPException(status_code=400, detail="视频地址必须使用 HTTPS")
     hostname = (parsed.hostname or "").lower()
+    # 允许 X 和 MissAV 的域名
     allowed_hosts = {"video.twimg.com", "video.twimg.com.", "missav.com", "missav.ws", "cdn.missav.com"}
     if hostname not in allowed_hosts:
-        # 放行（自用场景）
+        # 放行（自用）
         pass
     return url
 
@@ -1144,16 +1145,130 @@ async def video_stream(url: str = Query(...)):
         background=BackgroundTask(cleanup_video_directory, temp_dir)
     )
 # ============================================================
-# 导入 MissAV 路由
+# MissAV 抓取器（独立模块）
 # ============================================================
-from missav_routes import router as missav_router
+
+import cloudscraper
+from bs4 import BeautifulSoup
+
+class MissAVFetcher:
+    def __init__(self):
+        self.scraper = cloudscraper.create_scraper(
+            browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
+        )
+        self.base_url = "https://missav.com"
+        self.headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "text/html,application/xhtml+xml",
+            "Accept-Language": "zh-CN,zh;q=0.9",
+            "Referer": "https://missav.com/",
+        }
+
+    def _fetch(self, url):
+        resp = self.scraper.get(url, headers=self.headers, timeout=30)
+        if resp.status_code != 200:
+            raise Exception(f"抓取失败 HTTP {resp.status_code}")
+        return resp.text
+
+    def search(self, keyword):
+        if len(keyword) < 2:
+            raise ValueError("至少输入2个字符")
+        html = self._fetch(f"{self.base_url}/search/{quote(keyword)}")
+        soup = BeautifulSoup(html, 'lxml')
+        results = []
+        seen = set()
+        for a in soup.select('a[href*="/watch/"]'):
+            href = a.get('href')
+            if not href or href in seen:
+                continue
+            img = a.find('img')
+            src = img.get('src') or img.get('data-src') or "" if img else ""
+            if src and src.startswith('//'):
+                src = "https:" + src
+            title = a.get('title') or img.get('alt') if img else "未知"
+            code_match = re.search(r'([A-Z]{2,6}-\d{3,5})', title)
+            code = code_match.group(1) if code_match else "未知"
+            results.append({
+                "id": href.split('/')[-1],
+                "url": self.base_url + href if href.startswith('/') else href,
+                "title": title.strip(),
+                "code": code,
+                "cover": src,
+            })
+            seen.add(href)
+            if len(results) >= 30:
+                break
+        return results
+
+    def get_detail(self, video_id):
+        html = self._fetch(f"{self.base_url}/watch/{video_id}")
+        soup = BeautifulSoup(html, 'lxml')
+        title = soup.find('h1').text.strip() if soup.find('h1') else "未知"
+        code_match = re.search(r'([A-Z]{2,6}-\d{3,5})', title)
+        code = code_match.group(1) if code_match else "未知"
+        cover = ""
+        img = soup.select_one('img[alt*="cover"], img[src*="cover"]')
+        if img:
+            cover = img.get('src') or img.get('data-src') or ""
+            if cover.startswith('//'):
+                cover = "https:" + cover
+        actors = [a.text.strip() for a in soup.select('a[href*="/actor/"]') if a.text.strip()]
+        desc = soup.find('meta', attrs={'name': 'description'})
+        desc = desc.get('content', "") if desc else ""
+        video_url = ""
+        for script in soup.find_all('script'):
+            if script.string:
+                matches = re.findall(r'video_url\s*[:=]\s*["\'](https?://[^"\']+\.m3u8[^"\']*)["\']', script.string)
+                if matches:
+                    video_url = matches[0]
+                    break
+        if not video_url:
+            video_tag = soup.find('video')
+            if video_tag and video_tag.get('src'):
+                video_url = video_tag.get('src')
+        if not video_url:
+            raise Exception("未找到视频源 m3u8，页面可能改版")
+        return {
+            "id": video_id,
+            "code": code,
+            "title": title,
+            "cover": cover,
+            "actors": actors,
+            "description": desc[:300],
+            "video_url": video_url,
+            "url": f"{self.base_url}/watch/{video_id}",
+        }
+
+fetcher = MissAVFetcher()
 
 # ============================================================
-# 创建主应用（FastAPI）
+# MissAV 路由
 # ============================================================
+
+missav_router = APIRouter(prefix="/missav", tags=["MissAV"])
+
+@missav_router.get("/search")
+async def missav_search(q: str = Query(..., min_length=1)):
+    try:
+        items = fetcher.search(q)
+        return {"ok": True, "count": len(items), "items": items}
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+@missav_router.get("/info")
+async def missav_info(video_id: str = Query(...)):
+    try:
+        data = fetcher.get_detail(video_id)
+        return {"ok": True, "item": data}
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+# ============================================================
+# 创建主应用
+# ============================================================
+
 app = FastAPI(title="万能媒体下载器（X + MissAV）")
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -1162,7 +1277,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 注册数据库启动/关闭事件（使用 X 的数据库函数）
 async def startup_event():
     await database.connect()
     await init_db()
@@ -1176,20 +1290,11 @@ async def shutdown_event():
 app.add_event_handler("startup", startup_event)
 app.add_event_handler("shutdown", shutdown_event)
 
-# ============================================================
 # 注册路由
-# ============================================================
-
-# X 路由（挂载到根路径，原 /api 路径不变）
 app.include_router(x_router)
-
-# MissAV 路由（前缀 /missav）
 app.include_router(missav_router)
 
-# ============================================================
 # 静态页面
-# ============================================================
-
 @app.get("/")
 async def root():
     return FileResponse("static/index.html")
@@ -1201,10 +1306,6 @@ async def missav_page():
 @app.get("/health")
 async def health():
     return {"status": "ok"}
-
-# ============================================================
-# 启动
-# ============================================================
 
 if __name__ == "__main__":
     import uvicorn
