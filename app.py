@@ -976,12 +976,16 @@ async def check_favorite(request: Request, username: str):
 
 
 # =========================================================
-# API：Neon 存储用量（带详细错误日志）
+# API：Neon 存储用量（调试版）
 # =========================================================
 
 @app.get("/api/storage")
 async def get_storage(request: Request):
     global media_library
+
+    # 打印环境变量（调试用）
+    print(f"[DEBUG] NEON_API_KEY 是否存在: {'有值' if NEON_API_KEY else '空'}")
+    print(f"[DEBUG] NEON_PROJECT_ID: {NEON_PROJECT_ID}")
 
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
@@ -1000,30 +1004,38 @@ async def get_storage(request: Request):
 
     if NEON_API_KEY and NEON_PROJECT_ID:
         try:
-            async with httpx.AsyncClient(timeout=10) as client:
-                url = f"https://console.neon.tech/api/v2/projects/{NEON_PROJECT_ID}/consumption_history"
-                headers = {
-                    "Authorization": f"Bearer {NEON_API_KEY}",
-                    "Accept": "application/json"
-                }
-                response = await client.get(url, headers=headers)
-                
-                print(f"[Neon API] 状态码: {response.status_code}")
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    if data.get("consumption_history") and len(data["consumption_history"]) > 0:
-                        latest = data["consumption_history"][-1]
-                        neon_used_bytes = latest.get("storage_used", 0)
-                        print(f"[Neon API] 存储用量: {neon_used_bytes} bytes")
+            # 尝试两种 API 地址
+            urls = [
+                f"https://console.neon.tech/api/v2/projects/{NEON_PROJECT_ID}/consumption_history",
+                f"https://api.neon.tech/v2/projects/{NEON_PROJECT_ID}/consumption_history"
+            ]
+            
+            for url in urls:
+                print(f"[Neon API] 尝试: {url}")
+                async with httpx.AsyncClient(timeout=10) as client:
+                    headers = {
+                        "Authorization": f"Bearer {NEON_API_KEY}",
+                        "Accept": "application/json"
+                    }
+                    response = await client.get(url, headers=headers)
+                    print(f"[Neon API] 状态码: {response.status_code}")
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data.get("consumption_history") and len(data["consumption_history"]) > 0:
+                            latest = data["consumption_history"][-1]
+                            neon_used_bytes = latest.get("storage_used", 0)
+                            print(f"[Neon API] 存储用量: {neon_used_bytes} bytes")
+                            neon_error = None
+                            break
+                        else:
+                            neon_error = "没有消费历史数据"
+                    elif response.status_code == 401:
+                        neon_error = "API Key 无效或权限不足 (401)"
+                    elif response.status_code == 404:
+                        neon_error = f"Project ID 不存在: {NEON_PROJECT_ID} (404)"
                     else:
-                        neon_error = "没有消费历史数据"
-                elif response.status_code == 401:
-                    neon_error = "API Key 无效或权限不足 (401)"
-                elif response.status_code == 404:
-                    neon_error = f"Project ID 不存在: {NEON_PROJECT_ID} (404)"
-                else:
-                    neon_error = f"HTTP {response.status_code}: {response.text[:200]}"
+                        neon_error = f"HTTP {response.status_code}"
         except Exception as e:
             neon_error = f"请求异常: {str(e)}"
             print(f"[Neon API] 异常: {e}")
