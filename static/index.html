@@ -125,6 +125,7 @@
             display: none;
             animation: fadeIn 0.4s ease;
         }
+
         .page.active {
             display: block;
         }
@@ -277,95 +278,6 @@
             font-weight: 300;
         }
 
-        /* =====================================================
-           存储统计
-        ===================================================== */
-        .storage-section {
-            margin-top: 20px;
-            padding: 16px 0 8px 0;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .storage-title {
-            font-size: 13px;
-            font-weight: 400;
-            color: rgba(255, 255, 255, 0.5);
-            letter-spacing: 0.3px;
-            margin-bottom: 10px;
-        }
-
-        .storage-bar {
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: rgba(255, 255, 255, 0.08);
-            overflow: hidden;
-            display: flex;
-            gap: 1px;
-        }
-
-        .storage-bar .segment {
-            height: 100%;
-            transition: width 0.6s ease;
-            border-radius: 3px;
-        }
-
-        .storage-bar .segment.used-segment {
-            background: #007aff;
-        }
-
-        .storage-bar .segment.free-segment {
-            background: #34c759;
-        }
-
-        .storage-bar .segment.warning-segment {
-            background: #ff3b30;
-        }
-
-        .storage-stats {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.4);
-            font-weight: 300;
-            flex-wrap: wrap;
-            gap: 4px 12px;
-        }
-
-        .storage-stats .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .storage-stats .color-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .storage-stats .stat-number {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .storage-footer {
-            margin-top: 8px;
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.2);
-            text-align: right;
-            letter-spacing: 0.2px;
-        }
-
-        .storage-footer .media-count {
-            color: rgba(255, 255, 255, 0.3);
-        }
-
-        /* =====================================================
-           菜单
-        ===================================================== */
         .menu-grid {
             display: flex;
             flex-direction: column;
@@ -425,9 +337,6 @@
             transform: none;
         }
 
-        /* =====================================================
-           二级菜单
-        ===================================================== */
         .back-row {
             display: flex;
             align-items: center;
@@ -503,9 +412,6 @@
             font-weight: 300;
         }
 
-        /* =====================================================
-           搜索博主
-        ===================================================== */
         .search-section {
             margin-top: 6px;
         }
@@ -677,9 +583,6 @@
             color: rgba(255, 255, 255, 0.5);
         }
 
-        /* =====================================================
-           选项
-        ===================================================== */
         .option-section {
             margin-top: 18px;
         }
@@ -818,9 +721,6 @@
             font-weight: 300;
         }
 
-        /* =====================================================
-           画廊
-        ===================================================== */
         .gallery {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -841,9 +741,6 @@
             background: rgba(0, 122, 255, 0.08);
         }
 
-        /* =====================================================
-           选择框
-        ===================================================== */
         .select-check {
             position: absolute;
             top: 8px;
@@ -893,7 +790,6 @@
             cursor: pointer;
         }
 
-        /* ========== 核心修复：选择模式下禁用预览图点击 ========== */
         .item.in-select-mode .media-wrap img {
             cursor: default;
             pointer-events: none;
@@ -972,9 +868,6 @@
             font-weight: 300;
         }
 
-        /* =====================================================
-           卡片按钮
-        ===================================================== */
         .item-actions {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -1028,9 +921,6 @@
             color: rgba(255, 255, 255, 0.7);
         }
 
-        /* =====================================================
-           选择工具栏
-        ===================================================== */
         .selection-toolbar {
             position: fixed;
             bottom: 0;
@@ -1098,9 +988,6 @@
             font-weight: 300;
         }
 
-        /* =====================================================
-           删除确认弹窗
-        ===================================================== */
         .delete-confirm-overlay {
             position: fixed;
             inset: 0;
@@ -1189,9 +1076,6 @@
             transform: scale(0.96);
         }
 
-        /* =====================================================
-           Modal
-        ===================================================== */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -1289,9 +1173,6 @@
             color: #fff;
         }
 
-        /* =====================================================
-           响应式
-        ===================================================== */
         @media (max-width: 420px) {
             .app-container {
                 padding: 28px 18px 22px;
@@ -1330,9 +1211,6 @@
                 padding: 6px 14px;
                 font-size: 13px;
             }
-            .storage-stats {
-                font-size: 10px;
-            }
         }
 
         @media (max-width: 360px) {
@@ -1352,9 +1230,6 @@
             }
         }
 
-        /* =====================================================
-           访客提示弹窗
-        ===================================================== */
         .guest-tip-overlay {
             position: fixed;
             inset: 0;
@@ -1523,35 +1398,7 @@
                     <div class="menu-card-desc">更多网站支持中</div>
                 </div>
             </div>
-
-            <!-- ========== 存储统计 ========== -->
-            <div class="storage-section" id="storageSection">
-                <div class="storage-title">📦 Neon 存储用量</div>
-                <div class="storage-bar" id="storageBar">
-                    <div class="segment used-segment" id="usedSegment" style="width:0%;"></div>
-                    <div class="segment free-segment" id="freeSegment" style="width:0%;"></div>
-                </div>
-                <div class="storage-stats" id="storageStats">
-                    <span class="stat-item">
-                        <span class="color-dot" style="background:#007aff;"></span>
-                        已用: <span class="stat-number" id="statUsed">计算中…</span>
-                    </span>
-                    <span class="stat-item">
-                        <span class="color-dot" style="background:#34c759;"></span>
-                        剩余: <span class="stat-number" id="statFree">计算中…</span>
-                    </span>
-                    <span class="stat-item" style="margin-left:auto;">
-                        总配额: <span class="stat-number" id="statTotal">512 MB</span>
-                    </span>
-                </div>
-                <div class="storage-footer" id="storageFooter">
-                    图片: <span class="media-count" id="statImages">0</span> ·
-                    视频: <span class="media-count" id="statVideos">0</span> ·
-                    媒体总数: <span class="media-count" id="statTotalMedia">0</span>
-                </div>
-            </div>
-
-            <div class="login-dev-signature" style="margin-top:20px;">开发者：浮生若夢</div>
+            <div class="login-dev-signature" style="margin-top:32px;">开发者：浮生若夢</div>
         </div>
 
         <!-- =====================================================
@@ -1901,17 +1748,6 @@
         var confirmCancel = $('confirmCancel');
         var confirmDelete = $('confirmDelete');
 
-        // 存储显示
-        var storageSection = $('storageSection');
-        var usedSegment = $('usedSegment');
-        var freeSegment = $('freeSegment');
-        var statUsed = $('statUsed');
-        var statFree = $('statFree');
-        var statTotal = $('statTotal');
-        var statImages = $('statImages');
-        var statVideos = $('statVideos');
-        var statTotalMedia = $('statTotalMedia');
-
         /* =====================================================
            页面切换
         ==================================================== */
@@ -1947,7 +1783,6 @@
                 if (data.ok) {
                     currentMode = 'developer';
                     loadFavoritesFromServer();
-                    loadStorageData();
                     showPage('pageMenu');
                     loginPassword.value = '';
                 } else {
@@ -1975,7 +1810,6 @@
         guestBtn.addEventListener('click', function() {
             currentMode = 'guest';
             loadFavoritesFromLocal();
-            storageSection.classList.add('hidden');
             if (!guestTipShown) {
                 guestTip.classList.remove('hidden');
             } else {
@@ -1987,79 +1821,6 @@
             guestTipShown = true;
             showPage('pageMenu');
         });
-
-        /* =====================================================
-           Neon 存储统计
-        ==================================================== */
-        function loadStorageData() {
-            if (currentMode === 'guest') {
-                storageSection.classList.add('hidden');
-                return;
-            }
-            storageSection.classList.remove('hidden');
-
-            fetch('/api/storage', {
-                credentials: 'include'
-            })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data.ok) {
-                    updateStorageUI(data);
-                }
-            })
-            .catch(function(e) {
-                console.warn('[Storage] 加载失败:', e);
-                statUsed.textContent = '加载失败';
-                statFree.textContent = '—';
-                usedSegment.style.width = '0%';
-                freeSegment.style.width = '100%';
-            });
-        }
-
-        function updateStorageUI(data) {
-            var totalMedia = data.total_media || 0;
-            var images = data.images || 0;
-            var videos = data.videos || 0;
-
-            statImages.textContent = images;
-            statVideos.textContent = videos;
-            statTotalMedia.textContent = totalMedia;
-
-            var usedBytes = data.neon_used_bytes;
-
-            // 如果 API 返回 null、undefined 或负数，显示暂无法获取
-            if (usedBytes === null || usedBytes === undefined || usedBytes < 0) {
-                statUsed.textContent = '暂无法获取';
-                statFree.textContent = '—';
-                usedSegment.style.width = '0%';
-                freeSegment.style.width = '100%';
-                return;
-            }
-
-            var totalBytes = 512 * 1024 * 1024; // 512 MB
-            var freeBytes = Math.max(0, totalBytes - usedBytes);
-            var usedMB = (usedBytes / 1024 / 1024).toFixed(2);
-            var freeMB = (freeBytes / 1024 / 1024).toFixed(2);
-            var usedPct = Math.min((usedBytes / totalBytes) * 100, 100);
-            var freePct = 100 - usedPct;
-
-            if (usedPct > 80) {
-                usedSegment.className = 'segment warning-segment';
-            } else {
-                usedSegment.className = 'segment used-segment';
-            }
-
-            usedSegment.style.width = Math.max(usedPct, 0.5) + '%';
-            freeSegment.style.width = Math.max(freePct, 0.5) + '%';
-
-            if (usedBytes === 0) {
-                statUsed.textContent = '0 MB';
-                statFree.textContent = '512 MB';
-            } else {
-                statUsed.textContent = usedMB + ' MB';
-                statFree.textContent = freeMB + ' MB';
-            }
-        }
 
         /* =====================================================
            菜单导航
@@ -3077,7 +2838,6 @@
         // 初始化
         // =====================================================
         loadFavoritesFromLocal();
-        storageSection.classList.add('hidden');
         showPage('pageLogin');
         console.log('万能媒体下载器 已加载');
         console.log('开发者：浮生若夢');
