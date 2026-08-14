@@ -1345,6 +1345,35 @@
             if (isSelectMode) exitSelectMode();
         }
 
+        // ---- 资源清理（跳转前调用） ----
+        function cleanupBeforeUnload() {
+            // 1. 移除滚动监听
+            if (scrollListenerAttached) {
+                window.removeEventListener('scroll', handleScroll);
+                scrollListenerAttached = false;
+            }
+            // 2. 暂停并释放所有视频
+            document.querySelectorAll('video').forEach(function(v) {
+                v.pause();
+                v.src = '';
+                v.load();
+            });
+            // 3. 关闭 modal（如果开着）
+            if (modal && !modal.classList.contains('hidden')) {
+                closeModal();
+            }
+            // 4. 取消 HLS 实例
+            if (currentHls) {
+                currentHls.destroy();
+                currentHls = null;
+            }
+            // 5. 清除滚动定时器
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = null;
+            }
+        }
+
         // ---- 模式横幅 ----
         function updateModeBanners() {
             var mode = currentMode;
@@ -1355,7 +1384,6 @@
                 bannerHtml = '<div class="mode-banner developer">🔒 开发者模式 · 数据来自服务器</div>';
             }
             xModeBanner.innerHTML = bannerHtml;
-            // library 横幅在 openLibrary 中单独设置
         }
 
         function updateLibraryBanner(mode) {
@@ -1812,14 +1840,11 @@
             }
             showPage('pageLibrary');
 
-            // 更新横幅
             updateLibraryBanner(currentMode);
 
             if (currentMode === 'guest') {
-                // 访客模式：从 localStorage 读取
                 loadLibraryFromLocal(source);
             } else {
-                // 开发者模式：从服务器读取
                 fetch('/api/auth/check', { credentials: 'include' })
                     .then(function(res) { return res.json(); })
                     .then(function(data) {
@@ -2111,7 +2136,6 @@
             deleteConfirm.classList.remove('active');
 
             if (currentMode === 'guest') {
-                // 访客模式：从 localStorage 删除
                 var key = getStorageKey(currentSubPage);
                 var raw = localStorage.getItem(key);
                 if (raw) {
@@ -2131,7 +2155,6 @@
                 return;
             }
 
-            // 开发者模式：从服务器删除
             fetch('/api/media', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
@@ -2438,7 +2461,9 @@
         });
 
         // ---- 导航 ----
+        // 返回首页：先清理资源再跳转
         backToHome.addEventListener('click', function() {
+            cleanupBeforeUnload();
             window.location.href = '/';
         });
 
@@ -2475,7 +2500,6 @@
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     if (!data.authenticated) {
-                        // session 过期，降级为访客
                         currentMode = 'guest';
                         localStorage.setItem('userMode', 'guest');
                         console.log('⚠️ Session 已过期，降级为访客模式');
@@ -2483,7 +2507,6 @@
                     updateModeBanners();
                 })
                 .catch(function() {
-                    // 网络错误，降级为访客
                     currentMode = 'guest';
                     localStorage.setItem('userMode', 'guest');
                     updateModeBanners();
@@ -2492,10 +2515,7 @@
             updateModeBanners();
         }
 
-        // 加载收藏
         loadFavorites();
-
-        // 显示二级菜单
         showPage('pageXSub');
 
         console.log('🐦 X 下载器已加载');
