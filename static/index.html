@@ -26,6 +26,7 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            padding-bottom: 80px;
         }
 
         .hidden {
@@ -771,6 +772,49 @@
             border-radius: 10px;
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.04);
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .item.selected {
+            border-color: #007aff;
+            background: rgba(0, 122, 255, 0.08);
+        }
+
+        /* =====================================================
+           选择框
+        ===================================================== */
+        .select-check {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 10;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #fff;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .item.in-select-mode .select-check {
+            display: flex;
+        }
+
+        .item.selected .select-check {
+            background: #007aff;
+            border-color: #007aff;
+        }
+
+        .item.selected .select-check::after {
+            content: "✓";
+            font-weight: 600;
         }
 
         .media-wrap {
@@ -786,6 +830,10 @@
             aspect-ratio: 1 / 1;
             object-fit: cover;
             cursor: pointer;
+        }
+
+        .item.in-select-mode .media-wrap img {
+            cursor: default;
         }
 
         .media-error {
@@ -862,7 +910,7 @@
         }
 
         /* =====================================================
-           卡片按钮 - 三个等宽（无彩色边框）
+           卡片按钮 - 三个等宽
         ===================================================== */
         .item-actions {
             display: grid;
@@ -879,6 +927,11 @@
             font-family: inherit;
             border: 0;
             transition: all 0.2s ease;
+        }
+
+        .item.in-select-mode .item-actions button {
+            pointer-events: none;
+            opacity: 0.3;
         }
 
         .item-actions .btn-view {
@@ -909,6 +962,167 @@
         .item-actions .btn-original:hover {
             background: rgba(255, 255, 255, 0.1);
             color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* =====================================================
+           底部工具栏（选择模式）
+        ===================================================== */
+        .selection-toolbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(20, 20, 22, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 12px 20px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .selection-toolbar.active {
+            display: flex;
+        }
+
+        .selection-toolbar .toolbar-left {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .selection-toolbar .toolbar-btn {
+            background: transparent;
+            border: 0;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 15px;
+            font-weight: 450;
+            padding: 8px 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: color 0.2s ease;
+        }
+
+        .selection-toolbar .toolbar-btn:hover {
+            color: #fff;
+        }
+
+        .selection-toolbar .toolbar-btn.danger {
+            background: #fff;
+            color: #ff3b30;
+            padding: 8px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .selection-toolbar .toolbar-btn.danger:hover {
+            opacity: 0.85;
+        }
+
+        .selection-toolbar .toolbar-btn.danger:active {
+            transform: scale(0.96);
+        }
+
+        .selection-toolbar .selected-count {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 13px;
+            font-weight: 300;
+        }
+
+        /* =====================================================
+           自定义删除确认弹窗
+        ===================================================== */
+        .delete-confirm-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .delete-confirm-overlay.active {
+            display: flex;
+        }
+
+        .delete-confirm-box {
+            background: #1c1c1e;
+            border-radius: 14px;
+            padding: 28px 24px 20px;
+            max-width: 340px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .delete-confirm-box .confirm-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            display: block;
+            color: #ff3b30;
+        }
+
+        .delete-confirm-box .confirm-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .delete-confirm-box .confirm-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        .delete-confirm-box .confirm-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .delete-confirm-box .confirm-actions button {
+            flex: 1;
+            padding: 12px 0;
+            border: 0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-cancel {
+            background: transparent;
+            color: #007aff;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-cancel:hover {
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-delete {
+            background: #fff;
+            color: #ff3b30;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-delete:hover {
+            opacity: 0.85;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-delete:active {
+            transform: scale(0.96);
         }
 
         /* =====================================================
@@ -1040,6 +1254,17 @@
             .item-actions button {
                 font-size: 9px;
                 padding: 4px 0;
+            }
+            .selection-toolbar {
+                padding: 10px 16px;
+                padding-bottom: calc(10px + env(safe-area-inset-bottom));
+            }
+            .selection-toolbar .toolbar-btn {
+                font-size: 13px;
+            }
+            .selection-toolbar .toolbar-btn.danger {
+                padding: 6px 14px;
+                font-size: 13px;
             }
         }
 
@@ -1374,12 +1599,42 @@
             <div class="submenu-title" id="libraryTitle">我的喜欢</div>
             <div class="submenu-desc" id="libraryDesc">查看采集器上传的喜欢列表</div>
 
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;margin-top:4px;">
-                <span style="font-size:12px;color:rgba(255,255,255,0.25);font-weight:300;" id="libraryCount">正在读取…</span>
-                <button style="background:transparent;border:0;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;" id="refreshLibraryBtn">刷新</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:4px;flex-wrap:wrap;gap:6px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:12px;color:rgba(255,255,255,0.25);font-weight:300;" id="libraryCount">正在读取…</span>
+                    <button style="background:transparent;border:0;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;" id="refreshLibraryBtn">刷新</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button id="selectToggleBtn" class="hidden" style="background:transparent;border:0;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;">选择</button>
+                </div>
             </div>
 
+            <!-- ========== 日期筛选（新增） ========== -->
             <div class="option-section" style="margin-top:0;">
+                <span class="option-label">时间范围</span>
+                <div class="option-row" data-group="libraryRange">
+                    <button class="option-btn active" data-value="all">全部</button>
+                    <button class="option-btn" data-value="7">最近7天</button>
+                    <button class="option-btn" data-value="30">最近30天</button>
+                    <button class="option-btn" data-value="365">最近1年</button>
+                    <button class="option-btn" data-value="custom">自定义</button>
+                </div>
+            </div>
+
+            <div class="hidden" id="libraryCustomDates" style="margin-top:8px;">
+                <div class="date-row">
+                    <div>
+                        <label class="search-label" style="font-size:11px;">开始日期</label>
+                        <input type="date" id="libraryStartDate">
+                    </div>
+                    <div>
+                        <label class="search-label" style="font-size:11px;">结束日期</label>
+                        <input type="date" id="libraryEndDate">
+                    </div>
+                </div>
+            </div>
+
+            <div class="option-section" style="margin-top:12px;">
                 <span class="option-label">媒体类型</span>
                 <div class="option-row" data-group="libraryMedia">
                     <button class="option-btn active" data-value="all">全部</button>
@@ -1450,6 +1705,35 @@
             <button class="modal-original" id="modalOriginalBtn">打开原帖</button>
         </div>
     </div>
+
+    <!-- =====================================================
+    底部工具栏（选择模式）
+    ===================================================== -->
+    <div class="selection-toolbar" id="selectionToolbar">
+        <div class="toolbar-left">
+            <button class="toolbar-btn" id="toolbarCancel">取消</button>
+            <button class="toolbar-btn" id="toolbarSelectAll">全选</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <span class="selected-count" id="selectedCount">已选 0 个</span>
+            <button class="toolbar-btn danger" id="toolbarDelete">删除</button>
+        </div>
+    </div>
+
+    <!-- =====================================================
+    删除确认弹窗
+    ===================================================== -->
+    <div class="delete-confirm-overlay" id="deleteConfirm">
+        <div class="delete-confirm-box">
+            <span class="confirm-icon">🗑️</span>
+            <div class="confirm-title" id="confirmTitle">确定删除？</div>
+            <div class="confirm-desc" id="confirmDesc">这些媒体将被永久删除，无法恢复。</div>
+            <div class="confirm-actions">
+                <button class="confirm-cancel" id="confirmCancel">取消</button>
+                <button class="confirm-delete" id="confirmDelete">确定删除</button>
+            </div>
+        </div>
+    </div>
 <script>
         // =====================================================
         // 状态
@@ -1464,8 +1748,17 @@
         let sourceType = 'all';
         let libraryMediaType = 'all';
 
+        // ========== 日期筛选状态 ==========
+        let libraryRange = 'all';
+        let libraryStartDate = '';
+        let libraryEndDate = '';
+
         let favorites = [];
         let favoritesLoaded = false;
+
+        // ========== 选择模式状态 ==========
+        let isSelectMode = false;
+        let selectedIds = new Set();
 
         // API Key（用于收藏同步）
         const API_KEY = 'fushengruomeng'; // 请与服务器密码一致
@@ -1530,10 +1823,14 @@
         const libraryResultTitle = $('libraryResultTitle');
         const libraryResultCount = $('libraryResultCount');
         const libraryGallery = $('libraryGallery');
+        const selectToggleBtn = $('selectToggleBtn');
 
         const startDate = $('startDate');
         const endDate = $('endDate');
         const customDates = $('customDates');
+        const libraryCustomDates = $('libraryCustomDates');
+        const libraryStartDate = $('libraryStartDate');
+        const libraryEndDate = $('libraryEndDate');
 
         const modal = $('modal');
         const modalContent = $('modalContent');
@@ -1548,6 +1845,18 @@
         const missavTip = $('missavTip');
         const missavTipBtn = $('missavTipBtn');
 
+        // 选择模式元素
+        const selectionToolbar = $('selectionToolbar');
+        const toolbarCancel = $('toolbarCancel');
+        const toolbarSelectAll = $('toolbarSelectAll');
+        const toolbarDelete = $('toolbarDelete');
+        const selectedCount = $('selectedCount');
+        const deleteConfirm = $('deleteConfirm');
+        const confirmTitle = $('confirmTitle');
+        const confirmDesc = $('confirmDesc');
+        const confirmCancel = $('confirmCancel');
+        const confirmDelete = $('confirmDelete');
+
         /* =====================================================
            页面切换
         ==================================================== */
@@ -1556,6 +1865,8 @@
             const target = document.getElementById(pageId);
             if (target) target.classList.add('active');
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            // 退出选择模式（如果开启）
+            if (isSelectMode) exitSelectMode();
         }
 
         /* =====================================================
@@ -1581,7 +1892,6 @@
                 const data = await res.json();
                 if (res.ok && data.ok) {
                     currentMode = 'developer';
-                    // 开发者登录后加载服务器收藏
                     await loadFavoritesFromServer();
                     showPage('pageMenu');
                     loginPassword.value = '';
@@ -1609,7 +1919,7 @@
 
         guestBtn.addEventListener('click', () => {
             currentMode = 'guest';
-            loadFavoritesFromLocal(); // 仅本地
+            loadFavoritesFromLocal();
             if (!guestTipShown) {
                 guestTip.classList.remove('hidden');
             } else {
@@ -1648,6 +1958,7 @@
 
         backFromLibrary.addEventListener('click', () => {
             showPage('pageXSub');
+            if (isSelectMode) exitSelectMode();
         });
 
         /* =====================================================
@@ -1682,9 +1993,11 @@
                     `<div class="loader">请安装采集器后使用此功能</div>`;
                 libraryStatus.classList.add('hidden');
                 libraryResultHeader.classList.add('hidden');
+                selectToggleBtn.classList.add('hidden');
                 return;
             }
 
+            selectToggleBtn.classList.remove('hidden');
             loadLibrary(source);
         }
 
@@ -1706,12 +2019,24 @@
                         mediaType = value;
                     } else if (group === 'source') {
                         sourceType = value;
+                    } else if (group === 'libraryRange') {
+                        libraryRange = value;
+                        libraryCustomDates.classList.toggle('hidden', value !== 'custom');
+                        resetPaginationAndRender();
                     } else if (group === 'libraryMedia') {
                         libraryMediaType = value;
-                        resetPaginationAndRender(); // 切换筛选时重置分页并重新渲染
+                        resetPaginationAndRender();
                     }
                 });
             });
+        });
+
+        // 日期输入变化时触发重新渲染
+        libraryStartDate.addEventListener('change', () => {
+            if (libraryRange === 'custom') resetPaginationAndRender();
+        });
+        libraryEndDate.addEventListener('change', () => {
+            if (libraryRange === 'custom') resetPaginationAndRender();
         });
 
         /* =====================================================
@@ -1719,7 +2044,6 @@
         ==================================================== */
         const FAVORITE_KEY = 'universal_downloader_favorites';
 
-        // 从服务器加载收藏（开发者模式）
         async function loadFavoritesFromServer() {
             try {
                 const response = await fetch('/api/favorites', {
@@ -1737,7 +2061,6 @@
                         return;
                     }
                 }
-                // 如果服务器获取失败，回退到本地
                 loadFavoritesFromLocal();
             } catch (e) {
                 console.warn('从服务器加载收藏失败，使用本地缓存', e);
@@ -1757,14 +2080,6 @@
             }
         }
 
-        function getFavorites() {
-            if (!favoritesLoaded) {
-                loadFavoritesFromLocal();
-            }
-            return favorites;
-        }
-
-        // 添加收藏
         async function addFavorite(username, name) {
             if (currentMode === 'developer') {
                 try {
@@ -1784,7 +2099,6 @@
                             return true;
                         }
                     }
-                    // 如果服务器失败，回退到本地
                     return addFavoriteLocal(username, name);
                 } catch (e) {
                     console.warn('服务器添加收藏失败，回退本地', e);
@@ -1806,7 +2120,6 @@
             return false;
         }
 
-        // 删除收藏
         async function removeFavorite(username) {
             if (currentMode === 'developer') {
                 try {
@@ -1822,7 +2135,6 @@
                             return true;
                         }
                     }
-                    // 回退本地
                     return removeFavoriteLocal(username);
                 } catch (e) {
                     console.warn('服务器删除收藏失败，回退本地', e);
@@ -1843,14 +2155,6 @@
                 return true;
             }
             return false;
-        }
-
-        // 检查是否已收藏
-        async function isFavorited(username) {
-            if (!favoritesLoaded) {
-                await loadFavoritesFromServer();
-            }
-            return favorites.some(f => f.username.toLowerCase() === username.toLowerCase());
         }
 
         function renderFavorites() {
@@ -1977,6 +2281,25 @@
             } catch { return ''; }
         }
 
+        function getLibraryDateRange() {
+            if (libraryRange === 'all') return { start: null, end: null };
+            if (libraryRange === 'custom') {
+                return {
+                    start: libraryStartDate.value || null,
+                    end: libraryEndDate.value || null
+                };
+            }
+            const now = new Date();
+            const start = new Date(now);
+            start.setDate(start.getDate() - Number(libraryRange));
+            return {
+                start: start.getFullYear() + '-' + String(start.getMonth() + 1).padStart(2, '0') + '-' + String(start.getDate())
+                    .padStart(2, '0'),
+                end: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(
+                    2, '0')
+            };
+        }
+
         function getDates() {
             if (range === 'all') return { start: null, end: null };
             if (range === 'custom') return { start: startDate.value || null, end: endDate.value || null };
@@ -2098,7 +2421,6 @@
                 return;
             }
 
-            // 如果切换了来源，或者缓存为空，才请求后端
             if (source !== cachedLibrarySource || cachedLibraryItems.length === 0) {
                 libraryCount.textContent = '正在读取…';
                 libraryStatus.classList.add('hidden');
@@ -2130,20 +2452,39 @@
                 }
             }
 
-            // 重置分页状态
             resetPagination();
-            // 渲染
             renderLibraryResults();
         }
 
         function renderLibraryResults() {
-            // 根据当前筛选条件过滤
+            // 先按媒体类型过滤
             let filtered = cachedLibraryItems;
             if (libraryMediaType === 'image') {
                 filtered = cachedLibraryItems.filter(item => item.type === 'image');
             } else if (libraryMediaType === 'video') {
                 filtered = cachedLibraryItems.filter(item => item.type === 'video');
             }
+
+            // 再按日期过滤
+            const dateRange = getLibraryDateRange();
+            if (dateRange.start || dateRange.end) {
+                const startDt = dateRange.start ? new Date(dateRange.start + 'T00:00:00Z') : null;
+                const endDt = dateRange.end ? new Date(dateRange.end + 'T23:59:59Z') : null;
+                filtered = filtered.filter(item => {
+                    const timeStr = item.tweetCreatedAt || item.createdAt || '';
+                    if (!timeStr) return true; // 没有时间信息则保留
+                    try {
+                        let dt = new Date(timeStr);
+                        if (isNaN(dt.getTime())) return true; // 无法解析则保留
+                        if (startDt && dt < startDt) return false;
+                        if (endDt && dt > endDt) return false;
+                        return true;
+                    } catch {
+                        return true;
+                    }
+                });
+            }
+
             allFilteredItems = filtered;
 
             libraryCount.textContent = `共 ${allFilteredItems.length} 个媒体`;
@@ -2151,39 +2492,31 @@
             libraryResultTitle.textContent = currentSubPage === 'likes' ? '我的喜欢' : '我的书签';
             libraryResultCount.textContent = `共 ${allFilteredItems.length} 个媒体`;
 
-            // 清空画廊
             libraryGallery.innerHTML = '';
-            // 移除旧的加载提示
-            const oldLoader = document.getElementById('batch-loader');
-            if (oldLoader) oldLoader.remove();
-            const oldEnd = document.getElementById('batch-end');
-            if (oldEnd) oldEnd.remove();
 
-            // 如果没有任何数据
             if (!allFilteredItems || allFilteredItems.length === 0) {
                 libraryGallery.innerHTML = `<div class="loader">没有符合条件的媒体</div>`;
                 return;
             }
 
-            // 排序（按时间倒序）
             allFilteredItems.sort((a, b) => {
-                const timeA = Date.parse(a.createdAt || a.created_at || a.created || a.timestamp || '');
-                const timeB = Date.parse(b.createdAt || b.created_at || b.created || b.timestamp || '');
-                if (isFinite(timeA) && isFinite(timeB)) return timeB - timeA;
-                if (!isFinite(timeA) && isFinite(timeB)) return 1;
-                if (isFinite(timeA) && !isFinite(timeB)) return -1;
+                const timeA = a.tweetCreatedAt || a.createdAt || '';
+                const timeB = b.tweetCreatedAt || b.createdAt || '';
+                if (timeA && timeB) return timeB.localeCompare(timeA);
+                if (timeA && !timeB) return -1;
+                if (!timeA && timeB) return 1;
                 return 0;
             });
 
-            // 重置批次
             currentBatch = 0;
             allLoaded = false;
             isLoadingMore = false;
 
-            // 加载第一批
+            // 如果进入选择模式，退出
+            if (isSelectMode) exitSelectMode();
+
             loadNextBatch();
 
-            // 如果尚未添加滚动监听，添加
             if (!scrollListenerAttached) {
                 window.addEventListener('scroll', handleScroll);
                 scrollListenerAttached = true;
@@ -2195,11 +2528,6 @@
             currentBatch = 0;
             allLoaded = false;
             isLoadingMore = false;
-            // 移除之前的加载提示
-            const loader = document.getElementById('batch-loader');
-            if (loader) loader.remove();
-            const endMsg = document.getElementById('batch-end');
-            if (endMsg) endMsg.remove();
         }
 
         function resetPaginationAndRender() {
@@ -2207,18 +2535,14 @@
             renderLibraryResults();
         }
 
-        // 加载下一批
         function loadNextBatch() {
             if (allLoaded || isLoadingMore) return;
             if (currentBatch * BATCH_SIZE >= allFilteredItems.length) {
                 allLoaded = true;
-                showEndMessage();
                 return;
             }
 
             isLoadingMore = true;
-            showLoader();
-
             requestAnimationFrame(() => {
                 const start = currentBatch * BATCH_SIZE;
                 const end = Math.min(start + BATCH_SIZE, allFilteredItems.length);
@@ -2233,42 +2557,10 @@
 
                 if (currentBatch * BATCH_SIZE >= allFilteredItems.length) {
                     allLoaded = true;
-                    hideLoader();
-                    showEndMessage();
                 }
             });
         }
 
-        // 显示加载中提示
-        function showLoader() {
-            let loader = document.getElementById('batch-loader');
-            if (!loader) {
-                loader = document.createElement('div');
-                loader.id = 'batch-loader';
-                loader.className = 'loader';
-                loader.textContent = '⏳ 加载中…';
-                libraryGallery.appendChild(loader);
-            }
-        }
-
-        function hideLoader() {
-            const loader = document.getElementById('batch-loader');
-            if (loader) loader.remove();
-        }
-
-        function showEndMessage() {
-            hideLoader();
-            let endMsg = document.getElementById('batch-end');
-            if (!endMsg) {
-                endMsg = document.createElement('div');
-                endMsg.id = 'batch-end';
-                endMsg.className = 'loader';
-                endMsg.textContent = '✅ 已加载全部';
-                libraryGallery.appendChild(endMsg);
-            }
-        }
-
-        // 滚动事件处理（节流）
         let scrollTimeout = null;
 
         function handleScroll() {
@@ -2278,7 +2570,7 @@
                 const scrollY = window.scrollY || window.pageYOffset;
                 const windowHeight = window.innerHeight;
                 const docHeight = document.documentElement.scrollHeight;
-                if (scrollY + windowHeight >= docHeight - 200) {
+                if (scrollY + windowHeight >= docHeight - 300) {
                     if (!allLoaded && !isLoadingMore) {
                         loadNextBatch();
                     }
@@ -2287,7 +2579,6 @@
         }
 
         refreshLibraryBtn.addEventListener('click', () => {
-            // 清除缓存，强制重新加载
             cachedLibraryItems = [];
             cachedLibrarySource = '';
             resetPagination();
@@ -2297,11 +2588,157 @@
         });
 
         /* =====================================================
+           选择模式
+        ==================================================== */
+        selectToggleBtn.addEventListener('click', () => {
+            enterSelectMode();
+        });
+
+        function enterSelectMode() {
+            if (isSelectMode) return;
+            isSelectMode = true;
+            selectedIds.clear();
+            selectionToolbar.classList.add('active');
+            selectToggleBtn.textContent = '取消选择';
+            selectToggleBtn.style.color = 'rgba(255,255,255,0.6)';
+
+            document.querySelectorAll('#libraryGallery .item').forEach(el => {
+                el.classList.add('in-select-mode');
+                el.addEventListener('click', handleItemClick);
+            });
+
+            updateSelectedCount();
+        }
+
+        function exitSelectMode() {
+            if (!isSelectMode) return;
+            isSelectMode = false;
+            selectedIds.clear();
+            selectionToolbar.classList.remove('active');
+            selectToggleBtn.textContent = '选择';
+            selectToggleBtn.style.color = 'rgba(255,255,255,0.4)';
+
+            document.querySelectorAll('#libraryGallery .item').forEach(el => {
+                el.classList.remove('in-select-mode', 'selected');
+                el.removeEventListener('click', handleItemClick);
+            });
+
+            updateSelectedCount();
+        }
+
+        function handleItemClick(e) {
+            const item = e.currentTarget;
+            // 如果点击的是按钮或链接，不触发选择
+            if (e.target.closest('button') || e.target.closest('a')) return;
+
+            const mediaId = item.dataset.mediaId;
+            if (!mediaId) return;
+
+            if (selectedIds.has(mediaId)) {
+                selectedIds.delete(mediaId);
+                item.classList.remove('selected');
+            } else {
+                selectedIds.add(mediaId);
+                item.classList.add('selected');
+            }
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const count = selectedIds.size;
+            selectedCount.textContent = `已选 ${count} 个`;
+            toolbarDelete.style.display = count > 0 ? 'block' : 'none';
+        }
+
+        // 全选（仅当前已加载的媒体）
+        toolbarSelectAll.addEventListener('click', () => {
+            const items = document.querySelectorAll('#libraryGallery .item');
+            let allSelected = true;
+            items.forEach(el => {
+                const id = el.dataset.mediaId;
+                if (id && !selectedIds.has(id)) {
+                    allSelected = false;
+                }
+            });
+            if (allSelected) {
+                // 如果已经全选，取消全选
+                items.forEach(el => {
+                    const id = el.dataset.mediaId;
+                    if (id) {
+                        selectedIds.delete(id);
+                        el.classList.remove('selected');
+                    }
+                });
+            } else {
+                items.forEach(el => {
+                    const id = el.dataset.mediaId;
+                    if (id) {
+                        selectedIds.add(id);
+                        el.classList.add('selected');
+                    }
+                });
+            }
+            updateSelectedCount();
+        });
+
+        // 取消选择
+        toolbarCancel.addEventListener('click', exitSelectMode);
+
+        // 删除
+        toolbarDelete.addEventListener('click', () => {
+            const count = selectedIds.size;
+            if (count === 0) return;
+            confirmTitle.textContent = `删除 ${count} 个媒体？`;
+            confirmDesc.textContent = '这些媒体将被永久删除，无法恢复。';
+            deleteConfirm.classList.add('active');
+        });
+
+        confirmCancel.addEventListener('click', () => {
+            deleteConfirm.classList.remove('active');
+        });
+
+        confirmDelete.addEventListener('click', async () => {
+            const ids = Array.from(selectedIds);
+            if (ids.length === 0) return;
+            deleteConfirm.classList.remove('active');
+
+            try {
+                const response = await fetch('/api/media', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ media_ids: ids }),
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                if (response.ok && data.ok) {
+                    // 从缓存中移除已删除的项
+                    const deletedSet = new Set(ids);
+                    cachedLibraryItems = cachedLibraryItems.filter(item => !deletedSet.has(item.id));
+                    // 退出选择模式并重新渲染
+                    exitSelectMode();
+                    renderLibraryResults();
+                } else {
+                    alert('删除失败：' + (data.detail || '未知错误'));
+                }
+            } catch (e) {
+                alert('删除请求失败：' + e.message);
+            }
+        });
+
+        // 点击弹窗外部关闭
+        deleteConfirm.addEventListener('click', (e) => {
+            if (e.target === deleteConfirm) {
+                deleteConfirm.classList.remove('active');
+            }
+        });
+
+        /* =====================================================
            创建媒体卡片
         ==================================================== */
         function createMediaItem(item, mode) {
             const wrapper = document.createElement('div');
             wrapper.className = 'item';
+            wrapper.dataset.mediaId = item.id || '';
 
             const isVideo = item.media_type === 'video' || item.type === 'video';
             const mediaUrl = item.media_url || item.url || '';
@@ -2310,6 +2747,11 @@
 
             const mediaWrap = document.createElement('div');
             mediaWrap.className = 'media-wrap';
+
+            // 选择框
+            const checkBox = document.createElement('div');
+            checkBox.className = 'select-check';
+            mediaWrap.appendChild(checkBox);
 
             const img = document.createElement('img');
             img.src = isVideo ? thumbnail : mediaUrl;
@@ -2366,7 +2808,7 @@
 
             const date = document.createElement('div');
             date.className = 'item-date';
-            const rawDate = item.created_at || item.createdAt || '';
+            const rawDate = item.tweetCreatedAt || item.created_at || item.createdAt || '';
             date.textContent = mode === 'search' ? formatDateFromX(rawDate) : formatLibraryDate(rawDate);
             info.appendChild(date);
 
@@ -2376,21 +2818,21 @@
             const viewBtn = document.createElement('button');
             viewBtn.className = 'btn-view';
             viewBtn.textContent = isVideo ? '播放' : '查看';
-            viewBtn.onclick = () => openModal(normalized);
+            viewBtn.onclick = (e) => { e.stopPropagation();
+                openModal(normalized); };
             actions.appendChild(viewBtn);
 
             const downloadBtn = document.createElement('button');
             downloadBtn.className = 'btn-download';
             downloadBtn.textContent = '下载';
-            downloadBtn.onclick = () => downloadItem(normalized);
+            downloadBtn.onclick = (e) => { e.stopPropagation();
+                downloadItem(normalized); };
             actions.appendChild(downloadBtn);
 
             const postBtn = document.createElement('button');
             postBtn.className = 'btn-original';
             postBtn.textContent = '原帖';
-            postBtn.onclick = () => {
-                if (item.tweet_url) window.open(item.tweet_url, '_blank');
-            };
+            postBtn.onclick = (e) => { e.stopPropagation(); if (item.tweet_url) window.open(item.tweet_url, '_blank'); };
             actions.appendChild(postBtn);
 
             info.appendChild(actions);
@@ -2413,7 +2855,7 @@
                 thumbnail: item.thumbnail || '',
                 tweet_url: item.tweet_url || '',
                 author: item.author || '',
-                created_at: item.createdAt || item.created_at || '',
+                created_at: item.tweetCreatedAt || item.createdAt || item.created_at || '',
                 originalUrl: originalUrl,
                 libraryId: item.id || '',
                 width: item.width || 0,
