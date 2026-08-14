@@ -976,7 +976,7 @@ async def check_favorite(request: Request, username: str):
 
 
 # =========================================================
-# API：Neon 存储用量
+# API：Neon 存储用量（带详细错误日志）
 # =========================================================
 
 @app.get("/api/storage")
@@ -996,6 +996,8 @@ async def get_storage(request: Request):
     videos = sum(1 for item in items if item.get("type") == "video")
 
     neon_used_bytes = None
+    neon_error = None
+
     if NEON_API_KEY and NEON_PROJECT_ID:
         try:
             async with httpx.AsyncClient(timeout=10) as client:
@@ -1005,16 +1007,28 @@ async def get_storage(request: Request):
                     "Accept": "application/json"
                 }
                 response = await client.get(url, headers=headers)
+                
+                print(f"[Neon API] 状态码: {response.status_code}")
+                
                 if response.status_code == 200:
                     data = response.json()
                     if data.get("consumption_history") and len(data["consumption_history"]) > 0:
                         latest = data["consumption_history"][-1]
                         neon_used_bytes = latest.get("storage_used", 0)
+                        print(f"[Neon API] 存储用量: {neon_used_bytes} bytes")
+                    else:
+                        neon_error = "没有消费历史数据"
+                elif response.status_code == 401:
+                    neon_error = "API Key 无效或权限不足 (401)"
+                elif response.status_code == 404:
+                    neon_error = f"Project ID 不存在: {NEON_PROJECT_ID} (404)"
                 else:
-                    print(f"[Neon API] 请求失败: {response.status_code}")
+                    neon_error = f"HTTP {response.status_code}: {response.text[:200]}"
         except Exception as e:
+            neon_error = f"请求异常: {str(e)}"
             print(f"[Neon API] 异常: {e}")
-            neon_used_bytes = None
+    else:
+        neon_error = "NEON_API_KEY 或 NEON_PROJECT_ID 未设置"
 
     return {
         "ok": True,
@@ -1022,6 +1036,7 @@ async def get_storage(request: Request):
         "images": images,
         "videos": videos,
         "neon_used_bytes": neon_used_bytes,
+        "neon_error": neon_error,
     }
 
 
