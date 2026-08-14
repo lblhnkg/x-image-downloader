@@ -19,10 +19,10 @@ from starlette.background import BackgroundTask
 
 app = FastAPI(title="万能媒体下载器")
 
-# 配置 CORS - 允许你的 Render 域名
+# 配置 CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://x-v1.onrender.com"],  # 如果是自定义域名请替换
+    allow_origins=["https://x-v1.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -347,17 +347,16 @@ def extract_videos(tweet):
 # =========================================================
 
 @app.post("/api/auth/login")
-async def login(payload: dict = Body(...), response: Response):
+async def login(response: Response, payload: dict = Body(...)):
     password = payload.get("password", "")
     if password == APP_PASSWORD:
-        # 设置 Cookie，跨域共享
         response.set_cookie(
             key="session",
             value=APP_PASSWORD,
             httponly=False,
             secure=True,
             samesite="none",
-            max_age=3600*24*7  # 7天
+            max_age=3600*24*7
         )
         return {"ok": True, "message": "登录成功"}
     raise HTTPException(status_code=401, detail="密码错误")
@@ -551,7 +550,6 @@ def normalize_import_item(item):
 
 @app.post("/api/import-media")
 async def import_media(request: Request, payload: dict = Body(...)):
-    # 验证登录状态
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="未登录")
@@ -622,7 +620,6 @@ async def get_media(
     media_type: str = Query("all"),
     downloaded: str = Query("all"),
 ):
-    # 验证登录状态
     session = request.cookies.get("session")
     if session != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="未登录")
