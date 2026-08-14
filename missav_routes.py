@@ -1,5 +1,4 @@
 import re
-import json
 from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Query
 import cloudscraper
@@ -50,7 +49,6 @@ class MissAVFetcher:
                 "title": title.strip(),
                 "code": code,
                 "cover": src,
-                "media_type": "video"
             })
             seen.add(href)
             if len(results) >= 30:
@@ -93,7 +91,7 @@ class MissAVFetcher:
             "actors": actors,
             "description": desc[:300],
             "video_url": video_url,
-            "media_type": "video"
+            "url": f"{self.base_url}/watch/{video_id}",
         }
 
 fetcher = MissAVFetcher()
