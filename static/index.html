@@ -968,6 +968,8 @@ input:focus {
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
 
 </head>
+
+
 <body>
 
 <div class="container">
@@ -4360,7 +4362,7 @@ function downloadItem(
 
 
 /* =====================================================
-   Modal - 核心修复 v2：针对 iPhone Safari 优化
+   Modal - 核心修复 v3：利用后端代理在线播放 MP4
 ===================================================== */
 
 function openModal(item) {
@@ -4369,25 +4371,12 @@ function openModal(item) {
 
     modalContent.innerHTML = "";
 
-    // 获取视频 URL
+    // 获取视频 URL（此时后端已经返回了 /api/media-proxy 地址）
     let rawVideoUrl =
         item.video_url ||
         item.media_url ||
         item.url ||
         "";
-
-    // 如果 URL 是代理地址（/api/media-proxy?url=...），解析出真实地址
-    if (rawVideoUrl.startsWith("/api/media-proxy")) {
-        try {
-            const urlObj = new URL(rawVideoUrl, window.location.origin);
-            const realUrl = urlObj.searchParams.get("url");
-            if (realUrl) {
-                rawVideoUrl = decodeURIComponent(realUrl);
-            }
-        } catch (e) {
-            // 解析失败就保留原样
-        }
-    }
 
     // 判断是不是 HLS（.m3u8）
     const isHlsUrl =
@@ -4407,7 +4396,6 @@ function openModal(item) {
 
     if (isVideo) {
 
-        // 没有视频地址
         if (!rawVideoUrl) {
             modalContent.innerHTML =
                 `
@@ -4426,45 +4414,22 @@ function openModal(item) {
         video.playsInline = true;
         video.preload = "metadata";
 
-        video.onerror = function() {
-            // 如果原生播放失败，尝试用 hls.js（仅当不是 Safari 原生 HLS 时）
-            if (!video.canPlayType("application/vnd.apple.mpegurl") && typeof Hls !== "undefined" && Hls.isSupported()) {
-                if (currentHls) {
-                    currentHls.destroy();
-                    currentHls = null;
-                }
-                currentHls = new Hls();
-                currentHls.loadSource(rawVideoUrl);
-                currentHls.attachMedia(video);
-                currentHls.on(Hls.Events.ERROR, function(_event, data) {
-                    if (data.fatal) {
-                        modalContent.innerHTML =
-                            `
-                            <div class="media-error" style="width:100%;max-width:500px;color:#fff;background:#222;">
-                                视频暂时无法加载
-                            </div>
-                            `;
-                    }
-                });
-            } else {
-                modalContent.innerHTML =
-                    `
-                    <div class="media-error" style="width:100%;max-width:500px;color:#fff;background:#222;">
-                        视频暂时无法加载
-                    </div>
-                    `;
+        // =============================================
+        // 核心改动：如果是 MP4，强制走后端代理
+        // 这样就能像“下载”一样拿到数据了
+        // =============================================
+        if (isMp4Url) {
+            // 如果 URL 还不是代理地址，手动转成代理地址
+            if (!rawVideoUrl.startsWith("/api/media-proxy")) {
+                rawVideoUrl = "/api/media-proxy?url=" + encodeURIComponent(rawVideoUrl);
             }
-        };
-
-        // =============================================
-        // 关键修复：Safari 原生 HLS 直接用 src
-        // =============================================
-        if (isHlsUrl) {
-            // Safari 原生支持 HLS，直接用 src
+            video.src = rawVideoUrl;
+        } 
+        // HLS 处理（m3u8）：Safari 原生支持，Chrome 用 hls.js
+        else if (isHlsUrl) {
             if (video.canPlayType("application/vnd.apple.mpegurl")) {
                 video.src = rawVideoUrl;
             } else if (typeof Hls !== "undefined" && Hls.isSupported()) {
-                // 非 Safari 浏览器用 hls.js
                 if (currentHls) {
                     currentHls.destroy();
                     currentHls = null;
@@ -4494,16 +4459,27 @@ function openModal(item) {
                 return;
             }
         } else {
-            // MP4 或其他格式，直接播放
+            // 兜底
             video.src = rawVideoUrl;
         }
+
+        // 视频加载错误时的备用方案
+        video.onerror = function() {
+            // 如果加载失败，提示用户下载
+            modalContent.innerHTML =
+                `
+                <div class="media-error" style="width:100%;max-width:500px;color:#fff;background:#222;">
+                    视频在线预览失败，请点击下方“下载视频”保存到本地观看
+                </div>
+                `;
+        };
 
         modalContent.appendChild(video);
         downloadButton.textContent = "⬇ 下载视频";
 
     } else {
 
-        // 图片显示
+        // 图片显示（保持不变）
         const img = document.createElement("img");
         img.src = item.media_url || item.url || item.originalUrl || "";
         img.alt = item.alt || "";
@@ -4560,13 +4536,8 @@ modal.addEventListener(
 
 function closeModalWindow() {
 
-    /*
-     * 关闭前先暂停视频
-     */
     const existingVideo =
-        modalContent.querySelector(
-            "video"
-        );
+        modalContent.querySelector("video");
 
     if (existingVideo) {
         existingVideo.pause();
@@ -4575,9 +4546,6 @@ function closeModalWindow() {
         existingVideo.remove();
     }
 
-    /*
-     * 销毁 HLS 实例，释放内存
-     */
     if (currentHls) {
         currentHls.destroy();
         currentHls = null;
@@ -4586,7 +4554,6 @@ function closeModalWindow() {
     modal.classList.add("hidden");
     modalContent.innerHTML = "";
     currentItem = null;
-
 }
 
 
