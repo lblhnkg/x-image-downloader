@@ -11,7 +11,7 @@ from shared import database, init_db
 
 # 导入各模块路由
 from x_routes import router as x_router
-from missav_routes import router as missav_router, init_missav_db
+from missav_routes import router as missav_router
 from bilibili_routes import router as bilibili_router
 
 # 创建主应用
@@ -34,20 +34,12 @@ async def startup():
     # X 服务的数据库（共享）
     await database.connect()
     await init_db()
-    # MissAV 服务的独立数据库
-    await init_missav_db()
-    print("[DB] 所有数据库连接成功")
+    print("[DB] 数据库连接成功")
 
 @app.on_event("shutdown")
 async def shutdown():
-    # 断开 X 数据库
     await database.disconnect()
-    # MissAV 数据库在 missav_routes 中管理，已在 shutdown 事件中处理？
-    # 但为了统一，我们可以在 missav_routes 中注册自己的 shutdown，但最简单是在这里统一断开
-    # 由于 missav_routes 中的 database 是全局对象，我们可以导入并断开
-    from missav_routes import database as missav_db
-    await missav_db.disconnect()
-    print("[DB] 所有数据库已断开")
+    print("[DB] 数据库已断开")
 
 # ============================================================
 # 注册路由
