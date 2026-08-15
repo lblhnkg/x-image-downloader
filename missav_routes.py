@@ -1,20 +1,25 @@
 # ============================================================
-# missav_routes.py - MissAV 下载器（修正版）
-# 正确配置指纹和代理
+# missav_routes.py - MissAV 下载器（基于 missAV_api 2.2.1）
+# 支持限速、代理、指纹配置
 # ============================================================
 
 import os
 from fastapi import APIRouter, HTTPException, Query
-from missav_api import Client
-from base_api import BaseCore
+from missav_api import Client, DownloadConfigHLS
+from base_api.modules.config import config
+from base_api.base import BaseCore
 
 router = APIRouter(prefix="/missav", tags=["MissAV"])
 
 # ============================================================
 # 配置（从环境变量读取）
 # ============================================================
-PROXY = os.environ.get("MISSAV_PROXY")  # 例如 http://user:pass@host:port
-IMPERSONATION = os.environ.get("MISSAV_IMPERSONATION", "safari17_2_ios")  # 默认与库一致
+PROXY = os.environ.get("MISSAV_PROXY")
+IMPERSONATION = os.environ.get("MISSAV_IMPERSONATION", "chrome124")
+
+# 配置限速和延迟（降低被屏蔽风险）
+config.request_delay = 5  # 请求间隔 5 秒
+config.bandwidth_limit = 1.0  # 限速 1MB/s
 
 # 全局客户端单例
 _client = None
@@ -22,12 +27,13 @@ _client = None
 def get_client():
     global _client
     if _client is None:
-        core = BaseCore()
+        core = BaseCore(config=config)
         core.configuration.impersonation = IMPERSONATION
         if PROXY:
             core.configuration.proxy = PROXY
+        core.enable_logging()
         _client = Client(core=core)
-        print(f"[MissAV] 客户端初始化成功（指纹: {IMPERSONATION}）")
+        print(f"[MissAV] 客户端初始化成功（指纹: {IMPERSONATION}，限速已启用）")
     return _client
 
 # ============================================================
@@ -37,19 +43,21 @@ def get_client():
 async def missav_search(q: str = Query(..., min_length=1)):
     try:
         client = get_client()
+        # 搜索（返回 AsyncGenerator）
         items = []
         async for item in client.search(q):
             items.append(item)
             if len(items) >= 30:
                 break
+        # 格式化返回
         formatted = []
         for item in items:
             formatted.append({
                 "id": item.get("id") or "",
                 "url": item.get("url") or "",
                 "title": item.get("title") or "",
-                "code": item.get("code") or "",
-                "cover": item.get("cover") or "",
+                "code": item.get("video_code") or "",  # 新版属性名
+                "cover": item.get("thumbnail") or "",
             })
         return {"ok": True, "count": len(formatted), "items": formatted}
     except Exception as e:
@@ -60,16 +68,20 @@ async def missav_search(q: str = Query(..., min_length=1)):
 async def missav_info(video_id: str = Query(...)):
     try:
         client = get_client()
-        detail = await client.detail(video_id)
+        # 新版：使用视频 ID 或完整 URL
+        video_url = f"https://missav.ws/en/{video_id}"
+        video = await client.get_video(video_url)
+        # 加载元数据
+        await video.load_fields("title", "video_code", "publish_date", "genres", "series", "manufacturer", "thumbnail", "m3u8_base_url")
         result = {
-            "id": detail.get("id") or video_id,
-            "code": detail.get("code") or "",
-            "title": detail.get("title") or "",
-            "cover": detail.get("cover") or "",
-            "actors": detail.get("actors") or [],
-            "description": detail.get("description") or "",
-            "video_url": detail.get("video_url") or "",
-            "url": detail.get("url") or "",
+            "id": video_id,
+            "code": video.video_code or "",
+            "title": video.title or "",
+            "cover": video.thumbnail or "",
+            "actors": video.genres or [],
+            "description": f"发行日期: {video.publish_date}" if video.publish_date else "",
+            "video_url": video.m3u8_base_url or "",
+            "url": video_url,
         }
         return {"ok": True, "item": result}
     except Exception as e:
