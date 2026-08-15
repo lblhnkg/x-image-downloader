@@ -1,7 +1,10 @@
 # ============================================================
-# missav_routes.py - Cookie 会话方案（支持开发者和访客）
+# missav_routes.py - MissAV 下载器（独立数据库版）
+# 使用 MISSAV_DATABASE_URL 连接独立 PostgreSQL
+# 开发者 Cookie 存数据库，访客 Cookie 通过请求头传递
 # ============================================================
 
+import os
 import re
 import time
 from urllib.parse import quote, urlparse
@@ -9,27 +12,61 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 import httpx
 from bs4 import BeautifulSoup
+from databases import Database
 
 router = APIRouter(prefix="/missav", tags=["MissAV"])
 
-# 全局存储开发者 Cookie（仅存一个，新覆盖旧）
-developer_cookie = None
+# ============================================================
+# 独立数据库连接
+# ============================================================
+MISSAV_DATABASE_URL = os.environ.get("MISSAV_DATABASE_URL")
+if not MISSAV_DATABASE_URL:
+    raise Exception("MISSAV_DATABASE_URL 环境变量未设置")
 
+database = Database(MISSAV_DATABASE_URL)
+
+# ============================================================
+# 数据库初始化
+# ============================================================
+async def init_missav_db():
+    """在应用启动时调用，创建配置表"""
+    await database.connect()
+    await database.execute("""
+        CREATE TABLE IF NOT EXISTS missav_config (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    """)
+    print("[MissAV] 数据库初始化完成（独立库）")
+
+# ============================================================
+# API 模型
+# ============================================================
 class CookieSet(BaseModel):
     cookie_string: str
 
+# ============================================================
+# Cookie 管理 API
+# ============================================================
 @router.post("/set-cookie")
 async def set_cookie(data: CookieSet):
-    """开发者模式：保存 Cookie 到服务器（替换）"""
-    global developer_cookie
-    developer_cookie = data.cookie_string.strip()
+    """开发者模式：存储 Cookie 到数据库（替换旧值）"""
+    await database.execute(
+        "INSERT INTO missav_config (key, value) VALUES ('developer_cookie', :value) "
+        "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+        {"value": data.cookie_string}
+    )
     return {"ok": True, "message": "Cookie 已保存（开发者模式）"}
 
 @router.get("/cookie-status")
 async def cookie_status():
     """检查开发者 Cookie 是否存在"""
-    return {"ok": True, "has_cookie": bool(developer_cookie)}
+    row = await database.fetch_one("SELECT value FROM missav_config WHERE key = 'developer_cookie'")
+    return {"ok": True, "has_cookie": bool(row)}
 
+# ============================================================
+# MissAV 抓取器
+# ============================================================
 class MissAVFetcher:
     def __init__(self):
         self.base_domains = ["missav.ws", "missav.ai"]
@@ -37,9 +74,9 @@ class MissAVFetcher:
         self.client = httpx.Client(timeout=self.timeout, follow_redirects=True)
 
     def _fetch_with_cookies(self, url, cookie_str):
-        """使用传入的 Cookie 请求"""
+        """携带 Cookie 请求 MissAV"""
         if not cookie_str:
-            raise Exception("未提供 Cookie，请先设置")
+            raise Exception("未提供 Cookie")
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -47,11 +84,11 @@ class MissAVFetcher:
             "Referer": "https://missav.ws/",
             "Cookie": cookie_str,
         }
-
         for attempt in range(3):
             try:
                 resp = self.client.get(url, headers=headers)
                 if resp.status_code == 200:
+                    # 检查是否被重定向到验证页
                     if "Just a moment" in resp.text or "Cloudflare" in resp.text[:500]:
                         raise Exception("Cookie 已过期，请重新获取")
                     return resp.text
@@ -63,6 +100,7 @@ class MissAVFetcher:
         raise Exception("请求失败")
 
     def search(self, keyword, cookie_str):
+        """搜索影片"""
         if len(keyword) < 2:
             raise ValueError("至少输入2个字符")
         for domain in self.base_domains:
@@ -85,6 +123,7 @@ class MissAVFetcher:
         raise Exception("所有搜索尝试均失败")
 
     def _parse_search(self, html, base):
+        """解析搜索页"""
         soup = BeautifulSoup(html, 'lxml')
         results = []
         seen = set()
@@ -122,6 +161,7 @@ class MissAVFetcher:
         return results
 
     def get_detail(self, video_id_or_url, cookie_str):
+        """获取影片详情"""
         if video_id_or_url.startswith('http'):
             parsed = urlparse(video_id_or_url)
             base = f"{parsed.scheme}://{parsed.netloc}"
@@ -142,6 +182,7 @@ class MissAVFetcher:
         raise Exception("所有详情尝试均失败")
 
     def _parse_detail(self, html, base, video_id, url):
+        """解析详情页"""
         soup = BeautifulSoup(html, 'lxml')
         title = soup.find('h1').text.strip() if soup.find('h1') else "未知"
         code_match = re.search(r'([A-Z]{2,6}-\d{3,5})', title)
@@ -197,15 +238,24 @@ class MissAVFetcher:
 
 fetcher = MissAVFetcher()
 
+# ============================================================
+# 搜索和详情 API
+# ============================================================
 @router.get("/search")
 async def missav_search(request: Request, q: str = Query(..., min_length=1)):
     try:
-        # 优先从请求头获取访客 Cookie，否则使用开发者 Cookie
+        # 获取 Cookie：优先从请求头（访客模式），否则从数据库（开发者模式）
         cookie = request.headers.get("X-User-Cookie")
-        if not cookie:
-            cookie = developer_cookie
-        if not cookie:
-            raise HTTPException(status_code=400, detail="未设置 Cookie，请先获取")
+        if cookie is None:
+            # 开发者模式：从数据库读取
+            row = await database.fetch_one("SELECT value FROM missav_config WHERE key = 'developer_cookie'")
+            if not row:
+                raise HTTPException(status_code=400, detail="开发者 Cookie 未设置，请先获取")
+            cookie = row["value"]
+        else:
+            # 访客模式：必须提供有效的 Cookie
+            if not cookie:
+                raise HTTPException(status_code=400, detail="访客模式未设置 Cookie，请先获取")
         items = fetcher.search(q, cookie)
         return {"ok": True, "count": len(items), "items": items}
     except Exception as e:
@@ -215,10 +265,14 @@ async def missav_search(request: Request, q: str = Query(..., min_length=1)):
 async def missav_info(request: Request, video_id: str = Query(...)):
     try:
         cookie = request.headers.get("X-User-Cookie")
-        if not cookie:
-            cookie = developer_cookie
-        if not cookie:
-            raise HTTPException(status_code=400, detail="未设置 Cookie，请先获取")
+        if cookie is None:
+            row = await database.fetch_one("SELECT value FROM missav_config WHERE key = 'developer_cookie'")
+            if not row:
+                raise HTTPException(status_code=400, detail="开发者 Cookie 未设置，请先获取")
+            cookie = row["value"]
+        else:
+            if not cookie:
+                raise HTTPException(status_code=400, detail="访客模式未设置 Cookie，请先获取")
         data = fetcher.get_detail(video_id, cookie)
         return {"ok": True, "item": data}
     except Exception as e:
