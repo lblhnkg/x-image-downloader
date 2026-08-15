@@ -8,9 +8,3 @@ beautifulsoup4>=4.12.0
 lxml>=4.9.0
 python-multipart>=0.0.9
 curl_cffi>=0.5.10
-
-# MissAV 第三方 API 库（异步、自带 HLS 下载/合并、持续维护）
-# PyPI: https://pypi.org/project/missAV-api/
-# 源码: https://github.com/EchterAlsFake/unofficial-api-for-missav
-missAV_api[full]>=2.2
-base_api<2.0.0
