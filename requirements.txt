@@ -7,5 +7,4 @@ cloudscraper>=1.2.71
 beautifulsoup4>=4.12.0
 lxml>=4.9.0
 python-multipart>=0.0.9
-unofficial-api-for-missav>=0.2.2
-base-api>=0.1.0   # 显式添加，但通常会自动安装
+missAV_api==2.2.1
