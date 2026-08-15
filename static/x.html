@@ -1047,8 +1047,8 @@
         ===================================================== -->
         <div class="page active" id="pageXSub">
             <span class="back-home" id="backToHome">‹ 返回首页</span>
-            <!-- 单个横幅，由 JS 动态控制内容和样式 -->
-            <div id="xModeBanner" class="mode-banner">📌 访客模式 · 数据来自本地浏览器</div>
+            <!-- 初始隐藏，由 JS 控制显示 -->
+            <div id="xModeBanner" class="mode-banner" style="display:none;"></div>
             <div class="submenu-title">下载 X 上的媒体</div>
             <div class="submenu-desc">图片 · 视频 · 喜欢 · 书签</div>
             <div class="submenu-grid">
@@ -1350,14 +1350,16 @@
             if (isSelectMode) exitSelectMode();
         }
 
-        // ---- 模式横幅（单个元素，动态修改内容和样式，不闪烁） ----
+        // ---- 模式横幅（初始隐藏，由 JS 控制显示，无闪烁） ----
         function updateModeBanners() {
             if (currentMode === 'guest') {
                 xModeBanner.textContent = '📌 访客模式 · 数据来自本地浏览器';
                 xModeBanner.className = 'mode-banner';
+                xModeBanner.style.display = 'block';
             } else {
                 xModeBanner.textContent = '🔒 开发者模式 · 数据来自服务器';
                 xModeBanner.className = 'mode-banner developer';
+                xModeBanner.style.display = 'block';
             }
         }
 
@@ -1473,8 +1475,7 @@
         // ---- 收藏按钮事件（独立函数，每次重新绑定） ----
         function bindFavoriteEvents() {
             // 搜索框右边的收藏按钮
-            favoriteAddBtn.removeEventListener('click', favoriteAddBtn._clickHandler);
-            favoriteAddBtn._clickHandler = function() {
+            var newHandler = function() {
                 var username = normalizeUsername(profileInput.value);
                 if (!username) {
                     showSearchStatus('请先输入博主名', 'error');
@@ -1487,20 +1488,25 @@
                     addFavorite(username);
                 }
             };
+            // 移除旧监听器，添加新监听器
+            favoriteAddBtn.removeEventListener('click', favoriteAddBtn._clickHandler);
+            favoriteAddBtn._clickHandler = newHandler;
             favoriteAddBtn.addEventListener('click', favoriteAddBtn._clickHandler);
 
             // 我的收藏面板切换
-            favoriteToggleBtn.removeEventListener('click', favoriteToggleBtn._clickHandler);
-            favoriteToggleBtn._clickHandler = function() {
+            var toggleHandler = function() {
                 favoritesPanel.classList.toggle('hidden');
             };
-            favoriteToggleBtn.addEventListener('click', favoriteToggleBtn._clickHandler);
+            favoriteToggleBtn.removeEventListener('click', favoriteToggleBtn._toggleHandler);
+            favoriteToggleBtn._toggleHandler = toggleHandler;
+            favoriteToggleBtn.addEventListener('click', favoriteToggleBtn._toggleHandler);
 
             // 输入框变化时更新收藏按钮状态
-            profileInput.removeEventListener('input', profileInput._inputHandler);
-            profileInput._inputHandler = function() {
+            var inputHandler = function() {
                 updateFavoriteButton();
             };
+            profileInput.removeEventListener('input', profileInput._inputHandler);
+            profileInput._inputHandler = inputHandler;
             profileInput.addEventListener('input', profileInput._inputHandler);
         }
 
