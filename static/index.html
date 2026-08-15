@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
     <title>万能媒体下载器</title>
     <style>
-        /* ============================================
-           所有样式与最新确认的版本完全一致
-           菜单永远是一列，不会变成三列
-           ============================================ */
+        /* 所有样式与之前确认的版本完全一致，菜单永远一列 */
         * {
             margin: 0;
             padding: 0;
@@ -231,7 +228,7 @@
         }
 
         /* ============================================
-           菜单：永远一列，永不变成三列
+           菜单：永远一列
            ============================================ */
         .menu-grid {
             display: flex;
@@ -430,7 +427,7 @@
 
     <script>
         // ============================================================
-        // 登录 + 菜单逻辑（统一跳转淡出效果）
+        // 登录 + 菜单逻辑（无淡出，直接跳转）
         // ============================================================
 
         const pageLogin = document.getElementById('pageLogin');
@@ -458,19 +455,6 @@
 
         function showDeveloperBanner() {
             menuModeBanner.innerHTML = '<div class="mode-banner developer">🔒 开发者模式 · 数据存储在服务器</div>';
-        }
-
-        // ============================================================
-        // 通用跳转函数（淡出 + 延迟跳转）
-        // ============================================================
-        function navigateWithFade(url) {
-            // 页面淡出
-            document.documentElement.style.transition = 'opacity 0.2s ease';
-            document.documentElement.style.opacity = '0';
-            // 延迟跳转，让淡出完成
-            setTimeout(function() {
-                window.location.href = url;
-            }, 250);
         }
 
         // ============================================================
@@ -526,7 +510,6 @@
         guestBtn.addEventListener('click', function() {
             currentMode = 'guest';
             localStorage.setItem('userMode', 'guest');
-            // 清除可能残留的 session cookie
             document.cookie = 'session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
             showGuestBanner();
             if (!guestTipShown) {
@@ -543,19 +526,19 @@
         });
 
         // ============================================================
-        // 菜单卡片跳转（统一使用淡出）
+        // 菜单卡片跳转（直接跳转，无淡出）
         // ============================================================
 
         document.getElementById('menuX').addEventListener('click', function() {
-            navigateWithFade('/x');
+            window.location.href = '/x';
         });
 
         document.getElementById('menuMissav').addEventListener('click', function() {
-            navigateWithFade('/missav');
+            window.location.href = '/missav';
         });
 
         document.getElementById('menuBilibili').addEventListener('click', function() {
-            navigateWithFade('/bilibili');
+            window.location.href = '/bilibili';
         });
 
         // ============================================================
@@ -605,10 +588,6 @@
 
             showPage('pageLogin');
         }
-
-        // 页面加载完成后恢复透明度（防止从子页面返回时透明）
-        document.documentElement.style.opacity = '1';
-        document.documentElement.style.transition = '';
 
         initPage();
 
