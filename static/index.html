@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
     <title>万能媒体下载器</title>
-    <!-- Turbo Drive CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.3.0/dist/turbo.js"></script>
     <style>
-        /* 样式与之前确认的版本完全一致，菜单永远一列 */
         * {
             margin: 0;
             padding: 0;
@@ -366,9 +364,9 @@
     <div class="app-container" id="app">
 
         <!-- =====================================================
-        登录页
+        登录页（初始无 active，由 JS 控制显示）
         ===================================================== -->
-        <div class="page active" id="pageLogin">
+        <div class="page" id="pageLogin">
             <div class="app-title">万能媒体下载器</div>
             <hr class="login-divider">
             <div class="login-section-title">开发者通道</div>
@@ -388,7 +386,7 @@
         </div>
 
         <!-- =====================================================
-        一级菜单
+        一级菜单（初始无 active，由 JS 控制显示）
         ===================================================== -->
         <div class="page" id="pageMenu">
             <div class="app-title" style="font-size:22px;margin-bottom:4px;">万能媒体下载器</div>
@@ -443,7 +441,9 @@
         const menuModeBanner = document.getElementById('menuModeBanner');
 
         let currentMode = 'guest';
-        let guestTipShown = false;
+
+        // 访客弹窗是否已显示过（存 localStorage）
+        const GUEST_TIP_KEY = 'universal_guest_tip_shown';
 
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
@@ -514,16 +514,20 @@
             localStorage.setItem('userMode', 'guest');
             document.cookie = 'session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
             showGuestBanner();
-            if (!guestTipShown) {
-                guestTip.classList.remove('hidden');
-            } else {
+
+            // 检查是否已显示过弹窗
+            var tipShown = localStorage.getItem(GUEST_TIP_KEY);
+            if (tipShown === 'true') {
                 showPage('pageMenu');
+            } else {
+                guestTip.classList.remove('hidden');
             }
         });
 
         guestTipBtn.addEventListener('click', function() {
             guestTip.classList.add('hidden');
-            guestTipShown = true;
+            // 记录已显示过
+            localStorage.setItem(GUEST_TIP_KEY, 'true');
             showPage('pageMenu');
         });
 
@@ -566,9 +570,6 @@
                                 currentMode = 'guest';
                                 showGuestBanner();
                                 showPage('pageMenu');
-                                if (!guestTipShown) {
-                                    guestTip.classList.remove('hidden');
-                                }
                             }
                         })
                         .catch(function() {
@@ -581,13 +582,11 @@
                     currentMode = 'guest';
                     showGuestBanner();
                     showPage('pageMenu');
-                    if (!guestTipShown) {
-                        guestTip.classList.remove('hidden');
-                    }
                 }
                 return;
             }
 
+            // 默认显示登录页
             showPage('pageLogin');
         }
 
