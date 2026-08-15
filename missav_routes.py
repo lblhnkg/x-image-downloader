@@ -1,3 +1,7 @@
+# ============================================================
+# missav_routes.py - 通过 Cloudflare Worker 代理抓取
+# ============================================================
+
 import os
 import re
 import time
@@ -8,9 +12,8 @@ from bs4 import BeautifulSoup
 
 router = APIRouter(prefix="/missav", tags=["MissAV"])
 
-SCRAPINGBEE_KEY = os.environ.get("SCRAPINGBEE_KEY")
-if not SCRAPINGBEE_KEY:
-    print("⚠️ 警告：SCRAPINGBEE_KEY 未设置")
+# 🔴 替换成你自己的 Worker URL（已为你填好）
+WORKER_URL = "https://missav-proxy.yilimoshangshang.workers.dev"
 
 class MissAVFetcher:
     def __init__(self):
@@ -18,27 +21,30 @@ class MissAVFetcher:
         self.timeout = 60
         self.max_retries = 3
 
-    def _fetch_via_scrapingbee(self, url):
-        """通过 ScrapingBee 代理抓取"""
-        if not SCRAPINGBEE_KEY:
-            raise Exception("SCRAPINGBEE_KEY 未配置")
-        
-        # ScrapingBee API 参数：启用 JS 渲染，模拟移动端
-        params = {
-            "api_key": SCRAPINGBEE_KEY,
-            "url": url,
-            "render_js": "true",
-            "premium_proxy": "false",  # 免费版使用普通代理
-            "country_code": "us",
-            "wait": "3000",  # 等待 JS 加载
-        }
-        # 构建请求 URL
-        base_url = "https://app.scrapingbee.com/api/v1/"
-        resp = httpx.get(base_url, params=params, timeout=self.timeout)
-        if resp.status_code == 200:
-            return resp.text
-        else:
-            raise Exception(f"ScrapingBee 返回 {resp.status_code}: {resp.text[:200]}")
+    def _fetch_via_worker(self, url):
+        """通过 Cloudflare Worker 代理获取页面"""
+        proxy_url = f"{WORKER_URL}?url={quote(url, safe='')}"
+        with httpx.Client(timeout=self.timeout, follow_redirects=True) as client:
+            for attempt in range(self.max_retries):
+                try:
+                    print(f"[MissAV] 通过 Worker 请求: {url}")
+                    resp = client.get(proxy_url)
+                    if resp.status_code == 200:
+                        # 检查是否返回验证页
+                        if "Just a moment" in resp.text or "Cloudflare" in resp.text[:500]:
+                            print(f"[MissAV] Worker 返回验证页，重试 {attempt+1}")
+                            time.sleep(2 ** attempt)
+                            continue
+                        return resp.text
+                    else:
+                        print(f"[MissAV] Worker 返回 {resp.status_code}，重试 {attempt+1}")
+                        time.sleep(1 * (attempt + 1))
+                except Exception as e:
+                    print(f"[MissAV] Worker 请求失败 {attempt+1}: {e}")
+                    if attempt == self.max_retries - 1:
+                        raise
+                    time.sleep(1 * (attempt + 1))
+            raise Exception("Worker 请求失败，已达最大重试次数")
 
     def search(self, keyword):
         if len(keyword) < 2:
@@ -48,7 +54,7 @@ class MissAVFetcher:
             for path in [f"/search/{quote(keyword)}", f"/search?q={quote(keyword)}"]:
                 url = base + path
                 try:
-                    html = self._fetch_via_scrapingbee(url)
+                    html = self._fetch_via_worker(url)
                     if len(html) < 500:
                         continue
                     soup = BeautifulSoup(html, 'lxml')
@@ -103,14 +109,14 @@ class MissAVFetcher:
         if video_id_or_url.startswith('http'):
             parsed = urlparse(video_id_or_url)
             base = f"{parsed.scheme}://{parsed.netloc}"
-            html = self._fetch_via_scrapingbee(video_id_or_url)
+            html = self._fetch_via_worker(video_id_or_url)
             return self._parse_detail(html, base, video_id_or_url, video_id_or_url)
         for domain in self.base_domains:
             base = "https://" + domain
             for path in [f"/watch/{video_id_or_url}", f"/dm1/{video_id_or_url}", f"/v/{video_id_or_url}"]:
                 url = base + path
                 try:
-                    html = self._fetch_via_scrapingbee(url)
+                    html = self._fetch_via_worker(url)
                     if len(html) < 500:
                         continue
                     return self._parse_detail(html, base, video_id_or_url, url)
