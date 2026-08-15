@@ -1,15 +1,13 @@
 # ============================================================
-# missav_routes.py - 自动使用你的订阅节点作为代理
+# missav_routes.py - 使用节点池自动切换（最终版）
 # ============================================================
 
 import os
 import re
 import time
-import base64
-import requests as req  # 用于请求订阅地址
+import random
 from urllib.parse import quote, urlparse
 from fastapi import APIRouter, HTTPException, Query
-import httpx
 from bs4 import BeautifulSoup
 
 # 导入 singbox 代理库
@@ -22,103 +20,126 @@ except ImportError:
 router = APIRouter(prefix="/missav", tags=["MissAV"])
 
 # ------------------------------------------------------------
-# 配置区（你只需要改这里！）
+# 节点池（从你的订阅中提取的所有 vless 节点，去重后整理）
 # ------------------------------------------------------------
+NODES = [
+    # 日本节点（不同 host）
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.7770006.xyz:443?type=ws&encryption=none&host=jp1-lx.7770006.xyz&path=%2Fliangxin%2Fdata%2Fjp&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=safari&insecure=0&sni=jp1-lx.7770006.xyz#🇯🇵日本高速01",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.7770006.xyz:443?type=ws&encryption=none&host=jp2-lx.7770006.xyz&path=%2Fliangxin%2Fdata&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=safari&insecure=0&sni=jp2-lx.7770006.xyz#🇯🇵日本高速02",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.7770006.xyz:443?type=ws&encryption=none&host=jp3-lx.7770006.xyz&path=%2Fliangxin%2Fdash%2Fjp&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=chrome&insecure=0&sni=jp3-lx.7770006.xyz#🇯🇵日本高速06",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.7770006.xyz:443?type=ws&encryption=none&host=jp4-lx.7770006.xyz&path=%2Fliangxin%2Fdownload%2Fjp&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=chrome&insecure=0&sni=jp4-lx.7770006.xyz#🇯🇵日本高速08",
 
-# 你的订阅地址（就是你发我的那个链接）
-SUBSCRIBE_URL = "https://liangxin.xyz/api/v1/liangxin?OwO=0ff6856dd2351830c0c70dcb55041dfc"
+    # 香港节点（不同 host）
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link1.lxyun.xyz:36458?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=tls&flow=xtls-rprx-vision&fp=safari&insecure=1&sni=iosapps.itunes.apple.com&pcs=d5c39647e414c144b719bc49cb41c4b8f46f09f4cf26c863cae15c01d4a7b96a#🇭🇰香港高速01",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link2.lxyun.xyz:28346?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=tls&flow=xtls-rprx-vision&fp=safari&insecure=1&sni=www.lamer.com.hk&pcs=af0f11574724e7ddd96f64eb77a450f71ce2de61ee5afd6f2e27ed7604a6a9b1#🇭🇰香港高速02",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link3.lxyun.xyz:27786?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=ios&insecure=0&sni=www.lamer.com.hk&pbk=EYa4ic3GAxqznV61U-OOww-WKsu5wuQQptyS3fw7czM&sid=c50db39f#🇭🇰香港高速03",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link4.lxyun.xyz:23564?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=ios&insecure=0&sni=www.lamer.com.hk&pbk=3FPGTaxkfOM3nEUWUyCiqkH5oJGsOx-WxPJfADi1QWY&sid=7f369e14#🇭🇰香港高速04",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link5.lxyun.xyz:35332?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=ios&insecure=0&sni=www.lamer.com.hk&pbk=a11gdDetacKBsiBBfhsPvanTGMtVyZEIvax7gU5Wplg&sid=9bf38508#🇭🇰香港高速05",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.777078.xyz:443?type=ws&encryption=none&host=lx-hk1.7770008.xyz&path=%2Fliangxin%2Fdata%2Fhk1&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=safari&insecure=0&sni=lx-hk1.7770008.xyz#🇭🇰香港01住宅IP",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.777078.xyz:443?type=ws&encryption=none&host=lx-hk2.7770008.xyz&path=%2Fliangxin%2Fdata%2Fhk2&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=safari&insecure=0&sni=lx-hk2.7770008.xyz#🇭🇰香港02住宅IP",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.777078.xyz:443?type=ws&encryption=none&host=lx-hk3.7770008.xyz&path=%2Fliangxin%2Fdata%2Fhk3&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=safari&insecure=0&sni=lx-hk3.7770008.xyz#🇭🇰香港03住宅IP",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.777078.xyz:443?type=ws&encryption=none&host=lx-hk4.7770008.xyz&path=%2Fliangxin%2Fdata%2Fhk4&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=safari&insecure=0&sni=lx-hk4.7770008.xyz#🇭🇰香港04住宅IP",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.777078.xyz:443?type=ws&encryption=none&host=lx-hk5.7770008.xyz&path=%2Fliangxin%2Fdata%2Fhk5&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=safari&insecure=0&sni=lx-hk5.7770008.xyz#🇭🇰香港05住宅IP",
+
+    # 新加坡节点（部分）
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link7.lxyun.xyz:48574?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=ios&insecure=0&sni=www.lamer.com.sg&pbk=lmxSayN8tUg2Dag2MPXrdqZ2SQK9K3OjlaKk8wVCRnc&sid=f8f18902#🇸🇬新加坡高速01",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link8.lxyun.xyz:39645?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=ios&insecure=0&sni=iosapps.itunes.apple.com&pbk=x7VqpFP7_PrY4ebNw8hi8Ec5Tm5Upmt5JOdrN1M9VnQ&sid=2b3b0b93#🇸🇬新加坡高速02",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link9.lxyun.xyz:23587?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=ios&insecure=0&sni=iosapps.itunes.apple.com&pbk=H66PLLf6HkZwHk4oFqisfTawIvw2cxkEwk8Ue8sHZgA&sid=19b580ae#🇸🇬新加坡高速03",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link30.lxyun.xyz:23568?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=safari&insecure=0&sni=www.lamer.com.hk&pbk=EjcM-ENrpWY8iIL82qJtQrZgRs4KlVqhdisqLAXonUY&sid=55d046dc#🇸🇬新加坡高速04",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link31.lxyun.xyz:443?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=safari&insecure=0&sni=download-porter.hoyoverse.com&pbk=wXayfckurSM2zWeis7OAL_QVGm9wBLr0WYp2zFtJFAE&sid=c7487aeb#🇸🇬新加坡高速05",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.7770008.xyz:443?type=ws&encryption=none&host=lx-1sg.lxy1015.top&path=%2Fliangxin%2Fsg1&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=chrome&insecure=0&sni=lx-1sg.lxy1015.top#🇸🇬新加坡高速06",
+
+    # 美国节点（部分）
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.777078.xyz:443?type=ws&encryption=none&host=lx-us1.777078.xyz&path=%2Fliangxin%2Fus&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=chrome&insecure=0&sni=lx-us1.777078.xyz#🇺🇸美国高速01",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.777078.xyz:443?type=ws&encryption=none&host=lx-us2.777078.xyz&path=%2Fliangxin%2Fus&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=chrome&insecure=0&sni=lx-us2.777078.xyz#🇺🇸美国高速02",
+    "vless://39225b24-bf38-47c7-863b-3341d45f853b@lxyus1.777078.xyz:443?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=safari&insecure=0&sni=iosapps.itunes.apple.com&pbk=ulU6wfyain_FQnYt23NGunTAfBQNLhIBY49mvekiQB0&sid=ca032f81#🇺🇸美国洛杉矶01",
+]
 
 # ------------------------------------------------------------
+# 节点管理器
+# ------------------------------------------------------------
+class NodeManager:
+    def __init__(self, nodes):
+        self.nodes = nodes
+        self.current_index = 0
+        self.proxy_client = None
 
+    def get_next_node(self):
+        """轮询获取下一个节点"""
+        if not self.nodes:
+            raise Exception("节点列表为空")
+        node = self.nodes[self.current_index]
+        self.current_index = (self.current_index + 1) % len(self.nodes)
+        return node
+
+    def get_proxy_client(self):
+        """尝试创建代理客户端，如果失败则自动换节点"""
+        if self.proxy_client is not None:
+            # 如果已有客户端，先清理（可选）
+            pass
+
+        # 尝试最多 len(nodes) 次
+        for _ in range(len(self.nodes)):
+            node = self.get_next_node()
+            try:
+                print(f"[MissAV] 尝试使用节点: {node.split('#')[-1] if '#' in node else 'unnamed'}")
+                client = SingBoxProxy(node)
+                # 简单测试连接：请求一个健康检查页面（或者直接返回客户端）
+                # 由于无法在初始化时测试，我们返回客户端，在请求时捕获异常
+                self.proxy_client = client
+                return client
+            except Exception as e:
+                print(f"[MissAV] 节点初始化失败: {e}，切换到下一个")
+                self.proxy_client = None
+                continue
+        raise Exception("所有节点初始化均失败")
+
+    def reset(self):
+        """重置节点索引（可选）"""
+        self.current_index = 0
+        self.proxy_client = None
+
+# ------------------------------------------------------------
+# MissAV 抓取器
+# ------------------------------------------------------------
 class MissAVFetcher:
     def __init__(self):
         self.base_domains = ["missav.ws", "missav.ai"]
         self.timeout = 60
-        self.proxy_client = None
-        self._init_proxy()
-
-    def _init_proxy(self):
-        """初始化代理：从订阅地址提取节点并启动 sing-box"""
-        if SingBoxProxy is None:
-            print("[MissAV] singbox2proxy 未安装，无法使用代理")
-            return
-
-        try:
-            print("[MissAV] 正在获取订阅节点...")
-            # 1. 获取订阅内容
-            resp = req.get(SUBSCRIBE_URL, timeout=30)
-            if resp.status_code != 200:
-                print(f"[MissAV] 订阅获取失败: {resp.status_code}")
-                return
-
-            raw_text = resp.text.strip()
-            
-            # 2. 尝试解码 Base64（订阅通常都是 Base64 编码的）
-            decoded = ""
-            try:
-                # 补全 Base64 填充
-                missing_padding = len(raw_text) % 4
-                if missing_padding:
-                    raw_text += '=' * (4 - missing_padding)
-                decoded = base64.b64decode(raw_text).decode('utf-8')
-                print(f"[MissAV] 订阅解码成功")
-            except Exception:
-                # 如果不是 Base64，就直接用原文
-                decoded = raw_text
-                print("[MissAV] 订阅不是 Base64 格式，直接使用原文")
-
-            # 3. 从解码内容中提取 vless:// 或 vmess:// 链接
-            # 匹配标准代理链接格式
-            match = re.search(r'(vless|vmess)://[^\s\n]+', decoded)
-            if not match:
-                # 尝试找包含 @ 和端口的通用格式
-                match = re.search(r'[a-zA-Z0-9]+://[^\s\n]+', decoded)
-            
-            if not match:
-                print("[MissAV] 错误：未能从订阅中提取出有效的代理链接")
-                return
-
-            proxy_link = match.group(0)
-            print(f"[MissAV] 成功提取代理节点: {proxy_link[:50]}...")
-
-            # 4. 初始化 sing-box 代理客户端
-            # 注意：首次运行会下载 sing-box 内核（约 20MB），可能需要几十秒
-            self.proxy_client = SingBoxProxy(proxy_link)
-            print("[MissAV] Sing-box 代理客户端初始化成功")
-
-        except Exception as e:
-            print(f"[MissAV] 代理初始化失败: {e}")
-            self.proxy_client = None
+        self.node_manager = NodeManager(NODES)
+        self.current_proxy = None
 
     def _fetch_via_proxy(self, url):
-        """通过 sing-box 代理请求目标网页"""
-        if not self.proxy_client:
-            raise Exception("代理客户端未初始化，请检查订阅链接是否有效")
+        """通过节点池代理请求，自动切换"""
+        if not NODES:
+            raise Exception("节点列表为空，请检查配置")
 
-        for attempt in range(3):
+        # 尝试所有节点（最多轮询一遍）
+        for attempt in range(len(NODES)):
             try:
+                # 获取一个可用节点
+                client = self.node_manager.get_proxy_client()
                 print(f"[MissAV] 通过代理请求 (尝试 {attempt+1}): {url}")
-                # 使用代理发起 GET 请求
-                # singbox2proxy 的 request 方法返回响应对象
-                response = self.proxy_client.request("GET", url)
-                
+                response = client.request("GET", url, timeout=self.timeout)
                 if response.status_code == 200:
-                    # 检查是否返回了验证页
+                    # 检查是否返回验证页
                     if "Just a moment" in response.text or "Cloudflare" in response.text[:500]:
-                        print(f"[MissAV] 代理返回了验证页，重试中...")
-                        time.sleep(2 ** attempt)
+                        print(f"[MissAV] 节点返回验证页，切换节点")
+                        self.node_manager.proxy_client = None  # 强制换节点
                         continue
                     return response.text
                 else:
-                    print(f"[MissAV] 代理返回状态码: {response.status_code}")
-                    time.sleep(1 * (attempt + 1))
+                    print(f"[MissAV] 节点返回状态码 {response.status_code}，切换节点")
+                    self.node_manager.proxy_client = None
+                    continue
             except Exception as e:
-                print(f"[MissAV] 代理请求异常 {attempt+1}: {e}")
-                time.sleep(1 * (attempt + 1))
-        
-        raise Exception("所有代理请求均失败，可能节点已失效")
+                print(f"[MissAV] 节点请求异常: {e}，切换节点")
+                self.node_manager.proxy_client = None
+                continue
 
-    # ---------- 搜索与解析逻辑（和之前一样，只是换成了代理请求）----------
+        raise Exception("所有节点均请求失败，请检查节点是否有效")
+
+    # ----- 以下 search, get_detail, _parse_search, _parse_detail 与之前完全一致 -----
     def search(self, keyword):
         if len(keyword) < 2:
             raise ValueError("至少输入2个字符")
@@ -252,6 +273,9 @@ class MissAVFetcher:
             "url": url,
         }
 
+# ------------------------------------------------------------
+# FastAPI 路由
+# ------------------------------------------------------------
 fetcher = MissAVFetcher()
 
 @router.get("/search")
