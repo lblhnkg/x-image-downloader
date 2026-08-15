@@ -1047,7 +1047,6 @@
         ===================================================== -->
         <div class="page active" id="pageXSub">
             <span class="back-home" id="backToHome">‹ 返回首页</span>
-            <!-- 初始隐藏，由 JS 控制显示 -->
             <div id="xModeBanner" class="mode-banner" style="display:none;"></div>
             <div class="submenu-title">下载 X 上的媒体</div>
             <div class="submenu-desc">图片 · 视频 · 喜欢 · 书签</div>
@@ -1245,7 +1244,7 @@
 <script>
         // ============================================================
         // X 下载器 - 完整版（Turbo Drive 兼容）
-        // 修复：蓝条闪烁 + 搜索框收藏功能
+        // 修复：收藏功能（使用 cloneNode 彻底重置元素）
         // ============================================================
 
         // ---- 状态 ----
@@ -1350,7 +1349,7 @@
             if (isSelectMode) exitSelectMode();
         }
 
-        // ---- 模式横幅（初始隐藏，由 JS 控制显示，无闪烁） ----
+        // ---- 模式横幅（初始隐藏，由 JS 控制显示） ----
         function updateModeBanners() {
             if (currentMode === 'guest') {
                 xModeBanner.textContent = '📌 访客模式 · 数据来自本地浏览器';
@@ -1472,10 +1471,16 @@
             }
         }
 
-        // ---- 收藏按钮事件（独立函数，每次重新绑定） ----
+        // ---- 收藏按钮事件（使用 cloneNode 彻底重置） ----
         function bindFavoriteEvents() {
-            // 搜索框右边的收藏按钮
-            var newHandler = function() {
+            // ===== 1. 收藏按钮 =====
+            var oldBtn = favoriteAddBtn;
+            var newBtn = oldBtn.cloneNode(true);
+            oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+            favoriteAddBtn = newBtn;
+
+            // 绑定新事件
+            favoriteAddBtn.addEventListener('click', function() {
                 var username = normalizeUsername(profileInput.value);
                 if (!username) {
                     showSearchStatus('请先输入博主名', 'error');
@@ -1487,26 +1492,23 @@
                 } else {
                     addFavorite(username);
                 }
-            };
-            // 移除旧监听器，添加新监听器
-            favoriteAddBtn.removeEventListener('click', favoriteAddBtn._clickHandler);
-            favoriteAddBtn._clickHandler = newHandler;
-            favoriteAddBtn.addEventListener('click', favoriteAddBtn._clickHandler);
+            });
 
-            // 我的收藏面板切换
-            var toggleHandler = function() {
+            // ===== 2. 我的收藏面板切换按钮 =====
+            var oldToggle = favoriteToggleBtn;
+            var newToggle = oldToggle.cloneNode(true);
+            oldToggle.parentNode.replaceChild(newToggle, oldToggle);
+            favoriteToggleBtn = newToggle;
+
+            favoriteToggleBtn.addEventListener('click', function() {
                 favoritesPanel.classList.toggle('hidden');
-            };
-            favoriteToggleBtn.removeEventListener('click', favoriteToggleBtn._toggleHandler);
-            favoriteToggleBtn._toggleHandler = toggleHandler;
-            favoriteToggleBtn.addEventListener('click', favoriteToggleBtn._toggleHandler);
+            });
 
-            // 输入框变化时更新收藏按钮状态
-            var inputHandler = function() {
+            // ===== 3. 输入框变化更新收藏按钮 =====
+            profileInput.removeEventListener('input', profileInput._inputHandler);
+            profileInput._inputHandler = function() {
                 updateFavoriteButton();
             };
-            profileInput.removeEventListener('input', profileInput._inputHandler);
-            profileInput._inputHandler = inputHandler;
             profileInput.addEventListener('input', profileInput._inputHandler);
         }
 
@@ -1737,7 +1739,6 @@
             libraryCount.textContent = '正在读取本地数据…';
             libraryStatus.classList.add('hidden');
             libraryResultHeader.classList.add('hidden');
-            // 清空画廊，准备加载
             libraryGallery.innerHTML = '';
             libraryGallery.classList.remove('fade-in');
 
@@ -1760,7 +1761,6 @@
                 libraryGallery.innerHTML = '<div class="library-placeholder"><span class="icon">📭</span>暂无数据，请安装采集器</div>';
                 libraryResultHeader.classList.add('hidden');
                 selectToggleBtn.classList.add('hidden');
-                // 即使没有数据也触发淡入（占位内容平滑出现）
                 libraryGallery.classList.add('fade-in');
                 return;
             }
@@ -1939,7 +1939,6 @@
             if (allLoaded || isLoadingMore) return;
             if (currentBatch * BATCH_SIZE >= allFilteredItems.length) {
                 allLoaded = true;
-                // 全部加载完成，触发淡入
                 libraryGallery.classList.add('fade-in');
                 return;
             }
@@ -1956,7 +1955,6 @@
                 libraryGallery.appendChild(fragment);
                 currentBatch++;
 
-                // 如果当前批次已加载完毕，触发淡入
                 if (currentBatch * BATCH_SIZE >= allFilteredItems.length) {
                     allLoaded = true;
                     libraryGallery.classList.add('fade-in');
@@ -1995,7 +1993,6 @@
         function bindOptionButtons() {
             document.querySelectorAll('.option-row').forEach(function(row) {
                 row.querySelectorAll('.option-btn').forEach(function(btn) {
-                    // 移除旧监听器（防止重复绑定）
                     btn.removeEventListener('click', btn._listener);
                     var listener = function() {
                         var group = row.dataset.group;
@@ -2490,9 +2487,8 @@
             openLibrary('bookmarks');
         });
 
-        // ---- 初始化函数（用于首次加载和 Turbo 切换） ----
-        function initApp() {
-            // 重新获取 DOM 引用（Turbo 替换后需重新获取）
+        // ---- 重新获取 DOM 引用（每次加载时更新） ----
+        function refreshDomRefs() {
             pageXSub = $('pageXSub');
             pageSearch = $('pageSearch');
             pageLibrary = $('pageLibrary');
@@ -2546,6 +2542,12 @@
             confirmDesc = $('confirmDesc');
             confirmCancel = $('confirmCancel');
             confirmDelete = $('confirmDelete');
+        }
+
+        // ---- 初始化函数（用于首次加载和 Turbo 切换） ----
+        function initApp() {
+            // 刷新 DOM 引用
+            refreshDomRefs();
 
             // ---- 重新绑定事件 ----
 
@@ -2556,7 +2558,7 @@
                 if (e.key === 'Enter') performSearch();
             });
 
-            // 收藏（使用独立函数）
+            // 收藏（使用 cloneNode 彻底重置）
             bindFavoriteEvents();
 
             // 选项按钮
@@ -2644,12 +2646,10 @@
 
         // ---- Turbo 缓存前清理 ----
         document.addEventListener('turbo:before-cache', function() {
-            // 移除滚动监听，防止缓存后残留
             if (scrollListenerAttached) {
                 window.removeEventListener('scroll', handleScroll);
                 scrollListenerAttached = false;
             }
-            // 清理滚动定时器
             if (scrollTimeout) {
                 clearTimeout(scrollTimeout);
                 scrollTimeout = null;
