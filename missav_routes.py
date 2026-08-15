@@ -1,117 +1,165 @@
 # ============================================================
-# missav_routes.py - MissAV 全部功能（独立模块）
+# missav_routes.py - MissAV 采集存储模块（新版）
+# 功能：接收油猴脚本回传的数据，提供采集列表查询
+# 数据库：使用 MISSAV_DATABASE_URL（独立数据库）
 # ============================================================
 
-import re
-from urllib.parse import quote
-from fastapi import APIRouter, HTTPException, Query
-import cloudscraper
-from bs4 import BeautifulSoup
+import os
+from fastapi import APIRouter, Request, HTTPException
+from databases import Database
+from pydantic import BaseModel
 
-router = APIRouter(prefix="/missav", tags=["MissAV"])
+# ============================================================
+# 数据库连接
+# ============================================================
 
-class MissAVFetcher:
-    def __init__(self):
-        self.scraper = cloudscraper.create_scraper(
-            browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
-        )
-        self.base_url = "https://missav.com"
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "Accept": "text/html,application/xhtml+xml",
-            "Accept-Language": "zh-CN,zh;q=0.9",
-            "Referer": "https://missav.com/",
-        }
+MISSAV_DATABASE_URL = os.environ.get("MISSAV_DATABASE_URL")
+if not MISSAV_DATABASE_URL:
+    raise RuntimeError("❌ MISSAV_DATABASE_URL 环境变量未设置")
 
-    def _fetch(self, url):
-        resp = self.scraper.get(url, headers=self.headers, timeout=30)
-        if resp.status_code != 200:
-            raise Exception(f"抓取失败 HTTP {resp.status_code}")
-        return resp.text
+missav_db = Database(MISSAV_DATABASE_URL)
 
-    def search(self, keyword):
-        if len(keyword) < 2:
-            raise ValueError("至少输入2个字符")
-        html = self._fetch(f"{self.base_url}/search/{quote(keyword)}")
-        soup = BeautifulSoup(html, 'lxml')
-        results = []
-        seen = set()
-        for a in soup.select('a[href*="/watch/"]'):
-            href = a.get('href')
-            if not href or href in seen:
-                continue
-            img = a.find('img')
-            src = img.get('src') or img.get('data-src') or "" if img else ""
-            if src and src.startswith('//'):
-                src = "https:" + src
-            title = a.get('title') or img.get('alt') if img else "未知"
-            code_match = re.search(r'([A-Z]{2,6}-\d{3,5})', title)
-            code = code_match.group(1) if code_match else "未知"
-            results.append({
-                "id": href.split('/')[-1],
-                "url": self.base_url + href if href.startswith('/') else href,
-                "title": title.strip(),
-                "code": code,
-                "cover": src,
-            })
-            seen.add(href)
-            if len(results) >= 30:
-                break
-        return results
+# ============================================================
+# 路由定义
+# ============================================================
 
-    def get_detail(self, video_id):
-        html = self._fetch(f"{self.base_url}/watch/{video_id}")
-        soup = BeautifulSoup(html, 'lxml')
-        title = soup.find('h1').text.strip() if soup.find('h1') else "未知"
-        code_match = re.search(r'([A-Z]{2,6}-\d{3,5})', title)
-        code = code_match.group(1) if code_match else "未知"
-        cover = ""
-        img = soup.select_one('img[alt*="cover"], img[src*="cover"]')
-        if img:
-            cover = img.get('src') or img.get('data-src') or ""
-            if cover.startswith('//'):
-                cover = "https:" + cover
-        actors = [a.text.strip() for a in soup.select('a[href*="/actor/"]') if a.text.strip()]
-        desc = soup.find('meta', attrs={'name': 'description'})
-        desc = desc.get('content', "") if desc else ""
-        video_url = ""
-        for script in soup.find_all('script'):
-            if script.string:
-                matches = re.findall(r'video_url\s*[:=]\s*["\'](https?://[^"\']+\.m3u8[^"\']*)["\']', script.string)
-                if matches:
-                    video_url = matches[0]
-                    break
-        if not video_url:
-            video_tag = soup.find('video')
-            if video_tag and video_tag.get('src'):
-                video_url = video_tag.get('src')
-        if not video_url:
-            raise Exception("未找到视频源 m3u8，页面可能改版")
+router = APIRouter(prefix="/api/missav", tags=["MissAV"])
+
+
+# ============================================================
+# 数据模型
+# ============================================================
+
+class CollectItem(BaseModel):
+    video_id: str          # MissAV 影片编号，如 "ssis-001"
+    title: str             # 影片标题
+    publish_date: str | None = None   # 发布日期（如果页面有）
+    cover_url: str | None = None      # 封面图片地址
+    m3u8_url: str          # m3u8 视频流地址
+
+
+# ============================================================
+# API 接口
+# ============================================================
+
+@router.post("/collect")
+async def collect_missav_item(request: Request, item: CollectItem):
+    """
+    油猴脚本采集数据回传接口
+    
+    开发者模式（有 Session Cookie）→ 存入 MISSAV_DATABASE_URL
+    访客模式（无 Session Cookie）→ 不存数据库，直接返回成功（由前端存 localStorage）
+    """
+    # 检查是否登录（开发者模式）
+    session_cookie = request.cookies.get("session")
+    
+    if not session_cookie:
+        # 访客模式：不存数据库，直接返回成功
         return {
-            "id": video_id,
-            "code": code,
-            "title": title,
-            "cover": cover,
-            "actors": actors,
-            "description": desc[:300],
-            "video_url": video_url,
-            "url": f"{self.base_url}/watch/{video_id}",
+            "ok": True,
+            "stored": False,
+            "message": "访客模式，请前端自行存入 localStorage"
         }
-
-fetcher = MissAVFetcher()
-
-@router.get("/search")
-async def missav_search(q: str = Query(..., min_length=1)):
+    
+    # ===== 开发者模式：写入数据库 =====
     try:
-        items = fetcher.search(q)
-        return {"ok": True, "count": len(items), "items": items}
+        # 检查是否已存在（去重，如果存在则更新）
+        existing = await missav_db.fetch_one(
+            "SELECT id FROM missav_items WHERE video_id = :video_id",
+            {"video_id": item.video_id}
+        )
+        
+        if existing:
+            # 已存在 → 更新（m3u8 地址可能变化，封面/标题也可能更新）
+            await missav_db.execute(
+                """
+                UPDATE missav_items
+                SET title = :title,
+                    publish_date = :publish_date,
+                    cover_url = :cover_url,
+                    m3u8_url = :m3u8_url,
+                    created_at = CURRENT_TIMESTAMP
+                WHERE video_id = :video_id
+                """,
+                {
+                    "video_id": item.video_id,
+                    "title": item.title,
+                    "publish_date": item.publish_date,
+                    "cover_url": item.cover_url,
+                    "m3u8_url": item.m3u8_url,
+                }
+            )
+        else:
+            # 不存在 → 插入新记录
+            await missav_db.execute(
+                """
+                INSERT INTO missav_items (video_id, title, publish_date, cover_url, m3u8_url)
+                VALUES (:video_id, :title, :publish_date, :cover_url, :m3u8_url)
+                """,
+                {
+                    "video_id": item.video_id,
+                    "title": item.title,
+                    "publish_date": item.publish_date,
+                    "cover_url": item.cover_url,
+                    "m3u8_url": item.m3u8_url,
+                }
+            )
+        
+        return {
+            "ok": True,
+            "stored": True,
+            "message": "已存入云端数据库"
+        }
+        
     except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"数据库写入失败: {str(e)}")
 
-@router.get("/info")
-async def missav_info(video_id: str = Query(...)):
+
+@router.get("/my-items")
+async def get_missav_items(request: Request):
+    """
+    获取我的 MissAV 采集列表
+    
+    开发者模式 → 返回数据库全部记录（因为只有你一个人用）
+    访客模式 → 返回空列表（前端从 localStorage 读取）
+    """
+    session_cookie = request.cookies.get("session")
+    
+    if not session_cookie:
+        # 访客模式：返回空列表
+        return {
+            "ok": True,
+            "items": [],
+            "mode": "guest"
+        }
+    
+    # ===== 开发者模式：查询全部记录 =====
     try:
-        data = fetcher.get_detail(video_id)
-        return {"ok": True, "item": data}
+        rows = await missav_db.fetch_all(
+            """
+            SELECT id, video_id, title, publish_date, cover_url, m3u8_url, created_at
+            FROM missav_items
+            ORDER BY created_at DESC
+            """
+        )
+        
+        items = []
+        for row in rows:
+            items.append({
+                "id": row["id"],
+                "video_id": row["video_id"],
+                "title": row["title"],
+                "publish_date": row["publish_date"],
+                "cover_url": row["cover_url"],
+                "m3u8_url": row["m3u8_url"],
+                "created_at": row["created_at"].isoformat() if row["created_at"] else None
+            })
+        
+        return {
+            "ok": True,
+            "items": items,
+            "mode": "developer"
+        }
+        
     except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
