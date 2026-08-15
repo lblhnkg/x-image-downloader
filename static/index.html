@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
     <title>万能媒体下载器</title>
+    <!-- Turbo Drive CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.3.0/dist/turbo.js"></script>
     <style>
-        /* 所有样式与之前确认的版本完全一致，菜单永远一列 */
+        /* 样式与之前确认的版本完全一致，菜单永远一列 */
         * {
             margin: 0;
             padding: 0;
@@ -542,10 +544,10 @@
         });
 
         // ============================================================
-        // 初始化：判断显示登录页还是菜单页
+        // 初始化函数（用于首次加载和 Turbo 切换）
         // ============================================================
 
-        function initPage() {
+        function initApp() {
             var referrer = document.referrer || '';
             var isFromSubPage = referrer.includes('/x') || referrer.includes('/missav') || referrer.includes('/bilibili');
             var savedMode = localStorage.getItem('userMode');
@@ -589,15 +591,12 @@
             showPage('pageLogin');
         }
 
-        initPage();
+        // 绑定事件：Turbo 切换 + 常规加载
+        document.addEventListener('turbo:load', initApp);
+        document.addEventListener('DOMContentLoaded', initApp);
 
-        console.log('📱 万能媒体下载器 已加载');
+        console.log('📱 万能媒体下载器 已加载（Turbo 模式）');
         console.log('开发者：浮生若夢');
-        var mode = localStorage.getItem('userMode');
-        console.log('当前模式：' + (mode || '未登录'));
-        if (document.referrer) {
-            console.log('来源页面：' + document.referrer);
-        }
     </script>
 
 </body>
