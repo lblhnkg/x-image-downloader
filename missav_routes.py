@@ -1,7 +1,6 @@
 # ============================================================
 # missav_routes.py - MissAV 下载器（使用 unofficial-api-for-missav）
-# 完全自动处理 Cloudflare 5秒盾，无需用户干预
-# 登录逻辑不受影响，本模块独立运行
+# 支持指纹切换和代理，完全自动处理 Cloudflare
 # ============================================================
 
 import os
@@ -11,9 +10,10 @@ from missav_api import Client
 router = APIRouter(prefix="/missav", tags=["MissAV"])
 
 # ============================================================
-# 配置（可选代理）
+# 配置（从环境变量读取）
 # ============================================================
 PROXY = os.environ.get("MISSAV_PROXY")  # 例如 http://user:pass@host:port
+IMPERSONATE = os.environ.get("MISSAV_IMPERSONATE", "chrome124")  # 默认 chrome124
 
 # 全局客户端单例
 _client = None
@@ -21,11 +21,11 @@ _client = None
 def get_client():
     global _client
     if _client is None:
+        kwargs = {"impersonate": IMPERSONATE}
         if PROXY:
-            _client = Client(proxy=PROXY)
-        else:
-            _client = Client()
-        print("[MissAV] 客户端初始化成功（自动处理 Cloudflare）")
+            kwargs["proxy"] = PROXY
+        _client = Client(**kwargs)
+        print(f"[MissAV] 客户端初始化成功（指纹: {IMPERSONATE}）")
     return _client
 
 # ============================================================
@@ -36,12 +36,10 @@ async def missav_search(q: str = Query(..., min_length=1)):
     try:
         client = get_client()
         items = []
-        # 异步迭代搜索结果
         async for item in client.search(q):
             items.append(item)
             if len(items) >= 30:
                 break
-        # 格式化返回
         formatted = []
         for item in items:
             formatted.append({
