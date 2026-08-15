@@ -277,3 +277,10 @@ async def missav_info(request: Request, video_id: str = Query(...)):
         return {"ok": True, "item": data}
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"获取详情失败: {str(e)}")
+# ============================================================
+# 数据库关闭事件（由 app.py 统一调用，或者单独注册）
+# ============================================================
+@app.on_event("shutdown")
+async def shutdown_missav():
+    await database.disconnect()
+    print("[MissAV] 数据库已断开")
