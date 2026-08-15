@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
     <title>X 媒体下载器</title>
+    <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.3.0/dist/turbo.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js">
     </script>
     <style>
@@ -1041,7 +1042,7 @@
         X 二级菜单
         ===================================================== -->
         <div class="page active" id="pageXSub">
-            <a class="back-home" id="backToHome">‹ 返回首页</a>
+            <span class="back-home" id="backToHome">‹ 返回首页</span>
             <div id="xModeBanner"></div>
             <div class="submenu-title">下载 X 上的媒体</div>
             <div class="submenu-desc">图片 · 视频 · 喜欢 · 书签</div>
@@ -1239,8 +1240,7 @@
 
     <script>
         // ============================================================
-        // X 下载器 - 完整版（二级菜单 + 搜索 + 媒体库）
-        // 支持开发者/访客双模式
+        // X 下载器 - 完整版（Turbo Drive 兼容）
         // ============================================================
 
         // ---- 状态 ----
@@ -1343,35 +1343,6 @@
             if (target) target.classList.add('active');
             window.scrollTo({ top: 0, behavior: 'smooth' });
             if (isSelectMode) exitSelectMode();
-        }
-
-        // ---- 资源清理（跳转前调用） ----
-        function cleanupBeforeUnload() {
-            // 1. 移除滚动监听
-            if (scrollListenerAttached) {
-                window.removeEventListener('scroll', handleScroll);
-                scrollListenerAttached = false;
-            }
-            // 2. 暂停并释放所有视频
-            document.querySelectorAll('video').forEach(function(v) {
-                v.pause();
-                v.src = '';
-                v.load();
-            });
-            // 3. 关闭 modal（如果开着）
-            if (modal && !modal.classList.contains('hidden')) {
-                closeModal();
-            }
-            // 4. 取消 HLS 实例
-            if (currentHls) {
-                currentHls.destroy();
-                currentHls = null;
-            }
-            // 5. 清除滚动定时器
-            if (scrollTimeout) {
-                clearTimeout(scrollTimeout);
-                scrollTimeout = null;
-            }
         }
 
         // ---- 模式横幅 ----
@@ -2461,9 +2432,7 @@
         });
 
         // ---- 导航 ----
-        // 返回首页：先清理资源再跳转
         backToHome.addEventListener('click', function() {
-            cleanupBeforeUnload();
             window.location.href = '/';
         });
 
@@ -2489,38 +2458,201 @@
             openLibrary('bookmarks');
         });
 
-        // ---- 初始化 ----
-        // 读取用户模式
-        var savedMode = localStorage.getItem('userMode') || 'guest';
-        currentMode = savedMode;
+        // ---- 初始化函数（用于首次加载和 Turbo 切换） ----
+        function initApp() {
+            // 重新获取 DOM 引用（Turbo 替换后需重新获取）
+            pageXSub = $('pageXSub');
+            pageSearch = $('pageSearch');
+            pageLibrary = $('pageLibrary');
+            backToHome = $('backToHome');
+            backFromSearch = $('backFromSearch');
+            backFromLibrary = $('backFromLibrary');
+            xModeBanner = $('xModeBanner');
+            libraryModeBanner = $('libraryModeBanner');
+            subSearch = $('subSearch');
+            subLikes = $('subLikes');
+            subBookmarks = $('subBookmarks');
+            profileInput = $('profileInput');
+            searchBtn = $('searchBtn');
+            favoriteAddBtn = $('favoriteAddBtn');
+            favoriteToggleBtn = $('favoriteToggleBtn');
+            favoritesPanel = $('favoritesPanel');
+            searchSubmitBtn = $('searchSubmitBtn');
+            searchStatus = $('searchStatus');
+            searchResultHeader = $('searchResultHeader');
+            searchResultTitle = $('searchResultTitle');
+            searchResultCount = $('searchResultCount');
+            searchGallery = $('searchGallery');
+            libraryTitle = $('libraryTitle');
+            libraryDesc = $('libraryDesc');
+            libraryCount = $('libraryCount');
+            refreshLibraryBtn = $('refreshLibraryBtn');
+            libraryStatus = $('libraryStatus');
+            libraryResultHeader = $('libraryResultHeader');
+            libraryResultTitle = $('libraryResultTitle');
+            libraryResultCount = $('libraryResultCount');
+            libraryGallery = $('libraryGallery');
+            selectToggleBtn = $('selectToggleBtn');
+            startDate = $('startDate');
+            endDate = $('endDate');
+            customDates = $('customDates');
+            libraryCustomDates = $('libraryCustomDates');
+            libraryStartDate = $('libraryStartDate');
+            libraryEndDate = $('libraryEndDate');
+            modal = $('modal');
+            modalContent = $('modalContent');
+            modalCloseBtn = $('modalCloseBtn');
+            modalDownloadBtn = $('modalDownloadBtn');
+            modalOriginalBtn = $('modalOriginalBtn');
+            selectionToolbar = $('selectionToolbar');
+            toolbarCancel = $('toolbarCancel');
+            toolbarSelectAll = $('toolbarSelectAll');
+            toolbarDelete = $('toolbarDelete');
+            selectedCount = $('selectedCount');
+            deleteConfirm = $('deleteConfirm');
+            confirmTitle = $('confirmTitle');
+            confirmDesc = $('confirmDesc');
+            confirmCancel = $('confirmCancel');
+            confirmDelete = $('confirmDelete');
 
-        // 如果是开发者模式，验证 session
-        if (currentMode === 'developer') {
-            fetch('/api/auth/check', { credentials: 'include' })
-                .then(function(res) { return res.json(); })
-                .then(function(data) {
-                    if (!data.authenticated) {
+            // 重新绑定事件（Turbo 替换后事件会丢失）
+            // 搜索
+            searchBtn.addEventListener('click', performSearch);
+            searchSubmitBtn.addEventListener('click', performSearch);
+            profileInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') performSearch();
+            });
+
+            // 收藏
+            profileInput.addEventListener('input', updateFavoriteButton);
+            favoriteAddBtn.addEventListener('click', function() {
+                var username = normalizeUsername(profileInput.value);
+                if (!username) {
+                    showSearchStatus('请先输入博主名', 'error');
+                    return;
+                }
+                var exists = favorites.some(function(f) { return f.username.toLowerCase() === username.toLowerCase(); });
+                if (exists) {
+                    removeFavorite(username);
+                } else {
+                    addFavorite(username);
+                }
+            });
+            favoriteToggleBtn.addEventListener('click', function() {
+                favoritesPanel.classList.toggle('hidden');
+            });
+
+            // 选项按钮
+            document.querySelectorAll('.option-row').forEach(function(row) {
+                row.querySelectorAll('.option-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var group = row.dataset.group;
+                        row.querySelectorAll('.option-btn').forEach(function(b) { b.classList.remove('active'); });
+                        btn.classList.add('active');
+                        var value = btn.dataset.value;
+
+                        if (group === 'range') {
+                            range = value;
+                            customDates.classList.toggle('hidden', value !== 'custom');
+                        } else if (group === 'media') {
+                            mediaType = value;
+                        } else if (group === 'source') {
+                            sourceType = value;
+                        } else if (group === 'libraryRange') {
+                            libraryRange = value;
+                            libraryCustomDates.classList.toggle('hidden', value !== 'custom');
+                            resetPaginationAndRender();
+                        } else if (group === 'libraryMedia') {
+                            libraryMediaType = value;
+                            resetPaginationAndRender();
+                        }
+                    });
+                });
+            });
+
+            libraryStartDate.addEventListener('change', function() {
+                if (libraryRange === 'custom') resetPaginationAndRender();
+            });
+            libraryEndDate.addEventListener('change', function() {
+                if (libraryRange === 'custom') resetPaginationAndRender();
+            });
+
+            // 选择模式
+            selectToggleBtn.addEventListener('click', function() {
+                enterSelectMode();
+            });
+
+            // 刷新
+            refreshLibraryBtn.addEventListener('click', function() {
+                cachedLibraryItems = [];
+                cachedLibrarySource = '';
+                resetPagination();
+                if (currentSubPage) {
+                    openLibrary(currentSubPage);
+                }
+            });
+
+            // 导航
+            backToHome.addEventListener('click', function() {
+                window.location.href = '/';
+            });
+            backFromSearch.addEventListener('click', function() {
+                showPage('pageXSub');
+            });
+            backFromLibrary.addEventListener('click', function() {
+                showPage('pageXSub');
+                if (isSelectMode) exitSelectMode();
+            });
+
+            // 二级菜单
+            subSearch.addEventListener('click', function() {
+                showPage('pageSearch');
+            });
+            subLikes.addEventListener('click', function() {
+                openLibrary('likes');
+            });
+            subBookmarks.addEventListener('click', function() {
+                openLibrary('bookmarks');
+            });
+
+            // 读取用户模式
+            var savedMode = localStorage.getItem('userMode') || 'guest';
+            currentMode = savedMode;
+
+            if (currentMode === 'developer') {
+                fetch('/api/auth/check', { credentials: 'include' })
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        if (!data.authenticated) {
+                            currentMode = 'guest';
+                            localStorage.setItem('userMode', 'guest');
+                            console.log('⚠️ Session 已过期，降级为访客模式');
+                        }
+                        updateModeBanners();
+                        loadFavorites();
+                        showPage('pageXSub');
+                    })
+                    .catch(function() {
                         currentMode = 'guest';
                         localStorage.setItem('userMode', 'guest');
-                        console.log('⚠️ Session 已过期，降级为访客模式');
-                    }
-                    updateModeBanners();
-                })
-                .catch(function() {
-                    currentMode = 'guest';
-                    localStorage.setItem('userMode', 'guest');
-                    updateModeBanners();
-                });
-        } else {
-            updateModeBanners();
+                        updateModeBanners();
+                        loadFavorites();
+                        showPage('pageXSub');
+                    });
+            } else {
+                updateModeBanners();
+                loadFavorites();
+                showPage('pageXSub');
+            }
+
+            console.log('🐦 X 下载器已加载（Turbo 模式）');
+            console.log('开发者：浮生若夢');
+            console.log('当前模式：' + currentMode);
         }
 
-        loadFavorites();
-        showPage('pageXSub');
-
-        console.log('🐦 X 下载器已加载');
-        console.log('开发者：浮生若夢');
-        console.log('当前模式：' + currentMode);
+        // 绑定事件：Turbo 切换 + 常规加载
+        document.addEventListener('turbo:load', initApp);
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 
 </body>
