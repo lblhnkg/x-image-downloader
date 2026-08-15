@@ -1,165 +1,480 @@
 # ============================================================
-# missav_routes.py - MissAV 采集存储模块（新版）
-# 功能：接收油猴脚本回传的数据，提供采集列表查询
-# 数据库：使用 MISSAV_DATABASE_URL（独立数据库）
+# missav_routes.py - MissAV 模块（V2）
 # ============================================================
 
 import os
-from fastapi import APIRouter, Request, HTTPException
+
 from databases import Database
+from fastapi import APIRouter
+from fastapi import HTTPException
+from fastapi import Request
 from pydantic import BaseModel
 
 # ============================================================
-# 数据库连接
+# 数据库
 # ============================================================
 
 MISSAV_DATABASE_URL = os.environ.get("MISSAV_DATABASE_URL")
+
 if not MISSAV_DATABASE_URL:
-    raise RuntimeError("❌ MISSAV_DATABASE_URL 环境变量未设置")
+    raise RuntimeError(
+        "❌ MISSAV_DATABASE_URL 环境变量未设置"
+    )
 
 missav_db = Database(MISSAV_DATABASE_URL)
 
 # ============================================================
-# 路由定义
+# Router
 # ============================================================
 
-router = APIRouter(prefix="/api/missav", tags=["MissAV"])
-
+router = APIRouter(
+    prefix="/api/missav",
+    tags=["MissAV"]
+)
 
 # ============================================================
-# 数据模型
+# Model
 # ============================================================
+
 
 class CollectItem(BaseModel):
-    video_id: str          # MissAV 影片编号，如 "ssis-001"
-    title: str             # 影片标题
-    publish_date: str | None = None   # 发布日期（如果页面有）
-    cover_url: str | None = None      # 封面图片地址
-    m3u8_url: str          # m3u8 视频流地址
+
+    video_id: str
+
+    title: str
+
+    actress: str | None = None
+
+    description: str | None = None
+
+    publish_date: str | None = None
+
+    cover_url: str | None = None
+
+    m3u8_url: str
+
+    source_url: str | None = None
 
 
 # ============================================================
-# API 接口
+# 工具
 # ============================================================
+
+
+def is_developer(request: Request):
+
+    return bool(
+        request.cookies.get("session")
+    )
+
+
+# ============================================================
+# 采集
+# ============================================================
+
 
 @router.post("/collect")
-async def collect_missav_item(request: Request, item: CollectItem):
-    """
-    油猴脚本采集数据回传接口
-    
-    开发者模式（有 Session Cookie）→ 存入 MISSAV_DATABASE_URL
-    访客模式（无 Session Cookie）→ 不存数据库，直接返回成功（由前端存 localStorage）
-    """
-    # 检查是否登录（开发者模式）
-    session_cookie = request.cookies.get("session")
-    
-    if not session_cookie:
-        # 访客模式：不存数据库，直接返回成功
+async def collect_missav_item(
+    request: Request,
+    item: CollectItem
+):
+
+    if not is_developer(request):
+
         return {
             "ok": True,
             "stored": False,
-            "message": "访客模式，请前端自行存入 localStorage"
+            "message": "guest mode"
         }
-    
-    # ===== 开发者模式：写入数据库 =====
+
     try:
-        # 检查是否已存在（去重，如果存在则更新）
+
         existing = await missav_db.fetch_one(
-            "SELECT id FROM missav_items WHERE video_id = :video_id",
-            {"video_id": item.video_id}
+            """
+            SELECT id
+            FROM missav_items
+            WHERE video_id=:video_id
+            """,
+            {
+                "video_id": item.video_id
+            }
         )
-        
+
+        params = {
+
+            "video_id": item.video_id,
+
+            "title": item.title,
+
+            "actress": item.actress,
+
+            "description": item.description,
+
+            "publish_date": item.publish_date,
+
+            "cover_url": item.cover_url,
+
+            "m3u8_url": item.m3u8_url,
+
+            "source_url": item.source_url
+        }
+
         if existing:
-            # 已存在 → 更新（m3u8 地址可能变化，封面/标题也可能更新）
+
             await missav_db.execute(
                 """
                 UPDATE missav_items
-                SET title = :title,
-                    publish_date = :publish_date,
-                    cover_url = :cover_url,
-                    m3u8_url = :m3u8_url,
-                    created_at = CURRENT_TIMESTAMP
-                WHERE video_id = :video_id
+
+                SET
+
+                    title=:title,
+
+                    actress=:actress,
+
+                    description=:description,
+
+                    publish_date=:publish_date,
+
+                    cover_url=:cover_url,
+
+                    m3u8_url=:m3u8_url,
+
+                    source_url=:source_url,
+
+                    created_at=CURRENT_TIMESTAMP
+
+                WHERE video_id=:video_id
                 """,
-                {
-                    "video_id": item.video_id,
-                    "title": item.title,
-                    "publish_date": item.publish_date,
-                    "cover_url": item.cover_url,
-                    "m3u8_url": item.m3u8_url,
-                }
+                params
             )
+
         else:
-            # 不存在 → 插入新记录
+
             await missav_db.execute(
                 """
-                INSERT INTO missav_items (video_id, title, publish_date, cover_url, m3u8_url)
-                VALUES (:video_id, :title, :publish_date, :cover_url, :m3u8_url)
+                INSERT INTO missav_items(
+
+                    video_id,
+
+                    title,
+
+                    actress,
+
+                    description,
+
+                    publish_date,
+
+                    cover_url,
+
+                    m3u8_url,
+
+                    source_url
+
+                )
+
+                VALUES(
+
+                    :video_id,
+
+                    :title,
+
+                    :actress,
+
+                    :description,
+
+                    :publish_date,
+
+                    :cover_url,
+
+                    :m3u8_url,
+
+                    :source_url
+
+                )
                 """,
-                {
-                    "video_id": item.video_id,
-                    "title": item.title,
-                    "publish_date": item.publish_date,
-                    "cover_url": item.cover_url,
-                    "m3u8_url": item.m3u8_url,
-                }
+                params
             )
-        
+
         return {
             "ok": True,
-            "stored": True,
-            "message": "已存入云端数据库"
+            "stored": True
         }
-        
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"数据库写入失败: {str(e)}")
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+# ============================================================
+# 获取全部
+# ============================================================
 
 
 @router.get("/my-items")
-async def get_missav_items(request: Request):
-    """
-    获取我的 MissAV 采集列表
-    
-    开发者模式 → 返回数据库全部记录（因为只有你一个人用）
-    访客模式 → 返回空列表（前端从 localStorage 读取）
-    """
-    session_cookie = request.cookies.get("session")
-    
-    if not session_cookie:
-        # 访客模式：返回空列表
+async def get_items(
+    request: Request
+):
+
+    if not is_developer(request):
+
         return {
             "ok": True,
             "items": [],
             "mode": "guest"
         }
-    
-    # ===== 开发者模式：查询全部记录 =====
+
     try:
+
         rows = await missav_db.fetch_all(
             """
-            SELECT id, video_id, title, publish_date, cover_url, m3u8_url, created_at
+            SELECT *
+
             FROM missav_items
+
             ORDER BY created_at DESC
             """
         )
-        
+
         items = []
+
         for row in rows:
+
             items.append({
+
                 "id": row["id"],
+
                 "video_id": row["video_id"],
+
                 "title": row["title"],
+
+                "actress": row["actress"],
+
+                "description": row["description"],
+
                 "publish_date": row["publish_date"],
+
                 "cover_url": row["cover_url"],
+
                 "m3u8_url": row["m3u8_url"],
-                "created_at": row["created_at"].isoformat() if row["created_at"] else None
+
+                "source_url": row["source_url"],
+
+                "created_at": (
+                    row["created_at"].isoformat()
+                    if row["created_at"]
+                    else None
+                )
             })
-        
+
         return {
+
             "ok": True,
+
             "items": items,
+
             "mode": "developer"
         }
-        
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+# ============================================================
+# 搜索
+# ============================================================
+
+
+@router.get("/search")
+async def search_items(
+    q: str = ""
+):
+
+    try:
+
+        rows = await missav_db.fetch_all(
+            """
+            SELECT *
+
+            FROM missav_items
+
+            WHERE
+
+                LOWER(video_id)
+                LIKE LOWER(:q)
+
+                OR
+
+                LOWER(title)
+                LIKE LOWER(:q)
+
+            ORDER BY created_at DESC
+            """,
+            {
+                "q": f"%{q}%"
+            }
+        )
+
+        return {
+
+            "ok": True,
+
+            "items": [dict(row) for row in rows]
+        }
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+# ============================================================
+# 女优搜索
+# ============================================================
+
+
+@router.get("/actress/{name}")
+async def actress_items(
+    name: str
+):
+
+    try:
+
+        rows = await missav_db.fetch_all(
+            """
+            SELECT *
+
+            FROM missav_items
+
+            WHERE
+
+                LOWER(actress)
+                LIKE LOWER(:name)
+
+            ORDER BY created_at DESC
+            """,
+            {
+                "name": f"%{name}%"
+            }
+        )
+
+        return {
+
+            "ok": True,
+
+            "items": [dict(row) for row in rows]
+        }
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+# ============================================================
+# 统计
+# ============================================================
+
+
+@router.get("/stats")
+async def stats():
+
+    try:
+
+        total = await missav_db.fetch_val(
+            """
+            SELECT COUNT(*)
+
+            FROM missav_items
+            """
+        )
+
+        actresses = await missav_db.fetch_val(
+            """
+            SELECT COUNT(
+                DISTINCT actress
+            )
+
+            FROM missav_items
+            """
+        )
+
+        return {
+
+            "ok": True,
+
+            "total": total,
+
+            "actresses": actresses
+        }
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+# ============================================================
+# 清空
+# ============================================================
+
+
+@router.delete("/clear")
+async def clear_items(
+    request: Request
+):
+
+    if not is_developer(request):
+
+        raise HTTPException(
+            status_code=403,
+            detail="permission denied"
+        )
+
+    try:
+
+        await missav_db.execute(
+            """
+            DELETE FROM missav_items
+            """
+        )
+
+        return {
+
+            "ok": True
+        }
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+# ============================================================
+# 预留：同步我的喜欢
+# ============================================================
+
+
+@router.post("/sync-saved")
+async def sync_saved():
+
+    return {
+
+        "ok": False,
+
+        "message": "not implemented"
+    }
