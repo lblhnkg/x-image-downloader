@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
     <title>万能媒体下载器</title>
     <style>
+        /* ============================================
+           所有样式与最新确认的版本完全一致
+           菜单永远是一列，不会变成三列
+           ============================================ */
         * {
             margin: 0;
             padding: 0;
@@ -426,7 +430,7 @@
 
     <script>
         // ============================================================
-        // 登录 + 菜单逻辑
+        // 登录 + 菜单逻辑（统一跳转淡出效果）
         // ============================================================
 
         const pageLogin = document.getElementById('pageLogin');
@@ -454,6 +458,19 @@
 
         function showDeveloperBanner() {
             menuModeBanner.innerHTML = '<div class="mode-banner developer">🔒 开发者模式 · 数据存储在服务器</div>';
+        }
+
+        // ============================================================
+        // 通用跳转函数（淡出 + 延迟跳转）
+        // ============================================================
+        function navigateWithFade(url) {
+            // 页面淡出
+            document.documentElement.style.transition = 'opacity 0.2s ease';
+            document.documentElement.style.opacity = '0';
+            // 延迟跳转，让淡出完成
+            setTimeout(function() {
+                window.location.href = url;
+            }, 250);
         }
 
         // ============================================================
@@ -526,19 +543,19 @@
         });
 
         // ============================================================
-        // 菜单卡片跳转（MPA）
+        // 菜单卡片跳转（统一使用淡出）
         // ============================================================
 
         document.getElementById('menuX').addEventListener('click', function() {
-            window.location.href = '/x';
+            navigateWithFade('/x');
         });
 
         document.getElementById('menuMissav').addEventListener('click', function() {
-            window.location.href = '/missav';
+            navigateWithFade('/missav');
         });
 
         document.getElementById('menuBilibili').addEventListener('click', function() {
-            window.location.href = '/bilibili';
+            navigateWithFade('/bilibili');
         });
 
         // ============================================================
@@ -546,14 +563,10 @@
         // ============================================================
 
         function initPage() {
-            // 1. 检查是否从子页面返回
             var referrer = document.referrer || '';
             var isFromSubPage = referrer.includes('/x') || referrer.includes('/missav') || referrer.includes('/bilibili');
-
-            // 2. 检查 localStorage 是否有模式记录
             var savedMode = localStorage.getItem('userMode');
 
-            // 3. 如果是从子页面返回且有模式记录，直接进入菜单
             if (isFromSubPage && savedMode) {
                 if (savedMode === 'developer') {
                     fetch('/api/auth/check', { credentials: 'include' })
@@ -590,9 +603,12 @@
                 return;
             }
 
-            // 4. 默认显示登录页
             showPage('pageLogin');
         }
+
+        // 页面加载完成后恢复透明度（防止从子页面返回时透明）
+        document.documentElement.style.opacity = '1';
+        document.documentElement.style.transition = '';
 
         initPage();
 
