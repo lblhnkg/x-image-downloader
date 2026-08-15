@@ -37,7 +37,6 @@
             padding: 40px 28px 30px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
             min-height: 560px;
-            position: relative;
             transition: all 0.3s ease;
         }
 
@@ -96,6 +95,208 @@
             color: rgba(255, 255, 255, 0.7);
         }
 
+        /* ---- Cookie 设置区域 ---- */
+        .cookie-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .cookie-section .label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .cookie-section .row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .cookie-section .row input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: #fff;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.25s ease;
+            cursor: default;
+        }
+
+        .cookie-section .row input:focus {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .cookie-section .btn-auto {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .cookie-section .btn-auto:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .cookie-status {
+            font-size: 12px;
+            margin-top: 6px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .cookie-status.success {
+            color: #4caf50;
+        }
+
+        .cookie-status.error {
+            color: #ff6b6b;
+        }
+
+        /* ---- 引导弹窗 ---- */
+        .guide-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .guide-overlay.hidden {
+            display: none !important;
+        }
+
+        .guide-box {
+            background: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 30px 28px 24px;
+            max-width: 480px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .guide-box .guide-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        .guide-box .guide-desc {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            line-height: 1.8;
+            font-weight: 300;
+        }
+
+        .guide-box .guide-desc ol {
+            padding-left: 20px;
+            margin-bottom: 16px;
+        }
+
+        .guide-box .guide-desc ol li {
+            margin-bottom: 8px;
+        }
+
+        .guide-box .guide-desc strong {
+            color: #fff;
+        }
+
+        .guide-box .guide-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .guide-box .guide-actions button {
+            flex: 1;
+            padding: 12px 0;
+            border: 0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            min-width: 100px;
+        }
+
+        .guide-box .guide-actions .btn-open {
+            background: #fff;
+            color: #0a0a0a;
+        }
+
+        .guide-box .guide-actions .btn-open:hover {
+            opacity: 0.85;
+        }
+
+        .guide-box .guide-actions .btn-copy {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .guide-box .guide-actions .btn-copy:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .guide-box .guide-actions .btn-close-guide {
+            background: transparent;
+            color: rgba(255, 255, 255, 0.3);
+            flex: 0.5;
+        }
+
+        .guide-box .guide-actions .btn-close-guide:hover {
+            color: #fff;
+        }
+
+        .guide-status {
+            margin-top: 12px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.3);
+            text-align: center;
+            min-height: 24px;
+        }
+
+        .guide-status.success {
+            color: rgba(76, 175, 80, 0.8);
+        }
+
+        .guide-status.error {
+            color: rgba(255, 107, 107, 0.8);
+        }
+
+        .guide-status .code-block {
+            display: block;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 6px;
+            font-size: 12px;
+            word-break: break-all;
+            color: rgba(255, 255, 255, 0.5);
+            font-family: monospace;
+        }
+
+        /* ---- 搜索 ---- */
         .search-section {
             margin-top: 6px;
         }
@@ -170,10 +371,6 @@
             transform: scale(0.98);
         }
 
-        .primary-btn:active {
-            transform: scale(0.96);
-        }
-
         .primary-btn:disabled {
             opacity: 0.3;
             cursor: default;
@@ -199,6 +396,13 @@
             background: rgba(255, 107, 107, 0.04);
         }
 
+        .status-box.loading {
+            color: #ffd93d;
+            border-color: rgba(255, 217, 61, 0.15);
+            background: rgba(255, 217, 61, 0.04);
+        }
+
+        /* ---- 结果 ---- */
         .result-header {
             display: flex;
             justify-content: space-between;
@@ -230,7 +434,6 @@
             border-radius: 10px;
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.04);
-            position: relative;
             transition: all 0.2s ease;
         }
 
@@ -244,14 +447,14 @@
         .media-wrap img {
             display: block;
             width: 100%;
-            aspect-ratio: 1 / 1;
+            aspect-ratio: 1/1;
             object-fit: cover;
             cursor: pointer;
         }
 
         .media-error {
             width: 100%;
-            aspect-ratio: 1 / 1;
+            aspect-ratio: 1/1;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -343,6 +546,7 @@
             color: rgba(255, 255, 255, 0.7);
         }
 
+        /* ---- 模态框 ---- */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -504,6 +708,9 @@
                 font-size: 8px;
                 padding: 3px 0;
             }
+            .guide-box {
+                padding: 20px 16px;
+            }
         }
     </style>
 </head>
@@ -515,6 +722,17 @@
         <div class="app-title">🎬 MissAV 电影下载器</div>
         <div class="app-subtitle">输入番号或演员名，搜索并下载影片</div>
 
+        <!-- ========== Cookie 设置区域 ========== -->
+        <div class="cookie-section">
+            <label class="label">🔑 设置 MissAV 会话</label>
+            <div class="row">
+                <input type="text" id="cookieInput" placeholder="点击右侧按钮自动获取" readonly>
+                <button class="btn-auto" id="autoGetBtn">🚀 自动获取</button>
+            </div>
+            <div id="cookieStatus" class="cookie-status">⚠️ 请先设置 Cookie</div>
+        </div>
+
+        <!-- ========== 搜索区域 ========== -->
         <div class="search-section">
             <label class="search-label">搜索</label>
             <div class="search-row">
@@ -534,6 +752,7 @@
         <div class="dev-signature">开发者：浮生若夢</div>
     </div>
 
+    <!-- ========== 模态框 ========== -->
     <div class="modal-overlay hidden" id="modal">
         <div class="modal-top">
             <span style="color:rgba(255,255,255,0.2);font-size:13px;font-weight:300;" id="modalTitle">影片预览</span>
@@ -546,9 +765,32 @@
         </div>
     </div>
 
+    <!-- ========== 引导弹窗 ========== -->
+    <div class="guide-overlay hidden" id="guideOverlay">
+        <div class="guide-box">
+            <div class="guide-title">🍪 获取 Cookie 指引</div>
+            <div class="guide-desc">
+                <p style="margin-bottom:12px;">请按以下步骤操作（约 30 秒）：</p>
+                <ol>
+                    <li>点击下方 <strong>「打开 MissAV」</strong> 按钮，在新窗口完成 5 秒盾验证</li>
+                    <li>验证通过后，点击 <strong>「一键复制代码」</strong>（代码已自动复制）</li>
+                    <li>回到 MissAV 页面，在地址栏 <strong>粘贴代码</strong>（Ctrl+V）并 <strong>回车</strong></li>
+                    <li>弹窗提示 <strong>「Cookie 已复制」</strong>，返回本页面</li>
+                    <li>Cookie 会自动填入，点击 <strong>「保存」</strong> 即可</li>
+                </ol>
+            </div>
+            <div class="guide-actions">
+                <button class="btn-open" id="guideOpenBtn">🌐 打开 MissAV</button>
+                <button class="btn-copy" id="guideCopyBtn">📋 一键复制代码</button>
+                <button class="btn-close-guide" id="guideCloseBtn">✕</button>
+            </div>
+            <div id="guideStatus" class="guide-status">点击「一键复制代码」复制脚本</div>
+        </div>
+    </div>
+
     <script>
         // ============================================================
-        // MissAV 下载器（Turbo Drive 兼容）
+        // MissAV 下载器（Cookie 方案，支持双模式）
         // ============================================================
 
         let currentItem = null;
@@ -556,7 +798,12 @@
 
         function $(id) { return document.getElementById(id); }
 
-        // ---- 初始化函数（用于首次加载和 Turbo 切换） ----
+        // ---- 工具函数 ----
+        function getUserMode() {
+            return localStorage.getItem('userMode') || 'guest';
+        }
+
+        // ---- 初始化（兼容 Turbo） ----
         function initApp() {
             const searchInput = $('searchInput');
             const searchBtn = $('searchBtn');
@@ -574,11 +821,173 @@
             const modalOriginalBtn = $('modalOriginalBtn');
             const backToHome = $('backToHome');
 
+            // ---- Cookie 相关 ----
+            const cookieInput = $('cookieInput');
+            const autoGetBtn = $('autoGetBtn');
+            const cookieStatus = $('cookieStatus');
+
+            // ---- 引导弹窗 ----
+            const guideOverlay = $('guideOverlay');
+            const guideOpenBtn = $('guideOpenBtn');
+            const guideCopyBtn = $('guideCopyBtn');
+            const guideCloseBtn = $('guideCloseBtn');
+            const guideStatus = $('guideStatus');
+
+            // 提取 Cookie 的 JavaScript 代码
+            const COOKIE_EXTRACT_CODE =
+                `javascript:(function(){var c=document.cookie;if(c){navigator.clipboard.writeText(c).then(function(){alert("✅ Cookie 已复制到剪贴板！请返回下载器页面粘贴。");}).catch(function(){alert("请手动复制以下 Cookie：\\n\\n"+c);});}else{alert("❌ 未获取到 Cookie，请确认已通过 5 秒盾验证。");}})();`;
+
+            // ---- session 验证（参考 x.html） ----
+            function checkSession() {
+                const mode = getUserMode();
+                if (mode === 'developer') {
+                    fetch('/api/auth/check', { credentials: 'include' })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (!data.authenticated) {
+                                localStorage.setItem('userMode', 'guest');
+                                location.reload();
+                            }
+                        })
+                        .catch(() => {
+                            localStorage.setItem('userMode', 'guest');
+                            location.reload();
+                        });
+                }
+            }
+
+            // ---- 显示 Cookie 状态 ----
+            function showCookieStatus(msg, type) {
+                cookieStatus.textContent = msg;
+                cookieStatus.className = 'cookie-status' + (type === 'success' ? ' success' : type === 'error' ? ' error' :
+                    '');
+            }
+
+            // ---- 检查 Cookie 状态（从后端） ----
+            function checkCookieStatus() {
+                const mode = getUserMode();
+                if (mode === 'developer') {
+                    fetch(API_BASE + '/cookie-status')
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.has_cookie) {
+                                showCookieStatus('✅ 开发者 Cookie 已设置', 'success');
+                            } else {
+                                showCookieStatus('⚠️ 开发者 Cookie 未设置，请获取', '');
+                            }
+                        })
+                        .catch(() => {
+                            showCookieStatus('⚠️ 无法检查 Cookie 状态', 'error');
+                        });
+                } else {
+                    const localCookie = localStorage.getItem('missav_cookie');
+                    if (localCookie) {
+                        showCookieStatus('✅ 访客 Cookie 已设置（本地）', 'success');
+                    } else {
+                        showCookieStatus('⚠️ 访客 Cookie 未设置，请获取', '');
+                    }
+                }
+            }
+
+            // ---- 保存 Cookie（根据模式） ----
+            function saveCookie(cookieString) {
+                const mode = getUserMode();
+                if (mode === 'developer') {
+                    return fetch(API_BASE + '/set-cookie', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ cookie_string: cookieString })
+                    }).then(res => res.json());
+                } else {
+                    localStorage.setItem('missav_cookie', cookieString);
+                    return Promise.resolve({ ok: true });
+                }
+            }
+
+            // ---- 自动获取 Cookie 引导 ----
+            function openGuide() {
+                guideOverlay.classList.remove('hidden');
+                guideStatus.textContent = '点击「一键复制代码」复制脚本';
+                guideStatus.className = 'guide-status';
+                // 自动复制代码
+                copyCodeToClipboard();
+            }
+
+            function closeGuide() {
+                guideOverlay.classList.add('hidden');
+            }
+
+            function copyCodeToClipboard() {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(COOKIE_EXTRACT_CODE).then(function() {
+                        guideStatus.textContent = '✅ 代码已复制到剪贴板！请回到 MissAV 页面粘贴执行';
+                        guideStatus.className = 'guide-status success';
+                    }).catch(function() {
+                        guideStatus.innerHTML =
+                            '⚠️ 自动复制失败，请手动复制下方代码：<span class="code-block">' + COOKIE_EXTRACT_CODE +
+                            '</span>';
+                        guideStatus.className = 'guide-status error';
+                    });
+                } else {
+                    guideStatus.innerHTML =
+                        '⚠️ 您的浏览器不支持自动复制，请手动复制下方代码：<span class="code-block">' + COOKIE_EXTRACT_CODE +
+                        '</span>';
+                    guideStatus.className = 'guide-status error';
+                }
+            }
+
+            // ---- 打开 MissAV ----
+            function openMissav() {
+                window.open('https://missav.ws', '_blank');
+                guideStatus.textContent = '✅ 已打开 MissAV，请完成 5 秒盾验证';
+                guideStatus.className = 'guide-status success';
+            }
+
+            // ---- 自动检测剪贴板并填入 ----
+            function detectClipboardCookie() {
+                if (cookieInput.value) return;
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    navigator.clipboard.readText().then(function(text) {
+                        if (text && (text.includes('cf_clearance') || text.includes('session'))) {
+                            if (confirm('✅ 检测到剪贴板中有 Cookie，是否自动填入并保存？')) {
+                                cookieInput.value = text.trim();
+                                doSaveCookie();
+                            }
+                        }
+                    }).catch(function() {
+                        // 静默忽略
+                    });
+                }
+            }
+
+            // ---- 执行保存 Cookie ----
+            function doSaveCookie() {
+                const cookieString = cookieInput.value.trim();
+                if (!cookieString) {
+                    showCookieStatus('请先获取 Cookie', 'error');
+                    return;
+                }
+                showCookieStatus('正在保存…', '');
+                saveCookie(cookieString).then(data => {
+                    if (data.ok) {
+                        showCookieStatus('✅ Cookie 已保存', 'success');
+                        // 刷新状态
+                        checkCookieStatus();
+                    } else {
+                        showCookieStatus('❌ 保存失败: ' + (data.detail || '未知错误'), 'error');
+                    }
+                }).catch(() => {
+                    showCookieStatus('❌ 保存请求失败', 'error');
+                });
+            }
+
+            // ---- 搜索功能 ----
             function showStatus(msg, type) {
                 type = type || '';
                 searchStatus.classList.remove('hidden');
                 searchStatus.textContent = msg;
-                searchStatus.className = 'status-box' + (type === 'error' ? ' error' : '');
+                searchStatus.className = 'status-box' + (type === 'error' ? ' error' : type === 'loading' ? ' loading' :
+                    '');
             }
 
             function hideStatus() {
@@ -594,16 +1003,35 @@
                     return;
                 }
 
+                const mode = getUserMode();
+                const headers = { 'Content-Type': 'application/json' };
+
+                if (mode === 'guest') {
+                    const cookie = localStorage.getItem('missav_cookie');
+                    if (!cookie) {
+                        showStatus('访客模式：请先设置 Cookie（点击「自动获取」）', 'error');
+                        return;
+                    }
+                    headers['X-User-Cookie'] = cookie;
+                }
+                // 开发者模式：后端自动从数据库读取，无需传头
+
                 searchSubmitBtn.disabled = true;
                 searchSubmitBtn.textContent = '搜索中…';
-                hideStatus();
+                showStatus('正在搜索，请稍候…', 'loading');
                 resultHeader.classList.add('hidden');
                 gallery.innerHTML = '';
 
-                fetch(API_BASE + '/search?q=' + encodeURIComponent(keyword))
-                    .then(res => res.json())
+                fetch(API_BASE + '/search?q=' + encodeURIComponent(keyword), { headers })
+                    .then(res => {
+                        if (!res.ok) {
+                            return res.json().then(data => { throw new Error(data.detail || '搜索失败'); });
+                        }
+                        return res.json();
+                    })
                     .then(data => {
                         if (!data.ok) throw new Error(data.detail || '搜索失败');
+                        hideStatus();
                         renderResults(data);
                     })
                     .catch(err => {
@@ -622,7 +1050,8 @@
                 gallery.innerHTML = '';
 
                 if (!data.items || data.items.length === 0) {
-                    gallery.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:rgba(255,255,255,0.2);padding:40px 0;font-size:14px;font-weight:300;">没有找到相关影片</div>';
+                    gallery.innerHTML =
+                        '<div style="grid-column:1/-1;text-align:center;color:rgba(255,255,255,0.2);padding:40px 0;font-size:14px;font-weight:300;">没有找到相关影片</div>';
                     return;
                 }
 
@@ -710,11 +1139,31 @@
                 return wrapper;
             }
 
+            // ---- 详情 ----
             function fetchDetail(videoId, autoDownload) {
-                fetch(API_BASE + '/info?video_id=' + encodeURIComponent(videoId))
-                    .then(res => res.json())
+                const mode = getUserMode();
+                const headers = { 'Content-Type': 'application/json' };
+
+                if (mode === 'guest') {
+                    const cookie = localStorage.getItem('missav_cookie');
+                    if (!cookie) {
+                        showStatus('访客模式：请先设置 Cookie', 'error');
+                        return;
+                    }
+                    headers['X-User-Cookie'] = cookie;
+                }
+
+                showStatus('正在获取影片信息…', 'loading');
+                fetch(API_BASE + '/info?video_id=' + encodeURIComponent(videoId), { headers })
+                    .then(res => {
+                        if (!res.ok) {
+                            return res.json().then(data => { throw new Error(data.detail || '获取详情失败'); });
+                        }
+                        return res.json();
+                    })
                     .then(data => {
                         if (!data.ok) throw new Error(data.detail || '获取详情失败');
+                        hideStatus();
                         openModal(data.item, autoDownload);
                     })
                     .catch(err => {
@@ -782,16 +1231,30 @@
                     return;
                 }
                 const filename = (currentItem.code || 'missav') + '.mp4';
-                window.location.href = '/api/video-download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(filename);
+                window.location.href = '/api/video-download?url=' + encodeURIComponent(url) + '&filename=' +
+                    encodeURIComponent(filename);
             }
 
-            // ---- 绑定事件 ----
+            // ---- 事件绑定 ----
+            // 自动获取按钮
+            autoGetBtn.addEventListener('click', openGuide);
+
+            // 引导弹窗
+            guideOpenBtn.addEventListener('click', openMissav);
+            guideCopyBtn.addEventListener('click', copyCodeToClipboard);
+            guideCloseBtn.addEventListener('click', closeGuide);
+            guideOverlay.addEventListener('click', function(e) {
+                if (e.target === guideOverlay) closeGuide();
+            });
+
+            // 搜索
             searchBtn.addEventListener('click', performSearch);
             searchSubmitBtn.addEventListener('click', performSearch);
             searchInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') performSearch();
             });
 
+            // 模态框
             modalCloseBtn.addEventListener('click', closeModal);
             modal.addEventListener('click', function(e) {
                 if (e.target === modal) closeModal();
@@ -799,7 +1262,6 @@
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') closeModal();
             });
-
             modalDownloadBtn.addEventListener('click', downloadCurrent);
             modalOriginalBtn.addEventListener('click', function() {
                 if (currentItem && currentItem.url) {
@@ -807,15 +1269,26 @@
                 }
             });
 
+            // 返回首页
             backToHome.addEventListener('click', function() {
                 window.location.href = '/';
             });
 
-            console.log('🎬 MissAV 电影下载器已加载（Turbo 模式）');
+            // ---- 启动流程 ----
+            // 1. 验证 session（开发者模式）
+            checkSession();
+
+            // 2. 检查 Cookie 状态
+            checkCookieStatus();
+
+            // 3. 延迟检测剪贴板（给用户留时间切换窗口）
+            setTimeout(detectClipboardCookie, 1500);
+
+            console.log('🎬 MissAV 电影下载器已加载（Cookie 方案，模式: ' + getUserMode() + '）');
             console.log('开发者：浮生若夢');
         }
 
-        // 绑定事件：Turbo 切换 + 常规加载
+        // ---- Turbo 兼容 ----
         document.addEventListener('turbo:load', initApp);
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
