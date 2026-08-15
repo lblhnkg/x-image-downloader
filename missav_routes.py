@@ -35,7 +35,12 @@ def get_client():
 async def missav_search(q: str = Query(..., min_length=1)):
     try:
         client = get_client()
-        items = await client.search(q)
+        items = []
+        # 异步迭代搜索结果
+        async for item in client.search(q):
+            items.append(item)
+            if len(items) >= 30:  # 限制最多30条，避免数据过多
+                break
         # 格式化返回（保持与旧版本兼容）
         formatted = []
         for item in items:
@@ -55,6 +60,7 @@ async def missav_search(q: str = Query(..., min_length=1)):
 async def missav_info(video_id: str = Query(...)):
     try:
         client = get_client()
+        # detail 可能返回单个对象，直接 await
         detail = await client.detail(video_id)
         result = {
             "id": detail.get("id") or video_id,
