@@ -4,6 +4,11 @@ FROM python:3.12-slim
 # 设置工作目录
 WORKDIR /app
 
+# 安装系统依赖（FFmpeg 用于 X 视频 HLS 转 MP4）
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
 # 复制依赖文件并安装（利用 Docker 缓存层，加快构建）
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
