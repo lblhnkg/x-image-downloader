@@ -21,11 +21,14 @@ _client = None
 def get_client():
     global _client
     if _client is None:
+        # 切换指纹类型，MissAV 可能已封锁某些指纹
+        # 可选值：chrome123, chrome124, edge124, safari17
+        impersonation = os.environ.get("MISSAV_IMPERSONATION", "chrome124")
         if PROXY:
-            _client = Client(proxy=PROXY)
+            _client = Client(proxy=PROXY, impersonation=impersonation)
         else:
-            _client = Client()
-        print("[MissAV] 客户端初始化成功（自动处理 Cloudflare）")
+            _client = Client(impersonation=impersonation)
+        print(f"[MissAV] 客户端初始化成功（指纹: {impersonation}）")
     return _client
 
 # ============================================================
@@ -39,9 +42,9 @@ async def missav_search(q: str = Query(..., min_length=1)):
         # 异步迭代搜索结果
         async for item in client.search(q):
             items.append(item)
-            if len(items) >= 30:  # 限制最多30条，避免数据过多
+            if len(items) >= 30:
                 break
-        # 格式化返回（保持与旧版本兼容）
+        # 格式化返回
         formatted = []
         for item in items:
             formatted.append({
@@ -60,7 +63,6 @@ async def missav_search(q: str = Query(..., min_length=1)):
 async def missav_info(video_id: str = Query(...)):
     try:
         client = get_client()
-        # detail 可能返回单个对象，直接 await
         detail = await client.detail(video_id)
         result = {
             "id": detail.get("id") or video_id,
