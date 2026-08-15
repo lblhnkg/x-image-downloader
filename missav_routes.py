@@ -1,51 +1,124 @@
 # ============================================================
-# missav_routes.py - 通过 Cloudflare Worker 代理抓取
+# missav_routes.py - 自动使用你的订阅节点作为代理
 # ============================================================
 
 import os
 import re
 import time
+import base64
+import requests as req  # 用于请求订阅地址
 from urllib.parse import quote, urlparse
 from fastapi import APIRouter, HTTPException, Query
 import httpx
 from bs4 import BeautifulSoup
 
+# 导入 singbox 代理库
+try:
+    from singbox2proxy import SingBoxProxy
+except ImportError:
+    print("⚠️ 请先安装 singbox2proxy: pip install singbox2proxy")
+    SingBoxProxy = None
+
 router = APIRouter(prefix="/missav", tags=["MissAV"])
 
-# 🔴 替换成你自己的 Worker URL（已为你填好）
-WORKER_URL = "https://missav-proxy.yilimoshangshang.workers.dev"
+# ------------------------------------------------------------
+# 配置区（你只需要改这里！）
+# ------------------------------------------------------------
+
+# 你的订阅地址（就是你发我的那个链接）
+SUBSCRIBE_URL = "https://liangxin.xyz/api/v1/liangxin?OwO=0ff6856dd2351830c0c70dcb55041dfc"
+
+# ------------------------------------------------------------
 
 class MissAVFetcher:
     def __init__(self):
         self.base_domains = ["missav.ws", "missav.ai"]
         self.timeout = 60
-        self.max_retries = 3
+        self.proxy_client = None
+        self._init_proxy()
 
-    def _fetch_via_worker(self, url):
-        """通过 Cloudflare Worker 代理获取页面"""
-        proxy_url = f"{WORKER_URL}?url={quote(url, safe='')}"
-        with httpx.Client(timeout=self.timeout, follow_redirects=True) as client:
-            for attempt in range(self.max_retries):
-                try:
-                    print(f"[MissAV] 通过 Worker 请求: {url}")
-                    resp = client.get(proxy_url)
-                    if resp.status_code == 200:
-                        # 检查是否返回验证页
-                        if "Just a moment" in resp.text or "Cloudflare" in resp.text[:500]:
-                            print(f"[MissAV] Worker 返回验证页，重试 {attempt+1}")
-                            time.sleep(2 ** attempt)
-                            continue
-                        return resp.text
-                    else:
-                        print(f"[MissAV] Worker 返回 {resp.status_code}，重试 {attempt+1}")
-                        time.sleep(1 * (attempt + 1))
-                except Exception as e:
-                    print(f"[MissAV] Worker 请求失败 {attempt+1}: {e}")
-                    if attempt == self.max_retries - 1:
-                        raise
+    def _init_proxy(self):
+        """初始化代理：从订阅地址提取节点并启动 sing-box"""
+        if SingBoxProxy is None:
+            print("[MissAV] singbox2proxy 未安装，无法使用代理")
+            return
+
+        try:
+            print("[MissAV] 正在获取订阅节点...")
+            # 1. 获取订阅内容
+            resp = req.get(SUBSCRIBE_URL, timeout=30)
+            if resp.status_code != 200:
+                print(f"[MissAV] 订阅获取失败: {resp.status_code}")
+                return
+
+            raw_text = resp.text.strip()
+            
+            # 2. 尝试解码 Base64（订阅通常都是 Base64 编码的）
+            decoded = ""
+            try:
+                # 补全 Base64 填充
+                missing_padding = len(raw_text) % 4
+                if missing_padding:
+                    raw_text += '=' * (4 - missing_padding)
+                decoded = base64.b64decode(raw_text).decode('utf-8')
+                print(f"[MissAV] 订阅解码成功")
+            except Exception:
+                # 如果不是 Base64，就直接用原文
+                decoded = raw_text
+                print("[MissAV] 订阅不是 Base64 格式，直接使用原文")
+
+            # 3. 从解码内容中提取 vless:// 或 vmess:// 链接
+            # 匹配标准代理链接格式
+            match = re.search(r'(vless|vmess)://[^\s\n]+', decoded)
+            if not match:
+                # 尝试找包含 @ 和端口的通用格式
+                match = re.search(r'[a-zA-Z0-9]+://[^\s\n]+', decoded)
+            
+            if not match:
+                print("[MissAV] 错误：未能从订阅中提取出有效的代理链接")
+                return
+
+            proxy_link = match.group(0)
+            print(f"[MissAV] 成功提取代理节点: {proxy_link[:50]}...")
+
+            # 4. 初始化 sing-box 代理客户端
+            # 注意：首次运行会下载 sing-box 内核（约 20MB），可能需要几十秒
+            self.proxy_client = SingBoxProxy(proxy_link)
+            print("[MissAV] Sing-box 代理客户端初始化成功")
+
+        except Exception as e:
+            print(f"[MissAV] 代理初始化失败: {e}")
+            self.proxy_client = None
+
+    def _fetch_via_proxy(self, url):
+        """通过 sing-box 代理请求目标网页"""
+        if not self.proxy_client:
+            raise Exception("代理客户端未初始化，请检查订阅链接是否有效")
+
+        for attempt in range(3):
+            try:
+                print(f"[MissAV] 通过代理请求 (尝试 {attempt+1}): {url}")
+                # 使用代理发起 GET 请求
+                # singbox2proxy 的 request 方法返回响应对象
+                response = self.proxy_client.request("GET", url)
+                
+                if response.status_code == 200:
+                    # 检查是否返回了验证页
+                    if "Just a moment" in response.text or "Cloudflare" in response.text[:500]:
+                        print(f"[MissAV] 代理返回了验证页，重试中...")
+                        time.sleep(2 ** attempt)
+                        continue
+                    return response.text
+                else:
+                    print(f"[MissAV] 代理返回状态码: {response.status_code}")
                     time.sleep(1 * (attempt + 1))
-            raise Exception("Worker 请求失败，已达最大重试次数")
+            except Exception as e:
+                print(f"[MissAV] 代理请求异常 {attempt+1}: {e}")
+                time.sleep(1 * (attempt + 1))
+        
+        raise Exception("所有代理请求均失败，可能节点已失效")
 
+    # ---------- 搜索与解析逻辑（和之前一样，只是换成了代理请求）----------
     def search(self, keyword):
         if len(keyword) < 2:
             raise ValueError("至少输入2个字符")
@@ -54,7 +127,7 @@ class MissAVFetcher:
             for path in [f"/search/{quote(keyword)}", f"/search?q={quote(keyword)}"]:
                 url = base + path
                 try:
-                    html = self._fetch_via_worker(url)
+                    html = self._fetch_via_proxy(url)
                     if len(html) < 500:
                         continue
                     soup = BeautifulSoup(html, 'lxml')
@@ -109,14 +182,14 @@ class MissAVFetcher:
         if video_id_or_url.startswith('http'):
             parsed = urlparse(video_id_or_url)
             base = f"{parsed.scheme}://{parsed.netloc}"
-            html = self._fetch_via_worker(video_id_or_url)
+            html = self._fetch_via_proxy(video_id_or_url)
             return self._parse_detail(html, base, video_id_or_url, video_id_or_url)
         for domain in self.base_domains:
             base = "https://" + domain
             for path in [f"/watch/{video_id_or_url}", f"/dm1/{video_id_or_url}", f"/v/{video_id_or_url}"]:
                 url = base + path
                 try:
-                    html = self._fetch_via_worker(url)
+                    html = self._fetch_via_proxy(url)
                     if len(html) < 500:
                         continue
                     return self._parse_detail(html, base, video_id_or_url, url)
