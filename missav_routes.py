@@ -10,6 +10,7 @@ from fastapi import HTTPException
 from fastapi import Request
 from pydantic import BaseModel
 
+
 # ============================================================
 # 数据库
 # ============================================================
@@ -23,6 +24,17 @@ if not MISSAV_DATABASE_URL:
 
 missav_db = Database(MISSAV_DATABASE_URL)
 
+
+# ============================================================
+# 数据库表
+# ============================================================
+
+# 明确指定 public schema。
+# 避免 Render / Neon 的 search_path 不一致导致：
+# relation "missav_items" does not exist
+MISSAV_TABLE = "public.missav_items"
+
+
 # ============================================================
 # Router
 # ============================================================
@@ -32,10 +44,10 @@ router = APIRouter(
     tags=["MissAV"]
 )
 
+
 # ============================================================
 # Model
 # ============================================================
-
 
 class CollectItem(BaseModel):
 
@@ -60,7 +72,6 @@ class CollectItem(BaseModel):
 # 工具
 # ============================================================
 
-
 def is_developer(request: Request):
 
     return bool(
@@ -71,7 +82,6 @@ def is_developer(request: Request):
 # ============================================================
 # 采集
 # ============================================================
-
 
 @router.post("/collect")
 async def collect_missav_item(
@@ -90,9 +100,9 @@ async def collect_missav_item(
     try:
 
         existing = await missav_db.fetch_one(
-            """
+            f"""
             SELECT id
-            FROM missav_items
+            FROM {MISSAV_TABLE}
             WHERE video_id=:video_id
             """,
             {
@@ -122,8 +132,8 @@ async def collect_missav_item(
         if existing:
 
             await missav_db.execute(
-                """
-                UPDATE missav_items
+                f"""
+                UPDATE {MISSAV_TABLE}
 
                 SET
 
@@ -151,9 +161,9 @@ async def collect_missav_item(
         else:
 
             await missav_db.execute(
-                """
-                INSERT INTO missav_items(
-
+                f"""
+                INSERT INTO {MISSAV_TABLE}(
+                    
                     video_id,
 
                     title,
@@ -212,7 +222,6 @@ async def collect_missav_item(
 # 获取全部
 # ============================================================
 
-
 @router.get("/my-items")
 async def get_items(
     request: Request
@@ -229,10 +238,10 @@ async def get_items(
     try:
 
         rows = await missav_db.fetch_all(
-            """
+            f"""
             SELECT *
 
-            FROM missav_items
+            FROM {MISSAV_TABLE}
 
             ORDER BY created_at DESC
             """
@@ -290,7 +299,6 @@ async def get_items(
 # 搜索
 # ============================================================
 
-
 @router.get("/search")
 async def search_items(
     q: str = ""
@@ -299,10 +307,10 @@ async def search_items(
     try:
 
         rows = await missav_db.fetch_all(
-            """
+            f"""
             SELECT *
 
-            FROM missav_items
+            FROM {MISSAV_TABLE}
 
             WHERE
 
@@ -340,7 +348,6 @@ async def search_items(
 # 女优搜索
 # ============================================================
 
-
 @router.get("/actress/{name}")
 async def actress_items(
     name: str
@@ -349,10 +356,10 @@ async def actress_items(
     try:
 
         rows = await missav_db.fetch_all(
-            """
+            f"""
             SELECT *
 
-            FROM missav_items
+            FROM {MISSAV_TABLE}
 
             WHERE
 
@@ -385,27 +392,26 @@ async def actress_items(
 # 统计
 # ============================================================
 
-
 @router.get("/stats")
 async def stats():
 
     try:
 
         total = await missav_db.fetch_val(
-            """
+            f"""
             SELECT COUNT(*)
 
-            FROM missav_items
+            FROM {MISSAV_TABLE}
             """
         )
 
         actresses = await missav_db.fetch_val(
-            """
+            f"""
             SELECT COUNT(
                 DISTINCT actress
             )
 
-            FROM missav_items
+            FROM {MISSAV_TABLE}
             """
         )
 
@@ -430,7 +436,6 @@ async def stats():
 # 清空
 # ============================================================
 
-
 @router.delete("/clear")
 async def clear_items(
     request: Request
@@ -446,8 +451,8 @@ async def clear_items(
     try:
 
         await missav_db.execute(
-            """
-            DELETE FROM missav_items
+            f"""
+            DELETE FROM {MISSAV_TABLE}
             """
         )
 
@@ -467,7 +472,6 @@ async def clear_items(
 # ============================================================
 # 预留：同步我的喜欢
 # ============================================================
-
 
 @router.post("/sync-saved")
 async def sync_saved():
