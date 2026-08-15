@@ -17,51 +17,37 @@
             color: #fff;
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
             min-height: 100vh;
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            padding: 20px;
+            padding: 16px;
             padding-bottom: 80px;
         }
 
-        .hidden {
-            display: none !important;
-        }
-
         .app-container {
-            width: 100%;
             max-width: 480px;
             margin: 0 auto;
             background: linear-gradient(145deg, #141414 0%, #1a1a1a 100%);
-            border-radius: 32px;
-            padding: 40px 28px 30px;
+            border-radius: 28px;
+            padding: 32px 20px 30px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-            min-height: 560px;
-            transition: all 0.3s ease;
         }
 
         @media (min-width: 700px) {
             .app-container {
                 max-width: 900px;
-                padding: 50px 40px 40px;
+                padding: 40px 36px;
                 border-radius: 36px;
-            }
-            .gallery {
-                grid-template-columns: repeat(4, 1fr) !important;
-                gap: 14px;
             }
         }
 
-        @media (min-width: 1024px) {
-            .app-container {
-                max-width: 1100px;
-                padding: 60px 50px 50px;
-                border-radius: 40px;
-            }
-            .gallery {
-                grid-template-columns: repeat(4, 1fr) !important;
-                gap: 18px;
-            }
+        .back-link {
+            display: inline-block;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .back-link:hover {
+            color: rgba(255, 255, 255, 0.7);
         }
 
         .app-title {
@@ -69,10 +55,9 @@
             font-weight: 600;
             letter-spacing: -0.5px;
             text-align: center;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             color: #fff;
         }
-
         .app-subtitle {
             text-align: center;
             font-size: 13px;
@@ -81,32 +66,18 @@
             margin-bottom: 24px;
         }
 
-        .back-link {
-            display: inline-block;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 14px;
-            text-decoration: none;
-            margin-bottom: 18px;
-            transition: color 0.2s ease;
-            cursor: pointer;
-        }
-
-        .back-link:hover {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        /* ---- Cookie 设置区域 ---- */
+        /* ---- Cookie 设置区域（修复 UI） ---- */
         .cookie-section {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 16px;
             margin-bottom: 20px;
         }
 
         .cookie-section .label {
             font-size: 13px;
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(255, 255, 255, 0.5);
             margin-bottom: 8px;
             display: block;
         }
@@ -114,12 +85,15 @@
         .cookie-section .row {
             display: flex;
             gap: 8px;
+            align-items: center;
+            flex-wrap: nowrap;
         }
 
         .cookie-section .row input {
             flex: 1;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            min-width: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 8px;
             padding: 10px 12px;
             color: #fff;
@@ -127,11 +101,12 @@
             font-family: inherit;
             outline: none;
             transition: border-color 0.25s ease;
-            cursor: default;
         }
-
         .cookie-section .row input:focus {
-            border-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+        .cookie-section .row input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
         }
 
         .cookie-section .btn-auto {
@@ -139,29 +114,28 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
             color: #fff;
-            padding: 10px 20px;
+            padding: 10px 14px;
             cursor: pointer;
             font-family: inherit;
             font-size: 13px;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
             white-space: nowrap;
             font-weight: 500;
+            flex-shrink: 0;
         }
-
         .cookie-section .btn-auto:hover {
             background: rgba(255, 255, 255, 0.14);
         }
 
         .cookie-status {
             font-size: 12px;
-            margin-top: 6px;
+            margin-top: 8px;
             color: rgba(255, 255, 255, 0.3);
+            word-break: break-all;
         }
-
         .cookie-status.success {
             color: #4caf50;
         }
-
         .cookie-status.error {
             color: #ff6b6b;
         }
@@ -177,7 +151,6 @@
             justify-content: center;
             padding: 20px;
         }
-
         .guide-overlay.hidden {
             display: none !important;
         }
@@ -186,17 +159,17 @@
             background: #1a1a1a;
             border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 20px;
-            padding: 30px 28px 24px;
-            max-width: 480px;
+            padding: 24px 20px;
+            max-width: 440px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
         }
 
         .guide-box .guide-title {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 600;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             color: #fff;
         }
 
@@ -206,28 +179,24 @@
             line-height: 1.8;
             font-weight: 300;
         }
-
         .guide-box .guide-desc ol {
             padding-left: 20px;
             margin-bottom: 16px;
         }
-
         .guide-box .guide-desc ol li {
             margin-bottom: 8px;
         }
-
         .guide-box .guide-desc strong {
             color: #fff;
         }
 
         .guide-box .guide-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
         }
-
         .guide-box .guide-actions button {
-            flex: 1;
+            flex: 1 1 100px;
             padding: 12px 0;
             border: 0;
             border-radius: 10px;
@@ -235,35 +204,28 @@
             font-weight: 500;
             cursor: pointer;
             font-family: inherit;
-            transition: all 0.2s ease;
-            min-width: 100px;
+            transition: all 0.2s;
         }
-
         .guide-box .guide-actions .btn-open {
             background: #fff;
             color: #0a0a0a;
         }
-
         .guide-box .guide-actions .btn-open:hover {
             opacity: 0.85;
         }
-
         .guide-box .guide-actions .btn-copy {
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.08);
             color: #fff;
         }
-
         .guide-box .guide-actions .btn-copy:hover {
             background: rgba(255, 255, 255, 0.12);
         }
-
         .guide-box .guide-actions .btn-close-guide {
             background: transparent;
             color: rgba(255, 255, 255, 0.3);
             flex: 0.5;
         }
-
         .guide-box .guide-actions .btn-close-guide:hover {
             color: #fff;
         }
@@ -275,15 +237,12 @@
             text-align: center;
             min-height: 24px;
         }
-
         .guide-status.success {
-            color: rgba(76, 175, 80, 0.8);
+            color: #4caf50;
         }
-
         .guide-status.error {
-            color: rgba(255, 107, 107, 0.8);
+            color: #ff6b6b;
         }
-
         .guide-status .code-block {
             display: block;
             background: rgba(255, 255, 255, 0.05);
@@ -300,7 +259,6 @@
         .search-section {
             margin-top: 6px;
         }
-
         .search-label {
             font-size: 13px;
             color: rgba(255, 255, 255, 0.4);
@@ -308,13 +266,11 @@
             margin-bottom: 6px;
             display: block;
         }
-
         .search-row {
             display: flex;
             gap: 10px;
             align-items: center;
         }
-
         .search-row input {
             flex: 1;
             background: transparent;
@@ -324,19 +280,16 @@
             font-size: 16px;
             color: #fff;
             outline: none;
-            transition: border-color 0.25s ease;
+            transition: border-color 0.25s;
             font-family: inherit;
         }
-
         .search-row input::placeholder {
             color: rgba(255, 255, 255, 0.2);
             font-weight: 300;
         }
-
         .search-row input:focus {
             border-bottom-color: rgba(255, 255, 255, 0.5);
         }
-
         .search-row .search-btn-icon {
             background: transparent;
             border: 0;
@@ -344,9 +297,8 @@
             font-size: 20px;
             cursor: pointer;
             padding: 6px 4px 6px 10px;
-            transition: color 0.2s ease;
+            transition: color 0.2s;
         }
-
         .search-row .search-btn-icon:hover {
             color: rgba(255, 255, 255, 0.7);
         }
@@ -361,16 +313,14 @@
             font-size: 16px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
             font-family: inherit;
             margin-top: 18px;
         }
-
         .primary-btn:hover {
             opacity: 0.85;
             transform: scale(0.98);
         }
-
         .primary-btn:disabled {
             opacity: 0.3;
             cursor: default;
@@ -389,20 +339,17 @@
             line-height: 1.6;
             min-height: 20px;
         }
-
         .status-box.error {
             color: #ff6b6b;
             border-color: rgba(255, 107, 107, 0.15);
             background: rgba(255, 107, 107, 0.04);
         }
-
         .status-box.loading {
             color: #ffd93d;
             border-color: rgba(255, 217, 61, 0.15);
             background: rgba(255, 217, 61, 0.04);
         }
 
-        /* ---- 结果 ---- */
         .result-header {
             display: flex;
             justify-content: space-between;
@@ -410,13 +357,11 @@
             margin-top: 18px;
             margin-bottom: 12px;
         }
-
         .result-title {
             font-size: 15px;
             font-weight: 450;
             color: #fff;
         }
-
         .result-count {
             font-size: 12px;
             color: rgba(255, 255, 255, 0.25);
@@ -428,22 +373,26 @@
             grid-template-columns: 1fr 1fr;
             gap: 8px;
         }
+        @media (min-width: 700px) {
+            .gallery {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 14px;
+            }
+        }
 
         .item {
             background: rgba(255, 255, 255, 0.04);
             border-radius: 10px;
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.04);
-            transition: all 0.2s ease;
+            transition: all 0.2s;
         }
-
         .media-wrap {
             position: relative;
             width: 100%;
             background: rgba(255, 255, 255, 0.03);
             overflow: hidden;
         }
-
         .media-wrap img {
             display: block;
             width: 100%;
@@ -451,7 +400,6 @@
             object-fit: cover;
             cursor: pointer;
         }
-
         .media-error {
             width: 100%;
             aspect-ratio: 1/1;
@@ -465,7 +413,6 @@
             padding: 12px;
             font-weight: 300;
         }
-
         .video-badge {
             position: absolute;
             left: 8px;
@@ -478,11 +425,9 @@
             font-weight: 400;
             letter-spacing: 0.3px;
         }
-
         .item-info {
             padding: 8px 10px;
         }
-
         .item-title {
             font-size: 12px;
             font-weight: 400;
@@ -491,21 +436,18 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-
         .item-code {
             font-size: 11px;
             color: rgba(255, 255, 255, 0.3);
             margin-top: 2px;
             font-weight: 300;
         }
-
         .item-actions {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 4px;
             margin-top: 6px;
         }
-
         .item-actions button {
             padding: 5px 0;
             border-radius: 6px;
@@ -513,40 +455,16 @@
             cursor: pointer;
             font-family: inherit;
             border: 0;
-            transition: all 0.2s ease;
-        }
-
-        .item-actions .btn-view {
+            transition: all 0.2s;
             background: rgba(255, 255, 255, 0.05);
             color: rgba(255, 255, 255, 0.4);
         }
-
-        .item-actions .btn-view:hover {
+        .item-actions button:hover {
             background: rgba(255, 255, 255, 0.1);
             color: rgba(255, 255, 255, 0.7);
         }
 
-        .item-actions .btn-download {
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .item-actions .btn-download:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .item-actions .btn-original {
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .item-actions .btn-original:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        /* ---- 模态框 ---- */
+        /* ---- Modal ---- */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -556,19 +474,16 @@
             flex-direction: column;
             padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
         }
-
         .modal-overlay.hidden {
             display: none !important;
         }
-
         .modal-top {
             min-height: 54px;
             padding: 10px 16px 0;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-end;
         }
-
         .modal-close {
             background: rgba(255, 255, 255, 0.08);
             border: 0;
@@ -578,15 +493,13 @@
             font-size: 13px;
             cursor: pointer;
             font-family: inherit;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
             font-weight: 300;
         }
-
         .modal-close:hover {
             background: rgba(255, 255, 255, 0.15);
             color: #fff;
         }
-
         .modal-content {
             flex: 1;
             display: flex;
@@ -596,12 +509,10 @@
             overflow: auto;
             flex-direction: column;
         }
-
         .modal-content video {
             max-width: 100%;
             max-height: 70vh;
         }
-
         .modal-content .modal-info {
             width: 100%;
             max-width: 600px;
@@ -611,37 +522,31 @@
             font-weight: 300;
             line-height: 1.6;
         }
-
         .modal-content .modal-info .mi-title {
             font-size: 18px;
             font-weight: 500;
             color: #fff;
             margin-bottom: 4px;
         }
-
         .modal-content .modal-info .mi-code {
             font-size: 13px;
             color: rgba(255, 255, 255, 0.3);
         }
-
         .modal-content .modal-info .mi-actors {
             font-size: 13px;
             color: rgba(255, 255, 255, 0.4);
             margin-top: 4px;
         }
-
         .modal-content .modal-info .mi-desc {
             font-size: 13px;
             color: rgba(255, 255, 255, 0.3);
             margin-top: 6px;
         }
-
         .modal-bottom {
             padding: 10px 16px 16px;
             display: flex;
             gap: 10px;
         }
-
         .modal-bottom button {
             flex: 1;
             padding: 12px 0;
@@ -651,23 +556,19 @@
             font-weight: 450;
             cursor: pointer;
             font-family: inherit;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
         }
-
         .modal-bottom .modal-download {
             background: #fff;
             color: #0a0a0a;
         }
-
         .modal-bottom .modal-download:hover {
             opacity: 0.85;
         }
-
         .modal-bottom .modal-original {
             background: rgba(255, 255, 255, 0.08);
             color: rgba(255, 255, 255, 0.6);
         }
-
         .modal-bottom .modal-original:hover {
             background: rgba(255, 255, 255, 0.15);
             color: #fff;
@@ -684,614 +585,664 @@
 
         @media (max-width: 420px) {
             .app-container {
-                padding: 28px 18px 22px;
-                border-radius: 24px;
-            }
-            .app-title {
-                font-size: 22px;
-            }
-            .gallery {
-                gap: 6px;
-            }
-            .item-actions button {
-                font-size: 9px;
-                padding: 4px 0;
-            }
-        }
-
-        @media (max-width: 360px) {
-            .app-container {
-                padding: 20px 12px 16px;
+                padding: 20px 14px;
                 border-radius: 20px;
             }
-            .item-actions button {
-                font-size: 8px;
-                padding: 3px 0;
+            .cookie-section .row input {
+                font-size: 12px;
+                padding: 8px 10px;
+            }
+            .cookie-section .btn-auto {
+                font-size: 12px;
+                padding: 8px 12px;
             }
             .guide-box {
-                padding: 20px 16px;
+                padding: 18px 16px;
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        <span class="back-link" id="backToHome">‹ 返回首页</span>
+<div class="app-container">
+    <span class="back-link" id="backToHome">‹ 返回首页</span>
 
-        <div class="app-title">🎬 MissAV 电影下载器</div>
-        <div class="app-subtitle">输入番号或演员名，搜索并下载影片</div>
+    <div class="app-title">🎬 MissAV 电影下载器</div>
+    <div class="app-subtitle">输入番号或演员名，搜索并下载影片</div>
 
-        <!-- ========== Cookie 设置区域 ========== -->
-        <div class="cookie-section">
-            <label class="label">🔑 设置 MissAV 会话</label>
-            <div class="row">
-                <input type="text" id="cookieInput" placeholder="点击右侧按钮自动获取" readonly>
-                <button class="btn-auto" id="autoGetBtn">🚀 自动获取</button>
-            </div>
-            <div id="cookieStatus" class="cookie-status">⚠️ 请先设置 Cookie</div>
+    <!-- ===== Cookie 设置区 ===== -->
+    <div class="cookie-section">
+        <label class="label">🔑 设置 MissAV 会话</label>
+        <div class="row">
+            <input type="text" id="cookieInput" placeholder="点击右侧按钮获取 Cookie" readonly>
+            <button class="btn-auto" id="autoGetBtn">🚀 自动获取</button>
         </div>
-
-        <!-- ========== 搜索区域 ========== -->
-        <div class="search-section">
-            <label class="search-label">搜索</label>
-            <div class="search-row">
-                <input type="text" id="searchInput" placeholder="番号如 SSIS-001 或 演员名" autocomplete="off" autocapitalize="off" spellcheck="false">
-                <button class="search-btn-icon" id="searchBtn">⌕</button>
-            </div>
-            <button class="primary-btn" id="searchSubmitBtn">搜索影片</button>
-            <div class="status-box hidden" id="searchStatus"></div>
-
-            <div class="result-header hidden" id="resultHeader">
-                <span class="result-title" id="resultTitle">搜索结果</span>
-                <span class="result-count" id="resultCount"></span>
-            </div>
-            <div class="gallery" id="gallery"></div>
-        </div>
-
-        <div class="dev-signature">开发者：浮生若夢</div>
-    </div>
-
-    <!-- ========== 模态框 ========== -->
-    <div class="modal-overlay hidden" id="modal">
-        <div class="modal-top">
-            <span style="color:rgba(255,255,255,0.2);font-size:13px;font-weight:300;" id="modalTitle">影片预览</span>
-            <button class="modal-close" id="modalCloseBtn">关闭</button>
-        </div>
-        <div class="modal-content" id="modalContent"></div>
-        <div class="modal-bottom">
-            <button class="modal-download" id="modalDownloadBtn">下载视频</button>
-            <button class="modal-original" id="modalOriginalBtn">打开原页</button>
+        <div id="cookieStatus" class="cookie-status">⚠️ 请先设置 Cookie</div>
+        <!-- 增加一个手动输入/粘贴的提示，当点击输入框时变为可编辑 -->
+        <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,0.2);">
+            <span id="manualHint">💡 点击输入框可手动粘贴 Cookie</span>
         </div>
     </div>
 
-    <!-- ========== 引导弹窗 ========== -->
-    <div class="guide-overlay hidden" id="guideOverlay">
-        <div class="guide-box">
-            <div class="guide-title">🍪 获取 Cookie 指引</div>
-            <div class="guide-desc">
-                <p style="margin-bottom:12px;">请按以下步骤操作（约 30 秒）：</p>
-                <ol>
-                    <li>点击下方 <strong>「打开 MissAV」</strong> 按钮，在新窗口完成 5 秒盾验证</li>
-                    <li>验证通过后，点击 <strong>「一键复制代码」</strong>（代码已自动复制）</li>
-                    <li>回到 MissAV 页面，在地址栏 <strong>粘贴代码</strong>（Ctrl+V）并 <strong>回车</strong></li>
-                    <li>弹窗提示 <strong>「Cookie 已复制」</strong>，返回本页面</li>
-                    <li>Cookie 会自动填入，点击 <strong>「保存」</strong> 即可</li>
-                </ol>
-            </div>
-            <div class="guide-actions">
-                <button class="btn-open" id="guideOpenBtn">🌐 打开 MissAV</button>
-                <button class="btn-copy" id="guideCopyBtn">📋 一键复制代码</button>
-                <button class="btn-close-guide" id="guideCloseBtn">✕</button>
-            </div>
-            <div id="guideStatus" class="guide-status">点击「一键复制代码」复制脚本</div>
+    <!-- ===== 搜索区 ===== -->
+    <div class="search-section">
+        <label class="search-label">搜索</label>
+        <div class="search-row">
+            <input type="text" id="searchInput" placeholder="番号如 SSIS-001 或 演员名" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <button class="search-btn-icon" id="searchBtn">⌕</button>
         </div>
+        <button class="primary-btn" id="searchSubmitBtn">搜索影片</button>
+        <div class="status-box hidden" id="searchStatus"></div>
+
+        <div class="result-header hidden" id="resultHeader">
+            <span class="result-title" id="resultTitle">搜索结果</span>
+            <span class="result-count" id="resultCount"></span>
+        </div>
+        <div class="gallery" id="gallery"></div>
     </div>
 
-    <script>
-        // ============================================================
-        // MissAV 下载器（Cookie 方案，支持双模式）
-        // ============================================================
+    <div class="dev-signature">开发者：浮生若夢</div>
+</div>
 
-        let currentItem = null;
-        const API_BASE = '/missav';
+<!-- ===== Modal ===== -->
+<div class="modal-overlay hidden" id="modal">
+    <div class="modal-top">
+        <span style="color:rgba(255,255,255,0.2);font-size:13px;font-weight:300;" id="modalTitle">影片预览</span>
+        <button class="modal-close" id="modalCloseBtn">关闭</button>
+    </div>
+    <div class="modal-content" id="modalContent"></div>
+    <div class="modal-bottom">
+        <button class="modal-download" id="modalDownloadBtn">下载视频</button>
+        <button class="modal-original" id="modalOriginalBtn">打开原页</button>
+    </div>
+</div>
 
-        function $(id) { return document.getElementById(id); }
+<!-- ===== 引导弹窗 ===== -->
+<div class="guide-overlay hidden" id="guideOverlay">
+    <div class="guide-box">
+        <div class="guide-title">🍪 获取 Cookie 指引</div>
+        <div class="guide-desc">
+            <p style="margin-bottom:12px;">请按以下步骤操作（约 30 秒）：</p>
+            <ol>
+                <li>点击下方 <strong>「打开 MissAV」</strong> 按钮，在新窗口完成 5 秒盾验证</li>
+                <li>验证通过后，点击 <strong>「一键复制代码」</strong>（代码已自动复制）</li>
+                <li>回到 MissAV 页面，在地址栏 <strong>粘贴代码</strong>（Ctrl+V）并 <strong>回车</strong></li>
+                <li>弹窗提示 <strong>「Cookie 已复制」</strong>，返回本页面</li>
+                <li>Cookie 会自动填入，或点击输入框后手动粘贴</li>
+            </ol>
+        </div>
+        <div class="guide-actions">
+            <button class="btn-open" id="guideOpenBtn">🌐 打开 MissAV</button>
+            <button class="btn-copy" id="guideCopyBtn">📋 一键复制代码</button>
+            <button class="btn-close-guide" id="guideCloseBtn">✕</button>
+        </div>
+        <div id="guideStatus" class="guide-status">点击「一键复制代码」复制脚本</div>
+    </div>
+</div>
 
-        // ---- 工具函数 ----
-        function getUserMode() {
-            return localStorage.getItem('userMode') || 'guest';
-        }
+<script>
+    // ============================================================
+    // MissAV 下载器（Cookie 方案，修复 UI + 流程）
+    // ============================================================
 
-        // ---- 初始化（兼容 Turbo） ----
-        function initApp() {
-            const searchInput = $('searchInput');
-            const searchBtn = $('searchBtn');
-            const searchSubmitBtn = $('searchSubmitBtn');
-            const searchStatus = $('searchStatus');
-            const resultHeader = $('resultHeader');
-            const resultTitle = $('resultTitle');
-            const resultCount = $('resultCount');
-            const gallery = $('gallery');
-            const modal = $('modal');
-            const modalContent = $('modalContent');
-            const modalTitle = $('modalTitle');
-            const modalCloseBtn = $('modalCloseBtn');
-            const modalDownloadBtn = $('modalDownloadBtn');
-            const modalOriginalBtn = $('modalOriginalBtn');
-            const backToHome = $('backToHome');
+    let currentItem = null;
+    const API_BASE = '/missav';
 
-            // ---- Cookie 相关 ----
-            const cookieInput = $('cookieInput');
-            const autoGetBtn = $('autoGetBtn');
-            const cookieStatus = $('cookieStatus');
+    function $(id) { return document.getElementById(id); }
 
-            // ---- 引导弹窗 ----
-            const guideOverlay = $('guideOverlay');
-            const guideOpenBtn = $('guideOpenBtn');
-            const guideCopyBtn = $('guideCopyBtn');
-            const guideCloseBtn = $('guideCloseBtn');
-            const guideStatus = $('guideStatus');
+    function getUserMode() {
+        return localStorage.getItem('userMode') || 'guest';
+    }
 
-            // 提取 Cookie 的 JavaScript 代码
-            const COOKIE_EXTRACT_CODE =
-                `javascript:(function(){var c=document.cookie;if(c){navigator.clipboard.writeText(c).then(function(){alert("✅ Cookie 已复制到剪贴板！请返回下载器页面粘贴。");}).catch(function(){alert("请手动复制以下 Cookie：\\n\\n"+c);});}else{alert("❌ 未获取到 Cookie，请确认已通过 5 秒盾验证。");}})();`;
+    // ---- 初始化 ----
+    function initApp() {
+        const searchInput = $('searchInput');
+        const searchBtn = $('searchBtn');
+        const searchSubmitBtn = $('searchSubmitBtn');
+        const searchStatus = $('searchStatus');
+        const resultHeader = $('resultHeader');
+        const resultTitle = $('resultTitle');
+        const resultCount = $('resultCount');
+        const gallery = $('gallery');
+        const modal = $('modal');
+        const modalContent = $('modalContent');
+        const modalTitle = $('modalTitle');
+        const modalCloseBtn = $('modalCloseBtn');
+        const modalDownloadBtn = $('modalDownloadBtn');
+        const modalOriginalBtn = $('modalOriginalBtn');
+        const backToHome = $('backToHome');
 
-            // ---- session 验证（参考 x.html） ----
-            function checkSession() {
-                const mode = getUserMode();
-                if (mode === 'developer') {
-                    fetch('/api/auth/check', { credentials: 'include' })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (!data.authenticated) {
-                                localStorage.setItem('userMode', 'guest');
-                                location.reload();
-                            }
-                        })
-                        .catch(() => {
+        // ---- Cookie 相关 ----
+        const cookieInput = $('cookieInput');
+        const autoGetBtn = $('autoGetBtn');
+        const cookieStatus = $('cookieStatus');
+        const manualHint = $('manualHint');
+
+        // ---- 引导弹窗 ----
+        const guideOverlay = $('guideOverlay');
+        const guideOpenBtn = $('guideOpenBtn');
+        const guideCopyBtn = $('guideCopyBtn');
+        const guideCloseBtn = $('guideCloseBtn');
+        const guideStatus = $('guideStatus');
+
+        // 提取 Cookie 的 JavaScript 代码
+        const COOKIE_EXTRACT_CODE =
+            `javascript:(function(){var c=document.cookie;if(c){navigator.clipboard.writeText(c).then(function(){alert("✅ Cookie 已复制到剪贴板！请返回下载器页面粘贴。");}).catch(function(){alert("请手动复制以下 Cookie：\\n\\n"+c);});}else{alert("❌ 未获取到 Cookie，请确认已通过 5 秒盾验证。");}})();`;
+
+        // ---- session 验证（参考 x.html） ----
+        function checkSession() {
+            const mode = getUserMode();
+            if (mode === 'developer') {
+                fetch('/api/auth/check', { credentials: 'include' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.authenticated) {
                             localStorage.setItem('userMode', 'guest');
                             location.reload();
-                        });
-                }
+                        }
+                    })
+                    .catch(() => {
+                        localStorage.setItem('userMode', 'guest');
+                        location.reload();
+                    });
             }
+        }
 
-            // ---- 显示 Cookie 状态 ----
-            function showCookieStatus(msg, type) {
-                cookieStatus.textContent = msg;
-                cookieStatus.className = 'cookie-status' + (type === 'success' ? ' success' : type === 'error' ? ' error' :
-                    '');
-            }
+        // ---- 显示 Cookie 状态 ----
+        function showCookieStatus(msg, type) {
+            cookieStatus.textContent = msg;
+            cookieStatus.className = 'cookie-status' + (type === 'success' ? ' success' : type === 'error' ? ' error' :
+                '');
+        }
 
-            // ---- 检查 Cookie 状态（从后端） ----
-            function checkCookieStatus() {
-                const mode = getUserMode();
-                if (mode === 'developer') {
-                    fetch(API_BASE + '/cookie-status')
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.has_cookie) {
-                                showCookieStatus('✅ 开发者 Cookie 已设置', 'success');
-                            } else {
-                                showCookieStatus('⚠️ 开发者 Cookie 未设置，请获取', '');
-                            }
-                        })
-                        .catch(() => {
-                            showCookieStatus('⚠️ 无法检查 Cookie 状态', 'error');
-                        });
+        // ---- 检查 Cookie 状态 ----
+        function checkCookieStatus() {
+            const mode = getUserMode();
+            if (mode === 'developer') {
+                fetch(API_BASE + '/cookie-status')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.has_cookie) {
+                            showCookieStatus('✅ 开发者 Cookie 已设置', 'success');
+                        } else {
+                            showCookieStatus('⚠️ 开发者 Cookie 未设置', '');
+                        }
+                    })
+                    .catch(() => {
+                        showCookieStatus('⚠️ 无法检查 Cookie 状态', 'error');
+                    });
+            } else {
+                const localCookie = localStorage.getItem('missav_cookie');
+                if (localCookie) {
+                    showCookieStatus('✅ 访客 Cookie 已设置（本地）', 'success');
                 } else {
-                    const localCookie = localStorage.getItem('missav_cookie');
-                    if (localCookie) {
-                        showCookieStatus('✅ 访客 Cookie 已设置（本地）', 'success');
-                    } else {
-                        showCookieStatus('⚠️ 访客 Cookie 未设置，请获取', '');
-                    }
+                    showCookieStatus('⚠️ 访客 Cookie 未设置', '');
                 }
             }
+        }
 
-            // ---- 保存 Cookie（根据模式） ----
-            function saveCookie(cookieString) {
-                const mode = getUserMode();
-                if (mode === 'developer') {
-                    return fetch(API_BASE + '/set-cookie', {
+        // ---- 保存 Cookie ----
+        function saveCookie(cookieString) {
+            const mode = getUserMode();
+            if (mode === 'developer') {
+                return fetch(API_BASE + '/set-cookie', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ cookie_string: cookieString })
-                    }).then(res => res.json());
-                } else {
-                    localStorage.setItem('missav_cookie', cookieString);
-                    return Promise.resolve({ ok: true });
+                    })
+                    .then(res => res.json());
+            } else {
+                localStorage.setItem('missav_cookie', cookieString);
+                return Promise.resolve({ ok: true });
+            }
+        }
+
+        // ---- 自动检测剪贴板（每 3 秒检查一次，共检查 5 次） ----
+        let clipboardCheckCount = 0;
+        let clipboardCheckTimer = null;
+
+        function startClipboardDetection() {
+            if (clipboardCheckTimer) return;
+            clipboardCheckCount = 0;
+            clipboardCheckTimer = setInterval(function() {
+                if (clipboardCheckCount >= 5) {
+                    clearInterval(clipboardCheckTimer);
+                    clipboardCheckTimer = null;
+                    return;
                 }
-            }
-
-            // ---- 自动获取 Cookie 引导 ----
-            function openGuide() {
-                guideOverlay.classList.remove('hidden');
-                guideStatus.textContent = '点击「一键复制代码」复制脚本';
-                guideStatus.className = 'guide-status';
-                // 自动复制代码
-                copyCodeToClipboard();
-            }
-
-            function closeGuide() {
-                guideOverlay.classList.add('hidden');
-            }
-
-            function copyCodeToClipboard() {
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(COOKIE_EXTRACT_CODE).then(function() {
-                        guideStatus.textContent = '✅ 代码已复制到剪贴板！请回到 MissAV 页面粘贴执行';
-                        guideStatus.className = 'guide-status success';
-                    }).catch(function() {
-                        guideStatus.innerHTML =
-                            '⚠️ 自动复制失败，请手动复制下方代码：<span class="code-block">' + COOKIE_EXTRACT_CODE +
-                            '</span>';
-                        guideStatus.className = 'guide-status error';
-                    });
-                } else {
-                    guideStatus.innerHTML =
-                        '⚠️ 您的浏览器不支持自动复制，请手动复制下方代码：<span class="code-block">' + COOKIE_EXTRACT_CODE +
-                        '</span>';
-                    guideStatus.className = 'guide-status error';
+                clipboardCheckCount++;
+                if (cookieInput.value && cookieInput.value.length > 10) {
+                    // 已有值，停止检测
+                    clearInterval(clipboardCheckTimer);
+                    clipboardCheckTimer = null;
+                    return;
                 }
-            }
-
-            // ---- 打开 MissAV ----
-            function openMissav() {
-                window.open('https://missav.ws', '_blank');
-                guideStatus.textContent = '✅ 已打开 MissAV，请完成 5 秒盾验证';
-                guideStatus.className = 'guide-status success';
-            }
-
-            // ---- 自动检测剪贴板并填入 ----
-            function detectClipboardCookie() {
-                if (cookieInput.value) return;
                 if (navigator.clipboard && navigator.clipboard.readText) {
                     navigator.clipboard.readText().then(function(text) {
                         if (text && (text.includes('cf_clearance') || text.includes('session'))) {
-                            if (confirm('✅ 检测到剪贴板中有 Cookie，是否自动填入并保存？')) {
-                                cookieInput.value = text.trim();
-                                doSaveCookie();
-                            }
+                            // 发现 Cookie
+                            clearInterval(clipboardCheckTimer);
+                            clipboardCheckTimer = null;
+                            cookieInput.value = text.trim();
+                            // 提示用户自动填入
+                            showCookieStatus('✅ 检测到剪贴板中的 Cookie，已自动填入', 'success');
+                            // 自动保存
+                            doSaveCookie();
                         }
-                    }).catch(function() {
-                        // 静默忽略
-                    });
+                    }).catch(function() { /* 忽略 */ });
                 }
-            }
-
-            // ---- 执行保存 Cookie ----
-            function doSaveCookie() {
-                const cookieString = cookieInput.value.trim();
-                if (!cookieString) {
-                    showCookieStatus('请先获取 Cookie', 'error');
-                    return;
-                }
-                showCookieStatus('正在保存…', '');
-                saveCookie(cookieString).then(data => {
-                    if (data.ok) {
-                        showCookieStatus('✅ Cookie 已保存', 'success');
-                        // 刷新状态
-                        checkCookieStatus();
-                    } else {
-                        showCookieStatus('❌ 保存失败: ' + (data.detail || '未知错误'), 'error');
-                    }
-                }).catch(() => {
-                    showCookieStatus('❌ 保存请求失败', 'error');
-                });
-            }
-
-            // ---- 搜索功能 ----
-            function showStatus(msg, type) {
-                type = type || '';
-                searchStatus.classList.remove('hidden');
-                searchStatus.textContent = msg;
-                searchStatus.className = 'status-box' + (type === 'error' ? ' error' : type === 'loading' ? ' loading' :
-                    '');
-            }
-
-            function hideStatus() {
-                searchStatus.classList.add('hidden');
-                searchStatus.textContent = '';
-                searchStatus.className = 'status-box';
-            }
-
-            function performSearch() {
-                const keyword = searchInput.value.trim();
-                if (!keyword) {
-                    showStatus('请输入番号或演员名', 'error');
-                    return;
-                }
-
-                const mode = getUserMode();
-                const headers = { 'Content-Type': 'application/json' };
-
-                if (mode === 'guest') {
-                    const cookie = localStorage.getItem('missav_cookie');
-                    if (!cookie) {
-                        showStatus('访客模式：请先设置 Cookie（点击「自动获取」）', 'error');
-                        return;
-                    }
-                    headers['X-User-Cookie'] = cookie;
-                }
-                // 开发者模式：后端自动从数据库读取，无需传头
-
-                searchSubmitBtn.disabled = true;
-                searchSubmitBtn.textContent = '搜索中…';
-                showStatus('正在搜索，请稍候…', 'loading');
-                resultHeader.classList.add('hidden');
-                gallery.innerHTML = '';
-
-                fetch(API_BASE + '/search?q=' + encodeURIComponent(keyword), { headers })
-                    .then(res => {
-                        if (!res.ok) {
-                            return res.json().then(data => { throw new Error(data.detail || '搜索失败'); });
-                        }
-                        return res.json();
-                    })
-                    .then(data => {
-                        if (!data.ok) throw new Error(data.detail || '搜索失败');
-                        hideStatus();
-                        renderResults(data);
-                    })
-                    .catch(err => {
-                        showStatus(err.message || '搜索失败，请稍后重试', 'error');
-                    })
-                    .finally(() => {
-                        searchSubmitBtn.disabled = false;
-                        searchSubmitBtn.textContent = '搜索影片';
-                    });
-            }
-
-            function renderResults(data) {
-                resultHeader.classList.remove('hidden');
-                resultTitle.textContent = '搜索结果';
-                resultCount.textContent = '找到 ' + data.count + ' 部影片';
-                gallery.innerHTML = '';
-
-                if (!data.items || data.items.length === 0) {
-                    gallery.innerHTML =
-                        '<div style="grid-column:1/-1;text-align:center;color:rgba(255,255,255,0.2);padding:40px 0;font-size:14px;font-weight:300;">没有找到相关影片</div>';
-                    return;
-                }
-
-                data.items.forEach(item => {
-                    gallery.appendChild(createItem(item));
-                });
-            }
-
-            function createItem(item) {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'item';
-
-                const mediaWrap = document.createElement('div');
-                mediaWrap.className = 'media-wrap';
-
-                const img = document.createElement('img');
-                img.src = item.cover || '';
-                img.loading = 'lazy';
-                img.alt = item.title || '';
-                img.onerror = function() {
-                    const errDiv = document.createElement('div');
-                    errDiv.className = 'media-error';
-                    errDiv.textContent = '封面加载失败';
-                    img.replaceWith(errDiv);
-                };
-                img.addEventListener('click', function() {
-                    fetchDetail(item.id);
-                });
-
-                mediaWrap.appendChild(img);
-
-                const badge = document.createElement('div');
-                badge.className = 'video-badge';
-                badge.textContent = '🎬 视频';
-                mediaWrap.appendChild(badge);
-
-                wrapper.appendChild(mediaWrap);
-
-                const info = document.createElement('div');
-                info.className = 'item-info';
-
-                const title = document.createElement('div');
-                title.className = 'item-title';
-                title.textContent = item.title || '未知标题';
-                info.appendChild(title);
-
-                const code = document.createElement('div');
-                code.className = 'item-code';
-                code.textContent = item.code || '';
-                info.appendChild(code);
-
-                const actions = document.createElement('div');
-                actions.className = 'item-actions';
-
-                const viewBtn = document.createElement('button');
-                viewBtn.className = 'btn-view';
-                viewBtn.textContent = '详情';
-                viewBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    fetchDetail(item.id);
-                });
-                actions.appendChild(viewBtn);
-
-                const downloadBtn = document.createElement('button');
-                downloadBtn.className = 'btn-download';
-                downloadBtn.textContent = '下载';
-                downloadBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    fetchDetail(item.id, true);
-                });
-                actions.appendChild(downloadBtn);
-
-                const originBtn = document.createElement('button');
-                originBtn.className = 'btn-original';
-                originBtn.textContent = '原页';
-                originBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    if (item.url) window.open(item.url, '_blank');
-                });
-                actions.appendChild(originBtn);
-
-                info.appendChild(actions);
-                wrapper.appendChild(info);
-
-                return wrapper;
-            }
-
-            // ---- 详情 ----
-            function fetchDetail(videoId, autoDownload) {
-                const mode = getUserMode();
-                const headers = { 'Content-Type': 'application/json' };
-
-                if (mode === 'guest') {
-                    const cookie = localStorage.getItem('missav_cookie');
-                    if (!cookie) {
-                        showStatus('访客模式：请先设置 Cookie', 'error');
-                        return;
-                    }
-                    headers['X-User-Cookie'] = cookie;
-                }
-
-                showStatus('正在获取影片信息…', 'loading');
-                fetch(API_BASE + '/info?video_id=' + encodeURIComponent(videoId), { headers })
-                    .then(res => {
-                        if (!res.ok) {
-                            return res.json().then(data => { throw new Error(data.detail || '获取详情失败'); });
-                        }
-                        return res.json();
-                    })
-                    .then(data => {
-                        if (!data.ok) throw new Error(data.detail || '获取详情失败');
-                        hideStatus();
-                        openModal(data.item, autoDownload);
-                    })
-                    .catch(err => {
-                        showStatus('加载详情失败：' + err.message, 'error');
-                    });
-            }
-
-            function openModal(item, autoDownload) {
-                currentItem = item;
-                modalTitle.textContent = item.code || '影片预览';
-                modalContent.innerHTML = '';
-
-                const video = document.createElement('video');
-                video.controls = true;
-                video.autoplay = true;
-                video.playsInline = true;
-                video.preload = 'metadata';
-                video.style.cssText = 'max-width:100%;max-height:70vh;';
-
-                const streamUrl = '/api/video-stream?url=' + encodeURIComponent(item.video_url || '');
-                video.src = streamUrl;
-
-                video.onerror = function() {
-                    if (video.src === streamUrl) {
-                        video.src = item.video_url || '';
-                    }
-                };
-
-                modalContent.appendChild(video);
-
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'modal-info';
-                infoDiv.innerHTML = `
-                    <div class="mi-title">${item.title || '未知标题'}</div>
-                    <div class="mi-code">番号：${item.code || '未知'}</div>
-                    ${item.actors && item.actors.length ? '<div class="mi-actors">演员：' + item.actors.join('、') + '</div>' : ''}
-                    ${item.description ? '<div class="mi-desc">' + item.description + '</div>' : ''}
-                `;
-                modalContent.appendChild(infoDiv);
-
-                modal.classList.remove('hidden');
-
-                if (autoDownload) {
-                    setTimeout(() => downloadCurrent(), 500);
-                }
-            }
-
-            function closeModal() {
-                const video = modalContent.querySelector('video');
-                if (video) {
-                    video.pause();
-                    video.removeAttribute('src');
-                    video.load();
-                }
-                modal.classList.add('hidden');
-                modalContent.innerHTML = '';
-                currentItem = null;
-            }
-
-            function downloadCurrent() {
-                if (!currentItem) return;
-                const url = currentItem.video_url || '';
-                if (!url) {
-                    showStatus('没有可下载的视频地址', 'error');
-                    return;
-                }
-                const filename = (currentItem.code || 'missav') + '.mp4';
-                window.location.href = '/api/video-download?url=' + encodeURIComponent(url) + '&filename=' +
-                    encodeURIComponent(filename);
-            }
-
-            // ---- 事件绑定 ----
-            // 自动获取按钮
-            autoGetBtn.addEventListener('click', openGuide);
-
-            // 引导弹窗
-            guideOpenBtn.addEventListener('click', openMissav);
-            guideCopyBtn.addEventListener('click', copyCodeToClipboard);
-            guideCloseBtn.addEventListener('click', closeGuide);
-            guideOverlay.addEventListener('click', function(e) {
-                if (e.target === guideOverlay) closeGuide();
-            });
-
-            // 搜索
-            searchBtn.addEventListener('click', performSearch);
-            searchSubmitBtn.addEventListener('click', performSearch);
-            searchInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') performSearch();
-            });
-
-            // 模态框
-            modalCloseBtn.addEventListener('click', closeModal);
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) closeModal();
-            });
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') closeModal();
-            });
-            modalDownloadBtn.addEventListener('click', downloadCurrent);
-            modalOriginalBtn.addEventListener('click', function() {
-                if (currentItem && currentItem.url) {
-                    window.open(currentItem.url, '_blank');
-                }
-            });
-
-            // 返回首页
-            backToHome.addEventListener('click', function() {
-                window.location.href = '/';
-            });
-
-            // ---- 启动流程 ----
-            // 1. 验证 session（开发者模式）
-            checkSession();
-
-            // 2. 检查 Cookie 状态
-            checkCookieStatus();
-
-            // 3. 延迟检测剪贴板（给用户留时间切换窗口）
-            setTimeout(detectClipboardCookie, 1500);
-
-            console.log('🎬 MissAV 电影下载器已加载（Cookie 方案，模式: ' + getUserMode() + '）');
-            console.log('开发者：浮生若夢');
+            }, 1500);
         }
 
-        // ---- Turbo 兼容 ----
-        document.addEventListener('turbo:load', initApp);
-        document.addEventListener('DOMContentLoaded', initApp);
-    </script>
+        // ---- 执行保存 ----
+        function doSaveCookie() {
+            const cookieString = cookieInput.value.trim();
+            if (!cookieString) {
+                showCookieStatus('请先获取 Cookie', 'error');
+                return;
+            }
+            showCookieStatus('正在保存…', '');
+            saveCookie(cookieString).then(data => {
+                if (data.ok) {
+                    showCookieStatus('✅ Cookie 已保存', 'success');
+                    checkCookieStatus();
+                } else {
+                    showCookieStatus('❌ 保存失败: ' + (data.detail || '未知错误'), 'error');
+                }
+            }).catch(() => {
+                showCookieStatus('❌ 保存请求失败', 'error');
+            });
+        }
 
+        // ---- 引导弹窗 ----
+        function openGuide() {
+            guideOverlay.classList.remove('hidden');
+            guideStatus.textContent = '点击「一键复制代码」复制脚本';
+            guideStatus.className = 'guide-status';
+            // 自动复制代码
+            copyCodeToClipboard();
+        }
+
+        function closeGuide() {
+            guideOverlay.classList.add('hidden');
+        }
+
+        function copyCodeToClipboard() {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(COOKIE_EXTRACT_CODE).then(function() {
+                    guideStatus.textContent = '✅ 代码已复制到剪贴板！请回到 MissAV 页面粘贴执行';
+                    guideStatus.className = 'guide-status success';
+                }).catch(function() {
+                    guideStatus.innerHTML =
+                        '⚠️ 自动复制失败，请手动复制下方代码：<span class="code-block">' + COOKIE_EXTRACT_CODE +
+                        '</span>';
+                    guideStatus.className = 'guide-status error';
+                });
+            } else {
+                guideStatus.innerHTML =
+                    '⚠️ 您的浏览器不支持自动复制，请手动复制下方代码：<span class="code-block">' + COOKIE_EXTRACT_CODE +
+                    '</span>';
+                guideStatus.className = 'guide-status error';
+            }
+        }
+
+        function openMissav() {
+            window.open('https://missav.ws', '_blank');
+            guideStatus.textContent = '✅ 已打开 MissAV，请完成 5 秒盾验证';
+            guideStatus.className = 'guide-status success';
+        }
+
+        // ---- 搜索 ----
+        function showStatus(msg, type) {
+            type = type || '';
+            searchStatus.classList.remove('hidden');
+            searchStatus.textContent = msg;
+            searchStatus.className = 'status-box' + (type === 'error' ? ' error' : type === 'loading' ? ' loading' :
+                '');
+        }
+
+        function hideStatus() {
+            searchStatus.classList.add('hidden');
+            searchStatus.textContent = '';
+            searchStatus.className = 'status-box';
+        }
+
+        function performSearch() {
+            const keyword = searchInput.value.trim();
+            if (!keyword) {
+                showStatus('请输入番号或演员名', 'error');
+                return;
+            }
+
+            const mode = getUserMode();
+            const headers = { 'Content-Type': 'application/json' };
+
+            if (mode === 'guest') {
+                const cookie = localStorage.getItem('missav_cookie');
+                if (!cookie) {
+                    showStatus('访客模式：请先设置 Cookie（点击「自动获取」）', 'error');
+                    return;
+                }
+                headers['X-User-Cookie'] = cookie;
+            }
+
+            searchSubmitBtn.disabled = true;
+            searchSubmitBtn.textContent = '搜索中…';
+            showStatus('正在搜索，请稍候…', 'loading');
+            resultHeader.classList.add('hidden');
+            gallery.innerHTML = '';
+
+            fetch(API_BASE + '/search?q=' + encodeURIComponent(keyword), { headers })
+                .then(res => {
+                    if (!res.ok) {
+                        return res.json().then(data => { throw new Error(data.detail || '搜索失败'); });
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (!data.ok) throw new Error(data.detail || '搜索失败');
+                    hideStatus();
+                    renderResults(data);
+                })
+                .catch(err => {
+                    showStatus(err.message || '搜索失败，请稍后重试', 'error');
+                })
+                .finally(() => {
+                    searchSubmitBtn.disabled = false;
+                    searchSubmitBtn.textContent = '搜索影片';
+                });
+        }
+
+        function renderResults(data) {
+            resultHeader.classList.remove('hidden');
+            resultTitle.textContent = '搜索结果';
+            resultCount.textContent = '找到 ' + data.count + ' 部影片';
+            gallery.innerHTML = '';
+
+            if (!data.items || data.items.length === 0) {
+                gallery.innerHTML =
+                    '<div style="grid-column:1/-1;text-align:center;color:rgba(255,255,255,0.2);padding:40px 0;font-size:14px;font-weight:300;">没有找到相关影片</div>';
+                return;
+            }
+
+            data.items.forEach(item => {
+                gallery.appendChild(createItem(item));
+            });
+        }
+
+        function createItem(item) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'item';
+
+            const mediaWrap = document.createElement('div');
+            mediaWrap.className = 'media-wrap';
+
+            const img = document.createElement('img');
+            img.src = item.cover || '';
+            img.loading = 'lazy';
+            img.alt = item.title || '';
+            img.onerror = function() {
+                const errDiv = document.createElement('div');
+                errDiv.className = 'media-error';
+                errDiv.textContent = '封面加载失败';
+                img.replaceWith(errDiv);
+            };
+            img.addEventListener('click', function() { fetchDetail(item.id); });
+
+            mediaWrap.appendChild(img);
+
+            const badge = document.createElement('div');
+            badge.className = 'video-badge';
+            badge.textContent = '🎬 视频';
+            mediaWrap.appendChild(badge);
+
+            wrapper.appendChild(mediaWrap);
+
+            const info = document.createElement('div');
+            info.className = 'item-info';
+
+            const title = document.createElement('div');
+            title.className = 'item-title';
+            title.textContent = item.title || '未知标题';
+            info.appendChild(title);
+
+            const code = document.createElement('div');
+            code.className = 'item-code';
+            code.textContent = item.code || '';
+            info.appendChild(code);
+
+            const actions = document.createElement('div');
+            actions.className = 'item-actions';
+
+            const viewBtn = document.createElement('button');
+            viewBtn.textContent = '详情';
+            viewBtn.addEventListener('click', function(e) { e.stopPropagation();
+                fetchDetail(item.id); });
+            actions.appendChild(viewBtn);
+
+            const downloadBtn = document.createElement('button');
+            downloadBtn.textContent = '下载';
+            downloadBtn.addEventListener('click', function(e) { e.stopPropagation();
+                fetchDetail(item.id, true); });
+            actions.appendChild(downloadBtn);
+
+            const originBtn = document.createElement('button');
+            originBtn.textContent = '原页';
+            originBtn.addEventListener('click', function(e) { e.stopPropagation(); if (item.url) window.open(item.url,
+                    '_blank'); });
+            actions.appendChild(originBtn);
+
+            info.appendChild(actions);
+            wrapper.appendChild(info);
+
+            return wrapper;
+        }
+
+        function fetchDetail(videoId, autoDownload) {
+            const mode = getUserMode();
+            const headers = { 'Content-Type': 'application/json' };
+
+            if (mode === 'guest') {
+                const cookie = localStorage.getItem('missav_cookie');
+                if (!cookie) {
+                    showStatus('访客模式：请先设置 Cookie', 'error');
+                    return;
+                }
+                headers['X-User-Cookie'] = cookie;
+            }
+
+            showStatus('正在获取影片信息…', 'loading');
+            fetch(API_BASE + '/info?video_id=' + encodeURIComponent(videoId), { headers })
+                .then(res => {
+                    if (!res.ok) {
+                        return res.json().then(data => { throw new Error(data.detail || '获取详情失败'); });
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (!data.ok) throw new Error(data.detail || '获取详情失败');
+                    hideStatus();
+                    openModal(data.item, autoDownload);
+                })
+                .catch(err => {
+                    showStatus('加载详情失败：' + err.message, 'error');
+                });
+        }
+
+        function openModal(item, autoDownload) {
+            currentItem = item;
+            modalTitle.textContent = item.code || '影片预览';
+            modalContent.innerHTML = '';
+
+            const video = document.createElement('video');
+            video.controls = true;
+            video.autoplay = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            video.style.cssText = 'max-width:100%;max-height:70vh;';
+
+            const streamUrl = '/api/video-stream?url=' + encodeURIComponent(item.video_url || '');
+            video.src = streamUrl;
+
+            video.onerror = function() {
+                if (video.src === streamUrl) {
+                    video.src = item.video_url || '';
+                }
+            };
+
+            modalContent.appendChild(video);
+
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'modal-info';
+            infoDiv.innerHTML = `
+                <div class="mi-title">${item.title || '未知标题'}</div>
+                <div class="mi-code">番号：${item.code || '未知'}</div>
+                ${item.actors && item.actors.length ? '<div class="mi-actors">演员：' + item.actors.join('、') + '</div>' : ''}
+                ${item.description ? '<div class="mi-desc">' + item.description + '</div>' : ''}
+            `;
+            modalContent.appendChild(infoDiv);
+
+            modal.classList.remove('hidden');
+
+            if (autoDownload) {
+                setTimeout(() => downloadCurrent(), 500);
+            }
+        }
+
+        function closeModal() {
+            const video = modalContent.querySelector('video');
+            if (video) {
+                video.pause();
+                video.removeAttribute('src');
+                video.load();
+            }
+            modal.classList.add('hidden');
+            modalContent.innerHTML = '';
+            currentItem = null;
+        }
+
+        function downloadCurrent() {
+            if (!currentItem) return;
+            const url = currentItem.video_url || '';
+            if (!url) {
+                showStatus('没有可下载的视频地址', 'error');
+                return;
+            }
+            const filename = (currentItem.code || 'missav') + '.mp4';
+            window.location.href = '/api/video-download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(
+                filename);
+        }
+
+        // ---- 事件绑定 ----
+        // 点击输入框变为可编辑，并提示用户粘贴
+        cookieInput.addEventListener('focus', function() {
+            if (cookieInput.readOnly) {
+                cookieInput.readOnly = false;
+                manualHint.textContent = '✏️ 请粘贴 Cookie 或等待自动填入';
+                manualHint.style.color = 'rgba(255,255,255,0.4)';
+            }
+        });
+
+        // 输入框失去焦点时，如果内容为空则恢复只读
+        cookieInput.addEventListener('blur', function() {
+            if (!cookieInput.value.trim()) {
+                cookieInput.readOnly = true;
+                manualHint.textContent = '💡 点击输入框可手动粘贴 Cookie';
+                manualHint.style.color = 'rgba(255,255,255,0.2)';
+            }
+        });
+
+        // 检测到粘贴时自动保存
+        cookieInput.addEventListener('paste', function() {
+            // 等待内容填入
+            setTimeout(() => {
+                const val = cookieInput.value.trim();
+                if (val) {
+                    showCookieStatus('检测到粘贴，正在保存…', '');
+                    doSaveCookie();
+                }
+            }, 100);
+        });
+
+        // 自动获取按钮
+        autoGetBtn.addEventListener('click', function() {
+            openGuide();
+        });
+
+        // 引导弹窗
+        guideOpenBtn.addEventListener('click', openMissav);
+        guideCopyBtn.addEventListener('click', copyCodeToClipboard);
+        guideCloseBtn.addEventListener('click', closeGuide);
+        guideOverlay.addEventListener('click', function(e) {
+            if (e.target === guideOverlay) closeGuide();
+        });
+
+        // 搜索
+        searchBtn.addEventListener('click', performSearch);
+        searchSubmitBtn.addEventListener('click', performSearch);
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') performSearch();
+        });
+
+        // Modal
+        modalCloseBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+        });
+        modalDownloadBtn.addEventListener('click', downloadCurrent);
+        modalOriginalBtn.addEventListener('click', function() {
+            if (currentItem && currentItem.url) {
+                window.open(currentItem.url, '_blank');
+            }
+        });
+
+        backToHome.addEventListener('click', function() {
+            window.location.href = '/';
+        });
+
+        // ---- 启动 ----
+        checkSession();
+        checkCookieStatus();
+
+        // 如果 Cookie 已存在，自动填入输入框（仅限访客模式）
+        const mode = getUserMode();
+        if (mode === 'guest') {
+            const localCookie = localStorage.getItem('missav_cookie');
+            if (localCookie) {
+                cookieInput.value = localCookie;
+                cookieInput.readOnly = false;
+                manualHint.textContent = '✅ Cookie 已从本地加载';
+                manualHint.style.color = 'rgba(76, 175, 80, 0.6)';
+                showCookieStatus('✅ 访客 Cookie 已从本地加载', 'success');
+            }
+        } else {
+            // 开发者模式：尝试从服务器读取
+            fetch(API_BASE + '/cookie-status')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.has_cookie) {
+                        cookieInput.value = '已存在服务器 Cookie (不可见)';
+                        cookieInput.readOnly = true;
+                        manualHint.textContent = '🔒 Cookie 已在服务器端设置';
+                        manualHint.style.color = 'rgba(0,200,255,0.5)';
+                        showCookieStatus('✅ 开发者 Cookie 已设置', 'success');
+                    }
+                })
+                .catch(() => {});
+        }
+
+        // 开始剪贴板检测（用于自动获取后检测）
+        startClipboardDetection();
+
+        console.log('🎬 MissAV 电影下载器已加载（修复版）');
+        console.log('模式：' + getUserMode());
+    }
+
+    document.addEventListener('turbo:load', initApp);
+    document.addEventListener('DOMContentLoaded', initApp);
+</script>
 </body>
 </html>
