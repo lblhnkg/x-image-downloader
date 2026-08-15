@@ -11,7 +11,7 @@ from shared import database, init_db
 
 # 导入各模块路由
 from x_routes import router as x_router
-from missav_routes import router as missav_router
+from missav_routes import router as missav_router, missav_db   # 新增导入 missav_db
 from bilibili_routes import router as bilibili_router
 
 # 创建主应用
@@ -31,12 +31,16 @@ app.add_middleware(
 async def startup():
     await database.connect()
     await init_db()
-    print("[DB] 数据库连接成功")
+    await missav_db.connect()          # 新增：连接 MissAV 独立数据库
+    print("[DB] 主数据库连接成功")
+    print("[MissAV DB] 连接成功")
 
 @app.on_event("shutdown")
 async def shutdown():
     await database.disconnect()
-    print("[DB] 数据库已断开")
+    await missav_db.disconnect()       # 新增：断开 MissAV 数据库
+    print("[DB] 主数据库已断开")
+    print("[MissAV DB] 已断开")
 
 # ============================================================
 # 注册路由
@@ -45,7 +49,7 @@ async def shutdown():
 # X API（/api/*）
 app.include_router(x_router)
 
-# MissAV API（/missav/*）
+# MissAV API（/api/missav/*）
 app.include_router(missav_router)
 
 # Bilibili API（/bilibili/*）
@@ -67,7 +71,7 @@ async def x_page():
 
 @app.get("/missav")
 async def missav_page():
-    """MissAV 下载器完整页面"""
+    """MissAV 采集列表页面（已改造）"""
     return FileResponse("static/missav.html")
 
 @app.get("/bilibili")
