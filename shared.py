@@ -27,12 +27,13 @@ if not DATABASE_URL:
 database = Database(DATABASE_URL)
 
 # ============================================================
-# 数据库初始化
+# 数据库初始化（含迁移）
 # ============================================================
 
 async def init_db():
     is_postgres = DATABASE_URL.startswith("postgresql")
     
+    # 创建 media 表
     if is_postgres:
         await database.execute("""
             CREATE TABLE IF NOT EXISTS media (
@@ -50,6 +51,7 @@ async def init_db():
         """)
         await database.execute("CREATE INDEX IF NOT EXISTS idx_source ON media(data)")
     
+    # 创建 favorites 表
     if is_postgres:
         await database.execute("""
             CREATE TABLE IF NOT EXISTS favorites (
@@ -58,6 +60,11 @@ async def init_db():
                 addedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        # 检查并添加 addedAt 列（兼容旧表）
+        try:
+            await database.execute("ALTER TABLE favorites ADD COLUMN IF NOT EXISTS addedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+        except Exception:
+            pass
     else:
         await database.execute("""
             CREATE TABLE IF NOT EXISTS favorites (
@@ -66,6 +73,11 @@ async def init_db():
                 addedAt DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        # SQLite 不支持 IF NOT EXISTS 列添加，用备用方法
+        try:
+            await database.execute("ALTER TABLE favorites ADD COLUMN addedAt DATETIME DEFAULT CURRENT_TIMESTAMP")
+        except Exception:
+            pass
 
 # ============================================================
 # 媒体库操作
@@ -140,7 +152,7 @@ async def clear_all_media():
     await database.execute("DELETE FROM media")
 
 # ============================================================
-# 收藏操作
+# 收藏操作（兼容 addedAt 缺失的情况）
 # ============================================================
 
 async def load_all_favorites():
@@ -148,16 +160,22 @@ async def load_all_favorites():
     favorites = []
     for row in rows:
         if hasattr(row, "_mapping"):
+            # 使用 .get() 防止 KeyError
             favorites.append({
                 "username": row._mapping["username"],
                 "name": row._mapping["name"],
-                "addedAt": row._mapping["addedAt"]
+                "addedAt": row._mapping.get("addedAt", datetime.now(timezone.utc).isoformat())
             })
         else:
+            # 索引访问，若 addedAt 缺失则使用当前时间
+            try:
+                addedAt = row[2]
+            except IndexError:
+                addedAt = datetime.now(timezone.utc).isoformat()
             favorites.append({
                 "username": row[0],
                 "name": row[1],
-                "addedAt": row[2]
+                "addedAt": addedAt
             })
     return favorites
 
