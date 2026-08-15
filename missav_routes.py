@@ -13,7 +13,7 @@ router = APIRouter(prefix="/missav", tags=["MissAV"])
 # 配置（从环境变量读取）
 # ============================================================
 PROXY = os.environ.get("MISSAV_PROXY")  # 例如 http://user:pass@host:port
-IMPERSONATE = os.environ.get("MISSAV_IMPERSONATE", "chrome124")  # 默认 chrome124
+IMPERSONATION = os.environ.get("MISSAV_IMPERSONATION", "chrome124")  # 默认 chrome124
 
 # 全局客户端单例
 _client = None
@@ -21,15 +21,15 @@ _client = None
 def get_client():
     global _client
     if _client is None:
-        kwargs = {"impersonate": IMPERSONATE}
+        kwargs = {"impersonation": IMPERSONATION}
         if PROXY:
             kwargs["proxy"] = PROXY
         _client = Client(**kwargs)
-        print(f"[MissAV] 客户端初始化成功（指纹: {IMPERSONATE}）")
+        print(f"[MissAV] 客户端初始化成功（指纹: {IMPERSONATION}）")
     return _client
 
 # ============================================================
-# API 接口
+# API 接口（保持不变）
 # ============================================================
 @router.get("/search")
 async def missav_search(q: str = Query(..., min_length=1)):
