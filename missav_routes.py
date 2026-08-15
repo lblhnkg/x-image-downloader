@@ -1,6 +1,5 @@
 # ============================================================
-# missav_routes.py - Cookie 会话方案（最终稳定版）
-# 用户从浏览器复制 Cookie，后端携带 Cookie 请求 MissAV
+# missav_routes.py - Cookie 会话方案（支持开发者和访客）
 # ============================================================
 
 import re
@@ -13,31 +12,23 @@ from bs4 import BeautifulSoup
 
 router = APIRouter(prefix="/missav", tags=["MissAV"])
 
-# 存储用户 Cookie（内存存储，重启丢失）
-# 生产环境可改为数据库存储
-user_cookies = {}
+# 全局存储开发者 Cookie（仅存一个，新覆盖旧）
+developer_cookie = None
 
 class CookieSet(BaseModel):
     cookie_string: str
 
 @router.post("/set-cookie")
 async def set_cookie(data: CookieSet):
-    """用户提交 Cookie 字符串"""
-    cookie_dict = {}
-    for item in data.cookie_string.split(';'):
-        item = item.strip()
-        if '=' in item:
-            key, value = item.split('=', 1)
-            cookie_dict[key.strip()] = value.strip()
-    if not cookie_dict:
-        raise HTTPException(status_code=400, detail="无效的 Cookie 格式")
-    user_cookies['default'] = cookie_dict
-    return {"ok": True, "message": "Cookie 已保存"}
+    """开发者模式：保存 Cookie 到服务器（替换）"""
+    global developer_cookie
+    developer_cookie = data.cookie_string.strip()
+    return {"ok": True, "message": "Cookie 已保存（开发者模式）"}
 
 @router.get("/cookie-status")
 async def cookie_status():
-    has = 'default' in user_cookies and bool(user_cookies['default'])
-    return {"ok": True, "has_cookie": has}
+    """检查开发者 Cookie 是否存在"""
+    return {"ok": True, "has_cookie": bool(developer_cookie)}
 
 class MissAVFetcher:
     def __init__(self):
@@ -45,17 +36,16 @@ class MissAVFetcher:
         self.timeout = 30
         self.client = httpx.Client(timeout=self.timeout, follow_redirects=True)
 
-    def _fetch_with_cookies(self, url):
-        cookie_dict = user_cookies.get('default')
-        if not cookie_dict:
-            raise Exception("未设置 Cookie，请先粘贴 Cookie")
-
+    def _fetch_with_cookies(self, url, cookie_str):
+        """使用传入的 Cookie 请求"""
+        if not cookie_str:
+            raise Exception("未提供 Cookie，请先设置")
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
             "Referer": "https://missav.ws/",
-            "Cookie": "; ".join([f"{k}={v}" for k, v in cookie_dict.items()]),
+            "Cookie": cookie_str,
         }
 
         for attempt in range(3):
@@ -63,7 +53,7 @@ class MissAVFetcher:
                 resp = self.client.get(url, headers=headers)
                 if resp.status_code == 200:
                     if "Just a moment" in resp.text or "Cloudflare" in resp.text[:500]:
-                        raise Exception("Cookie 已过期，请重新粘贴")
+                        raise Exception("Cookie 已过期，请重新获取")
                     return resp.text
                 time.sleep(1 * (attempt + 1))
             except Exception as e:
@@ -72,7 +62,7 @@ class MissAVFetcher:
                 time.sleep(1 * (attempt + 1))
         raise Exception("请求失败")
 
-    def search(self, keyword):
+    def search(self, keyword, cookie_str):
         if len(keyword) < 2:
             raise ValueError("至少输入2个字符")
         for domain in self.base_domains:
@@ -80,7 +70,7 @@ class MissAVFetcher:
             for path in [f"/search/{quote(keyword)}", f"/search?q={quote(keyword)}"]:
                 url = base + path
                 try:
-                    html = self._fetch_with_cookies(url)
+                    html = self._fetch_with_cookies(url, cookie_str)
                     if len(html) < 500:
                         continue
                     soup = BeautifulSoup(html, 'lxml')
@@ -131,18 +121,18 @@ class MissAVFetcher:
                 break
         return results
 
-    def get_detail(self, video_id_or_url):
+    def get_detail(self, video_id_or_url, cookie_str):
         if video_id_or_url.startswith('http'):
             parsed = urlparse(video_id_or_url)
             base = f"{parsed.scheme}://{parsed.netloc}"
-            html = self._fetch_with_cookies(video_id_or_url)
+            html = self._fetch_with_cookies(video_id_or_url, cookie_str)
             return self._parse_detail(html, base, video_id_or_url, video_id_or_url)
         for domain in self.base_domains:
             base = "https://" + domain
             for path in [f"/watch/{video_id_or_url}", f"/dm1/{video_id_or_url}", f"/v/{video_id_or_url}"]:
                 url = base + path
                 try:
-                    html = self._fetch_with_cookies(url)
+                    html = self._fetch_with_cookies(url, cookie_str)
                     if len(html) < 500:
                         continue
                     return self._parse_detail(html, base, video_id_or_url, url)
@@ -208,17 +198,28 @@ class MissAVFetcher:
 fetcher = MissAVFetcher()
 
 @router.get("/search")
-async def missav_search(q: str = Query(..., min_length=1)):
+async def missav_search(request: Request, q: str = Query(..., min_length=1)):
     try:
-        items = fetcher.search(q)
+        # 优先从请求头获取访客 Cookie，否则使用开发者 Cookie
+        cookie = request.headers.get("X-User-Cookie")
+        if not cookie:
+            cookie = developer_cookie
+        if not cookie:
+            raise HTTPException(status_code=400, detail="未设置 Cookie，请先获取")
+        items = fetcher.search(q, cookie)
         return {"ok": True, "count": len(items), "items": items}
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"搜索失败: {str(e)}")
 
 @router.get("/info")
-async def missav_info(video_id: str = Query(...)):
+async def missav_info(request: Request, video_id: str = Query(...)):
     try:
-        data = fetcher.get_detail(video_id)
+        cookie = request.headers.get("X-User-Cookie")
+        if not cookie:
+            cookie = developer_cookie
+        if not cookie:
+            raise HTTPException(status_code=400, detail="未设置 Cookie，请先获取")
+        data = fetcher.get_detail(video_id, cookie)
         return {"ok": True, "item": data}
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"获取详情失败: {str(e)}")
