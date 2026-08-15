@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-    <title>MissAV 电影下载器</title>
+    <title>MissAV 采集列表</title>
     <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.3.0/dist/turbo.js"></script>
     <style>
         * {
@@ -24,10 +24,6 @@
             padding-bottom: 80px;
         }
 
-        .hidden {
-            display: none !important;
-        }
-
         .app-container {
             width: 100%;
             max-width: 480px;
@@ -36,8 +32,7 @@
             border-radius: 32px;
             padding: 40px 28px 30px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-            min-height: 560px;
-            position: relative;
+            min-height: 400px;
             transition: all 0.3s ease;
         }
 
@@ -65,6 +60,20 @@
             }
         }
 
+        .back-link {
+            display: inline-block;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+            text-decoration: none;
+            margin-bottom: 18px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
         .app-title {
             font-size: 26px;
             font-weight: 600;
@@ -82,147 +91,29 @@
             margin-bottom: 24px;
         }
 
-        .back-link {
-            display: inline-block;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 14px;
-            text-decoration: none;
-            margin-bottom: 18px;
-            transition: color 0.2s ease;
-            cursor: pointer;
-        }
-
-        .back-link:hover {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .search-section {
-            margin-top: 6px;
-        }
-
-        .search-label {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.4);
-            font-weight: 300;
-            margin-bottom: 6px;
-            display: block;
-        }
-
-        .search-row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .search-row input {
-            flex: 1;
-            background: transparent;
-            border: 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-            padding: 10px 0 8px;
-            font-size: 16px;
-            color: #fff;
-            outline: none;
-            transition: border-color 0.25s ease;
-            font-family: inherit;
-        }
-
-        .search-row input::placeholder {
-            color: rgba(255, 255, 255, 0.2);
-            font-weight: 300;
-        }
-
-        .search-row input:focus {
-            border-bottom-color: rgba(255, 255, 255, 0.5);
-        }
-
-        .search-row .search-btn-icon {
-            background: transparent;
-            border: 0;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 20px;
-            cursor: pointer;
-            padding: 6px 4px 6px 10px;
-            transition: color 0.2s ease;
-        }
-
-        .search-row .search-btn-icon:hover {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .primary-btn {
-            width: 100%;
-            padding: 14px 0;
-            background: #fff;
-            color: #0a0a0a;
-            border: 0;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
-            margin-top: 18px;
-        }
-
-        .primary-btn:hover {
-            opacity: 0.85;
-            transform: scale(0.98);
-        }
-
-        .primary-btn:active {
-            transform: scale(0.96);
-        }
-
-        .primary-btn:disabled {
-            opacity: 0.3;
-            cursor: default;
-            transform: none;
-        }
-
-        .status-box {
-            margin-top: 14px;
-            padding: 12px 14px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.5);
-            font-weight: 300;
-            line-height: 1.6;
-            min-height: 20px;
-        }
-
-        .status-box.error {
-            color: #ff6b6b;
-            border-color: rgba(255, 107, 107, 0.15);
-            background: rgba(255, 107, 107, 0.04);
-        }
-
-        .result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 18px;
-            margin-bottom: 12px;
-        }
-
-        .result-title {
-            font-size: 15px;
-            font-weight: 450;
-            color: #fff;
-        }
-
-        .result-count {
+        .mode-banner {
+            background: rgba(255, 215, 0, 0.08);
+            border: 1px solid rgba(255, 215, 0, 0.15);
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 16px;
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.25);
+            color: rgba(255, 215, 0, 0.6);
+            text-align: center;
             font-weight: 300;
+        }
+
+        .mode-banner.developer {
+            background: rgba(0, 200, 255, 0.06);
+            border-color: rgba(0, 200, 255, 0.1);
+            color: rgba(0, 200, 255, 0.5);
         }
 
         .gallery {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
+            margin-top: 4px;
         }
 
         .item {
@@ -230,8 +121,11 @@
             border-radius: 10px;
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.04);
-            position: relative;
             transition: all 0.2s ease;
+        }
+
+        .item:hover {
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
         .media-wrap {
@@ -246,34 +140,18 @@
             width: 100%;
             aspect-ratio: 1 / 1;
             object-fit: cover;
-            cursor: pointer;
         }
 
-        .media-error {
+        .media-wrap .cover-fallback {
             width: 100%;
             aspect-ratio: 1 / 1;
             display: flex;
             align-items: center;
             justify-content: center;
             background: rgba(255, 255, 255, 0.03);
-            color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.15);
             font-size: 12px;
-            text-align: center;
-            padding: 12px;
             font-weight: 300;
-        }
-
-        .video-badge {
-            position: absolute;
-            left: 8px;
-            top: 8px;
-            background: rgba(0, 0, 0, 0.7);
-            color: #fff;
-            border-radius: 12px;
-            padding: 3px 10px;
-            font-size: 10px;
-            font-weight: 400;
-            letter-spacing: 0.3px;
         }
 
         .item-info {
@@ -289,16 +167,19 @@
             text-overflow: ellipsis;
         }
 
-        .item-code {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.3);
+        .item-meta {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.25);
             margin-top: 2px;
             font-weight: 300;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .item-actions {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr;
             gap: 4px;
             margin-top: 6px;
         }
@@ -311,162 +192,37 @@
             font-family: inherit;
             border: 0;
             transition: all 0.2s ease;
-        }
-
-        .item-actions .btn-view {
             background: rgba(255, 255, 255, 0.05);
             color: rgba(255, 255, 255, 0.4);
         }
 
-        .item-actions .btn-view:hover {
+        .item-actions button:hover {
             background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.8);
         }
 
-        .item-actions .btn-download {
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.4);
+        .item-actions button:active {
+            transform: scale(0.96);
         }
 
-        .item-actions .btn-download:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .item-actions .btn-original {
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .item-actions .btn-original:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex;
-            flex-direction: column;
-            padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
-        }
-
-        .modal-overlay.hidden {
-            display: none !important;
-        }
-
-        .modal-top {
-            min-height: 54px;
-            padding: 10px 16px 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .modal-close {
-            background: rgba(255, 255, 255, 0.08);
-            border: 0;
-            color: rgba(255, 255, 255, 0.5);
-            border-radius: 16px;
-            padding: 6px 14px;
-            font-size: 13px;
-            cursor: pointer;
-            font-family: inherit;
-            transition: all 0.2s ease;
-            font-weight: 300;
-        }
-
-        .modal-close:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: #fff;
-        }
-
-        .modal-content {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 12px 16px;
-            overflow: auto;
-            flex-direction: column;
-        }
-
-        .modal-content video {
-            max-width: 100%;
-            max-height: 70vh;
-        }
-
-        .modal-content .modal-info {
-            width: 100%;
-            max-width: 600px;
-            margin-top: 16px;
-            color: rgba(255, 255, 255, 0.6);
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.2);
+            padding: 50px 20px 40px;
             font-size: 14px;
             font-weight: 300;
-            line-height: 1.6;
+            line-height: 2;
         }
 
-        .modal-content .modal-info .mi-title {
-            font-size: 18px;
-            font-weight: 500;
-            color: #fff;
-            margin-bottom: 4px;
+        .empty-state .empty-icon {
+            font-size: 36px;
+            display: block;
+            margin-bottom: 10px;
         }
-
-        .modal-content .modal-info .mi-code {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.3);
-        }
-
-        .modal-content .modal-info .mi-actors {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.4);
-            margin-top: 4px;
-        }
-
-        .modal-content .modal-info .mi-desc {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.3);
-            margin-top: 6px;
-        }
-
-        .modal-bottom {
-            padding: 10px 16px 16px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .modal-bottom button {
-            flex: 1;
-            padding: 12px 0;
-            border: 0;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 450;
-            cursor: pointer;
-            font-family: inherit;
-            transition: all 0.2s ease;
-        }
-
-        .modal-bottom .modal-download {
-            background: #fff;
-            color: #0a0a0a;
-        }
-
-        .modal-bottom .modal-download:hover {
-            opacity: 0.85;
-        }
-
-        .modal-bottom .modal-original {
-            background: rgba(255, 255, 255, 0.08);
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .modal-bottom .modal-original:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: #fff;
+        .empty-state .empty-hint {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.1);
         }
 
         .dev-signature {
@@ -512,155 +268,74 @@
     <div class="app-container">
         <span class="back-link" id="backToHome">‹ 返回首页</span>
 
-        <div class="app-title">🎬 MissAV 电影下载器</div>
-        <div class="app-subtitle">输入番号或演员名，搜索并下载影片</div>
+        <div class="app-title">🎬 MissAV 采集列表</div>
+        <div class="app-subtitle">油猴脚本采集的影片会出现在这里</div>
 
-        <div class="search-section">
-            <label class="search-label">搜索</label>
-            <div class="search-row">
-                <input type="text" id="searchInput" placeholder="番号如 SSIS-001 或 演员名" autocomplete="off" autocapitalize="off" spellcheck="false">
-                <button class="search-btn-icon" id="searchBtn">⌕</button>
-            </div>
-            <button class="primary-btn" id="searchSubmitBtn">搜索影片</button>
-            <div class="status-box hidden" id="searchStatus"></div>
+        <div id="modeBanner"></div>
 
-            <div class="result-header hidden" id="resultHeader">
-                <span class="result-title" id="resultTitle">搜索结果</span>
-                <span class="result-count" id="resultCount"></span>
-            </div>
-            <div class="gallery" id="gallery"></div>
+        <div class="gallery" id="gallery">
+            <div class="empty-state">⏳ 加载中...</div>
         </div>
 
         <div class="dev-signature">开发者：浮生若夢</div>
     </div>
 
-    <div class="modal-overlay hidden" id="modal">
-        <div class="modal-top">
-            <span style="color:rgba(255,255,255,0.2);font-size:13px;font-weight:300;" id="modalTitle">影片预览</span>
-            <button class="modal-close" id="modalCloseBtn">关闭</button>
-        </div>
-        <div class="modal-content" id="modalContent"></div>
-        <div class="modal-bottom">
-            <button class="modal-download" id="modalDownloadBtn">下载视频</button>
-            <button class="modal-original" id="modalOriginalBtn">打开原页</button>
-        </div>
-    </div>
-
     <script>
         // ============================================================
-        // MissAV 下载器（Turbo Drive 兼容）
+        // MissAV 采集列表（Turbo Drive 兼容）
         // ============================================================
 
-        let currentItem = null;
-        const API_BASE = '/missav';
+        const API_BASE = '/api/missav';
+        const STORAGE_KEY = 'missav_items';
 
         function $(id) { return document.getElementById(id); }
 
-        // ---- 初始化函数（用于首次加载和 Turbo 切换） ----
-        function initApp() {
-            const searchInput = $('searchInput');
-            const searchBtn = $('searchBtn');
-            const searchSubmitBtn = $('searchSubmitBtn');
-            const searchStatus = $('searchStatus');
-            const resultHeader = $('resultHeader');
-            const resultTitle = $('resultTitle');
-            const resultCount = $('resultCount');
+        function getMode() {
+            return localStorage.getItem('userMode') || 'guest';
+        }
+
+        function renderItems(items) {
             const gallery = $('gallery');
-            const modal = $('modal');
-            const modalContent = $('modalContent');
-            const modalTitle = $('modalTitle');
-            const modalCloseBtn = $('modalCloseBtn');
-            const modalDownloadBtn = $('modalDownloadBtn');
-            const modalOriginalBtn = $('modalOriginalBtn');
-            const backToHome = $('backToHome');
 
-            function showStatus(msg, type) {
-                type = type || '';
-                searchStatus.classList.remove('hidden');
-                searchStatus.textContent = msg;
-                searchStatus.className = 'status-box' + (type === 'error' ? ' error' : '');
+            if (!items || items.length === 0) {
+                gallery.innerHTML = `
+                    <div class="empty-state">
+                        <span class="empty-icon">📭</span>
+                        暂无采集数据
+                        <div class="empty-hint">请安装油猴脚本，访问 MissAV 影片详情页自动采集</div>
+                    </div>
+                `;
+                return;
             }
 
-            function hideStatus() {
-                searchStatus.classList.add('hidden');
-                searchStatus.textContent = '';
-                searchStatus.className = 'status-box';
-            }
+            gallery.innerHTML = '';
 
-            function performSearch() {
-                const keyword = searchInput.value.trim();
-                if (!keyword) {
-                    showStatus('请输入番号或演员名', 'error');
-                    return;
-                }
-
-                searchSubmitBtn.disabled = true;
-                searchSubmitBtn.textContent = '搜索中…';
-                hideStatus();
-                resultHeader.classList.add('hidden');
-                gallery.innerHTML = '';
-
-                fetch(API_BASE + '/search?q=' + encodeURIComponent(keyword))
-                    .then(res => res.json())
-                    .then(data => {
-                        if (!data.ok) throw new Error(data.detail || '搜索失败');
-                        renderResults(data);
-                    })
-                    .catch(err => {
-                        showStatus(err.message || '搜索失败，请稍后重试', 'error');
-                    })
-                    .finally(() => {
-                        searchSubmitBtn.disabled = false;
-                        searchSubmitBtn.textContent = '搜索影片';
-                    });
-            }
-
-            function renderResults(data) {
-                resultHeader.classList.remove('hidden');
-                resultTitle.textContent = '搜索结果';
-                resultCount.textContent = '找到 ' + data.count + ' 部影片';
-                gallery.innerHTML = '';
-
-                if (!data.items || data.items.length === 0) {
-                    gallery.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:rgba(255,255,255,0.2);padding:40px 0;font-size:14px;font-weight:300;">没有找到相关影片</div>';
-                    return;
-                }
-
-                data.items.forEach(item => {
-                    gallery.appendChild(createItem(item));
-                });
-            }
-
-            function createItem(item) {
+            items.forEach(function(item) {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'item';
 
+                // ---- 封面 ----
                 const mediaWrap = document.createElement('div');
                 mediaWrap.className = 'media-wrap';
 
                 const img = document.createElement('img');
-                img.src = item.cover || '';
                 img.loading = 'lazy';
-                img.alt = item.title || '';
+                img.alt = item.title || '封面';
+                img.src = item.cover_url || '';
+
                 img.onerror = function() {
-                    const errDiv = document.createElement('div');
-                    errDiv.className = 'media-error';
-                    errDiv.textContent = '封面加载失败';
-                    img.replaceWith(errDiv);
+                    // 加载失败显示占位
+                    this.style.display = 'none';
+                    const fallback = document.createElement('div');
+                    fallback.className = 'cover-fallback';
+                    fallback.textContent = '🎬';
+                    mediaWrap.appendChild(fallback);
                 };
-                img.addEventListener('click', function() {
-                    fetchDetail(item.id);
-                });
 
                 mediaWrap.appendChild(img);
-
-                const badge = document.createElement('div');
-                badge.className = 'video-badge';
-                badge.textContent = '🎬 视频';
-                mediaWrap.appendChild(badge);
-
                 wrapper.appendChild(mediaWrap);
 
+                // ---- 信息 ----
                 const info = document.createElement('div');
                 info.className = 'item-info';
 
@@ -669,153 +344,210 @@
                 title.textContent = item.title || '未知标题';
                 info.appendChild(title);
 
-                const code = document.createElement('div');
-                code.className = 'item-code';
-                code.textContent = item.code || '';
-                info.appendChild(code);
+                const meta = document.createElement('div');
+                meta.className = 'item-meta';
+                const parts = [];
+                if (item.video_id) parts.push(item.video_id);
+                if (item.publish_date) parts.push(item.publish_date);
+                meta.textContent = parts.join(' · ') || '—';
+                info.appendChild(meta);
 
+                // ---- 操作按钮 ----
                 const actions = document.createElement('div');
                 actions.className = 'item-actions';
 
-                const viewBtn = document.createElement('button');
-                viewBtn.className = 'btn-view';
-                viewBtn.textContent = '详情';
-                viewBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    fetchDetail(item.id);
+                const copyBtn = document.createElement('button');
+                copyBtn.textContent = '📋 M3U8';
+                copyBtn.addEventListener('click', function() {
+                    const url = item.m3u8_url || '';
+                    if (!url) {
+                        alert('没有 M3U8 地址');
+                        return;
+                    }
+                    navigator.clipboard.writeText(url).then(function() {
+                        copyBtn.textContent = '✅ 已复制';
+                        setTimeout(function() {
+                            copyBtn.textContent = '📋 M3U8';
+                        }, 1500);
+                    }).catch(function() {
+                        // fallback
+                        const textarea = document.createElement('textarea');
+                        textarea.value = url;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        copyBtn.textContent = '✅ 已复制';
+                        setTimeout(function() {
+                            copyBtn.textContent = '📋 M3U8';
+                        }, 1500);
+                    });
                 });
-                actions.appendChild(viewBtn);
+                actions.appendChild(copyBtn);
 
-                const downloadBtn = document.createElement('button');
-                downloadBtn.className = 'btn-download';
-                downloadBtn.textContent = '下载';
-                downloadBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    fetchDetail(item.id, true);
+                const openBtn = document.createElement('button');
+                openBtn.textContent = '🔗 原页';
+                openBtn.addEventListener('click', function() {
+                    if (item.video_id) {
+                        window.open('https://missav.com/watch/' + item.video_id, '_blank');
+                    } else if (item.url) {
+                        window.open(item.url, '_blank');
+                    } else {
+                        alert('没有原页地址');
+                    }
                 });
-                actions.appendChild(downloadBtn);
-
-                const originBtn = document.createElement('button');
-                originBtn.className = 'btn-original';
-                originBtn.textContent = '原页';
-                originBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    if (item.url) window.open(item.url, '_blank');
-                });
-                actions.appendChild(originBtn);
+                actions.appendChild(openBtn);
 
                 info.appendChild(actions);
                 wrapper.appendChild(info);
 
-                return wrapper;
-            }
-
-            function fetchDetail(videoId, autoDownload) {
-                fetch(API_BASE + '/info?video_id=' + encodeURIComponent(videoId))
-                    .then(res => res.json())
-                    .then(data => {
-                        if (!data.ok) throw new Error(data.detail || '获取详情失败');
-                        openModal(data.item, autoDownload);
-                    })
-                    .catch(err => {
-                        showStatus('加载详情失败：' + err.message, 'error');
-                    });
-            }
-
-            function openModal(item, autoDownload) {
-                currentItem = item;
-                modalTitle.textContent = item.code || '影片预览';
-                modalContent.innerHTML = '';
-
-                const video = document.createElement('video');
-                video.controls = true;
-                video.autoplay = true;
-                video.playsInline = true;
-                video.preload = 'metadata';
-                video.style.cssText = 'max-width:100%;max-height:70vh;';
-
-                const streamUrl = '/api/video-stream?url=' + encodeURIComponent(item.video_url || '');
-                video.src = streamUrl;
-
-                video.onerror = function() {
-                    if (video.src === streamUrl) {
-                        video.src = item.video_url || '';
-                    }
-                };
-
-                modalContent.appendChild(video);
-
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'modal-info';
-                infoDiv.innerHTML = `
-                    <div class="mi-title">${item.title || '未知标题'}</div>
-                    <div class="mi-code">番号：${item.code || '未知'}</div>
-                    ${item.actors && item.actors.length ? '<div class="mi-actors">演员：' + item.actors.join('、') + '</div>' : ''}
-                    ${item.description ? '<div class="mi-desc">' + item.description + '</div>' : ''}
-                `;
-                modalContent.appendChild(infoDiv);
-
-                modal.classList.remove('hidden');
-
-                if (autoDownload) {
-                    setTimeout(() => downloadCurrent(), 500);
-                }
-            }
-
-            function closeModal() {
-                const video = modalContent.querySelector('video');
-                if (video) {
-                    video.pause();
-                    video.removeAttribute('src');
-                    video.load();
-                }
-                modal.classList.add('hidden');
-                modalContent.innerHTML = '';
-                currentItem = null;
-            }
-
-            function downloadCurrent() {
-                if (!currentItem) return;
-                const url = currentItem.video_url || '';
-                if (!url) {
-                    showStatus('没有可下载的视频地址', 'error');
-                    return;
-                }
-                const filename = (currentItem.code || 'missav') + '.mp4';
-                window.location.href = '/api/video-download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(filename);
-            }
-
-            // ---- 绑定事件 ----
-            searchBtn.addEventListener('click', performSearch);
-            searchSubmitBtn.addEventListener('click', performSearch);
-            searchInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') performSearch();
+                gallery.appendChild(wrapper);
             });
-
-            modalCloseBtn.addEventListener('click', closeModal);
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) closeModal();
-            });
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') closeModal();
-            });
-
-            modalDownloadBtn.addEventListener('click', downloadCurrent);
-            modalOriginalBtn.addEventListener('click', function() {
-                if (currentItem && currentItem.url) {
-                    window.open(currentItem.url, '_blank');
-                }
-            });
-
-            backToHome.addEventListener('click', function() {
-                window.location.href = '/';
-            });
-
-            console.log('🎬 MissAV 电影下载器已加载（Turbo 模式）');
-            console.log('开发者：浮生若夢');
         }
 
-        // 绑定事件：Turbo 切换 + 常规加载
+        function loadData() {
+            const mode = getMode();
+            const banner = $('modeBanner');
+            const gallery = $('gallery');
+
+            // 先显示加载状态
+            gallery.innerHTML = '<div class="empty-state">⏳ 加载中...</div>';
+
+            if (mode === 'developer') {
+                // ---- 开发者模式：从云端拉取 ----
+                banner.innerHTML = `
+                    <div class="mode-banner developer">
+                        🔒 开发者模式 · 数据存储在云端
+                    </div>
+                `;
+
+                fetch(API_BASE + '/my-items', {
+                    credentials: 'include'
+                })
+                .then(function(res) {
+                    if (!res.ok) throw new Error('网络响应异常');
+                    return res.json();
+                })
+                .then(function(data) {
+                    if (data.ok && data.items) {
+                        renderItems(data.items);
+                    } else {
+                        renderItems([]);
+                    }
+                })
+                .catch(function(err) {
+                    console.error('[MissAV] 加载云端数据失败:', err);
+                    renderItems([]);
+                });
+            } else {
+                // ---- 访客模式：从 localStorage 读取 ----
+                banner.innerHTML = `
+                    <div class="mode-banner">
+                        📌 访客模式 · 数据仅保存在本地浏览器
+                    </div>
+                `;
+
+                let items = [];
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        items = JSON.parse(raw);
+                    }
+                } catch (e) {
+                    console.error('[MissAV] 读取 localStorage 失败:', e);
+                }
+                renderItems(items);
+            }
+        }
+
+        // ============================================================
+        // 全局函数：供油猴脚本调用（保存采集数据）
+        // ============================================================
+
+        window.saveMissavItem = function(item) {
+            const mode = getMode();
+
+            if (mode === 'developer') {
+                // ---- 开发者模式：调用后端 API ----
+                return fetch(API_BASE + '/collect', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(item),
+                    credentials: 'include'
+                })
+                .then(function(res) {
+                    if (!res.ok) {
+                        return res.json().then(function(errData) {
+                            throw new Error(errData.detail || '存储失败');
+                        });
+                    }
+                    return res.json();
+                })
+                .then(function(data) {
+                    if (data.ok) {
+                        // 刷新列表
+                        loadData();
+                        return { ok: true, stored: true };
+                    } else {
+                        throw new Error(data.message || '存储失败');
+                    }
+                });
+            } else {
+                // ---- 访客模式：存入 localStorage ----
+                let items = [];
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        items = JSON.parse(raw);
+                    }
+                } catch (e) {
+                    // ignore
+                }
+
+                // 去重：如果已存在相同 video_id，更新它
+                const existingIndex = items.findIndex(function(i) {
+                    return i.video_id === item.video_id;
+                });
+
+                if (existingIndex !== -1) {
+                    items[existingIndex] = item;
+                } else {
+                    items.unshift(item); // 最新在上面
+                }
+
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+                } catch (e) {
+                    return Promise.reject(new Error('localStorage 写入失败: ' + e.message));
+                }
+
+                // 刷新列表
+                loadData();
+                return Promise.resolve({ ok: true, stored: false });
+            }
+        };
+
+        // ============================================================
+        // 返回首页
+        // ============================================================
+
+        $('backToHome').addEventListener('click', function() {
+            window.location.href = '/';
+        });
+
+        // ============================================================
+        // 初始化（Turbo 兼容）
+        // ============================================================
+
+        function initApp() {
+            loadData();
+            console.log('🎬 MissAV 采集列表已加载');
+            console.log('  当前模式:', getMode());
+            console.log('  调用 window.saveMissavItem(item) 可存入数据');
+        }
+
         document.addEventListener('turbo:load', initApp);
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
