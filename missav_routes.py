@@ -1,6 +1,5 @@
 # ============================================================
-# missav_routes.py - 超强反爬版（适配 missav.ws）
-# 使用 cloudscraper + 会话预热 + 真实浏览器指纹
+# missav_routes.py - 使用 curl_cffi 自动绕过 Cloudflare
 # ============================================================
 
 import re
@@ -8,12 +7,12 @@ import random
 import time
 from urllib.parse import quote, urlparse
 from fastapi import APIRouter, HTTPException, Query
-import cloudscraper
+from curl_cffi import requests
 from bs4 import BeautifulSoup
 
 router = APIRouter(prefix="/missav", tags=["MissAV"])
 
-# 更真实的 User-Agent 池
+# 随机 User-Agent 池（与 curl_cffi 的 impersonate 搭配）
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
@@ -25,24 +24,17 @@ USER_AGENTS = [
 class MissAVFetcher:
     def __init__(self):
         self.base_domains = ["missav.ws", "missav.ai"]
-        self.timeout = 45  # 增加超时
-        self.max_retries = 5  # 增加重试
+        self.timeout = 45
+        self.max_retries = 3
         self.session = None
 
     def _get_session(self):
         if self.session is None:
-            # 使用更真实的浏览器指纹
-            self.session = cloudscraper.create_scraper(
-                browser={
-                    'browser': 'chrome',
-                    'platform': 'windows',
-                    'mobile': False,
-                    'desktop': True,
-                },
-                delay=15,  # 模拟人类操作延迟
-                request_post_hooks=[],
-            )
-            # 设置超时
+            # 模拟 Chrome 浏览器的 TLS 指纹，自动处理 Cloudflare 盾
+            self.session = requests.Session()
+            # 选择浏览器指纹（建议 chrome 或 edge）
+            self.session.impersonate = "chrome124"  # 或 "chrome123"
+            # 超时设置
             self.session.timeout = self.timeout
         return self.session
 
@@ -64,25 +56,23 @@ class MissAVFetcher:
         session = self._get_session()
         for attempt in range(retries):
             try:
-                # 每次请求使用不同的 Referer
                 headers["Referer"] = random.choice([
                     "https://missav.ws/",
-                    "https://missav.ws/search/",
                     "https://missav.ai/",
                 ])
                 resp = session.get(url, headers=headers, timeout=self.timeout)
                 if resp.status_code == 200:
-                    # 检查是否返回了验证页
-                    if "Just a moment" in resp.text or "Cloudflare" in resp.text:
-                        print(f"[MissAV] 返回验证页，尝试重试 {attempt+1}/{retries}")
-                        # 重置会话
+                    # 检查是否返回了验证页（关键词）
+                    if "Just a moment" in resp.text or "Cloudflare" in resp.text or "cf_" in resp.text[:500]:
+                        print(f"[MissAV] 仍然收到验证页，重试 {attempt+1}/{retries}")
+                        # 重新创建 session（可能指纹需要刷新）
                         self.session = None
                         session = self._get_session()
                         time.sleep(3 * (attempt + 1))
                         continue
                     return resp.text
                 if resp.status_code in (403, 503):
-                    print(f"[MissAV] 被屏蔽 {resp.status_code}，尝试重设会话")
+                    print(f"[MissAV] 被屏蔽 {resp.status_code}，重设会话")
                     self.session = None
                     session = self._get_session()
                     time.sleep(2 ** attempt)
@@ -96,8 +86,9 @@ class MissAVFetcher:
         raise Exception("抓取失败，已达最大重试次数")
 
     def _warm_up(self, base_url):
-        """预热：访问首页获取初始 cookies"""
+        """预热：访问首页，让 curl_cffi 完成 JS 挑战"""
         try:
+            # 使用 HEAD 或 GET，让 session 自动处理挑战
             self._fetch(base_url + "/")
             time.sleep(1)
         except Exception as e:
@@ -111,18 +102,15 @@ class MissAVFetcher:
             base = "https://" + domain
             print(f"[MissAV] 尝试域名: {domain}")
             self._warm_up(base)
-            # 尝试两种搜索格式
             for path in [f"/search/{quote(keyword)}", f"/search?q={quote(keyword)}"]:
                 url = base + path
                 try:
                     print(f"[MissAV] 尝试搜索: {url}")
                     html = self._fetch(url)
-                    # 如果返回的 HTML 太短，可能有问题
                     if len(html) < 500:
                         print(f"[MissAV] HTML 太短 ({len(html)} 字符)，继续尝试")
                         continue
                     soup = BeautifulSoup(html, 'lxml')
-                    # 检查是否有结果
                     links = soup.select('a[href*="/watch/"], a[href*="/dm1/"], a[href*="/v/"]')
                     if not links:
                         print(f"[MissAV] 未找到视频链接，继续尝试")
@@ -147,10 +135,8 @@ class MissAVFetcher:
                 continue
             full_url = base + href if href.startswith('/') else href
 
-            # 提取视频 ID（URL 最后一段）
             video_id = href.split('/')[-1] if href.split('/') else ""
 
-            # 封面图
             img = a.find('img')
             src = ""
             if img:
