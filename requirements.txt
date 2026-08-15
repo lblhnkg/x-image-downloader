@@ -1,4 +1,6 @@
 fastapi>=0.115
 uvicorn[standard]>=0.34
 httpx>=0.28
+databases>=0.8
+asyncpg>=0.29
 git+https://github.com/ythx-101/x-tweet-fetcher.git
