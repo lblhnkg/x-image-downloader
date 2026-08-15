@@ -1,11 +1,12 @@
 # ============================================================
-# missav_routes.py - MissAV 下载器（使用 unofficial-api-for-missav）
-# 支持指纹切换和代理，完全自动处理 Cloudflare
+# missav_routes.py - MissAV 下载器（修正版）
+# 正确配置指纹和代理
 # ============================================================
 
 import os
 from fastapi import APIRouter, HTTPException, Query
 from missav_api import Client
+from base_api import BaseCore
 
 router = APIRouter(prefix="/missav", tags=["MissAV"])
 
@@ -13,7 +14,7 @@ router = APIRouter(prefix="/missav", tags=["MissAV"])
 # 配置（从环境变量读取）
 # ============================================================
 PROXY = os.environ.get("MISSAV_PROXY")  # 例如 http://user:pass@host:port
-IMPERSONATION = os.environ.get("MISSAV_IMPERSONATION", "chrome124")  # 默认 chrome124
+IMPERSONATION = os.environ.get("MISSAV_IMPERSONATION", "safari17_2_ios")  # 默认与库一致
 
 # 全局客户端单例
 _client = None
@@ -21,15 +22,16 @@ _client = None
 def get_client():
     global _client
     if _client is None:
-        kwargs = {"impersonation": IMPERSONATION}
+        core = BaseCore()
+        core.configuration.impersonation = IMPERSONATION
         if PROXY:
-            kwargs["proxy"] = PROXY
-        _client = Client(**kwargs)
+            core.configuration.proxy = PROXY
+        _client = Client(core=core)
         print(f"[MissAV] 客户端初始化成功（指纹: {IMPERSONATION}）")
     return _client
 
 # ============================================================
-# API 接口（保持不变）
+# API 接口
 # ============================================================
 @router.get("/search")
 async def missav_search(q: str = Query(..., min_length=1)):
