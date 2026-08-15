@@ -26,7 +26,7 @@ if not MISSAV_DATABASE_URL:
 database = Database(MISSAV_DATABASE_URL)
 
 # ============================================================
-# 数据库初始化
+# 数据库初始化 / 关闭
 # ============================================================
 async def init_missav_db():
     """在应用启动时调用，创建配置表"""
@@ -38,6 +38,11 @@ async def init_missav_db():
         )
     """)
     print("[MissAV] 数据库初始化完成（独立库）")
+
+async def shutdown_missav_db():
+    """在应用关闭时断开数据库连接"""
+    await database.disconnect()
+    print("[MissAV] 数据库已断开")
 
 # ============================================================
 # API 模型
@@ -277,10 +282,3 @@ async def missav_info(request: Request, video_id: str = Query(...)):
         return {"ok": True, "item": data}
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"获取详情失败: {str(e)}")
-# ============================================================
-# 数据库关闭事件（由 app.py 统一调用，或者单独注册）
-# ============================================================
-@app.on_event("shutdown")
-async def shutdown_missav():
-    await database.disconnect()
-    print("[MissAV] 数据库已断开")
