@@ -21,14 +21,11 @@ _client = None
 def get_client():
     global _client
     if _client is None:
-        # 切换指纹类型，MissAV 可能已封锁某些指纹
-        # 可选值：chrome123, chrome124, edge124, safari17
-        impersonation = os.environ.get("MISSAV_IMPERSONATION", "chrome124")
         if PROXY:
-            _client = Client(proxy=PROXY, impersonation=impersonation)
+            _client = Client(proxy=PROXY)
         else:
-            _client = Client(impersonation=impersonation)
-        print(f"[MissAV] 客户端初始化成功（指纹: {impersonation}）")
+            _client = Client()
+        print("[MissAV] 客户端初始化成功（自动处理 Cloudflare）")
     return _client
 
 # ============================================================
