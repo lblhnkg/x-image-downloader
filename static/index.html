@@ -20,6 +20,7 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            padding-bottom: 80px;
         }
 
         .hidden {
@@ -41,25 +42,30 @@
 
         @media (min-width: 700px) {
             .app-container {
-                max-width: 600px;
+                max-width: 900px;
                 padding: 50px 40px 40px;
                 border-radius: 36px;
             }
+            .login-footer-text {
+                font-size: 13px;
+            }
+            .search-row input {
+                font-size: 18px;
+            }
+            .option-btn {
+                padding: 8px 18px;
+                font-size: 13px;
+            }
         }
 
-        @media (max-width: 420px) {
+        @media (min-width: 1024px) {
             .app-container {
-                padding: 28px 18px 22px;
-                border-radius: 24px;
+                max-width: 1100px;
+                padding: 60px 50px 50px;
+                border-radius: 40px;
             }
-            .app-title {
-                font-size: 22px;
-            }
-            .menu-card {
-                padding: 18px 18px;
-            }
-            .menu-card-title {
-                font-size: 16px;
+            .login-footer-text {
+                font-size: 14px;
             }
         }
 
@@ -187,14 +193,6 @@
             transform: scale(0.98);
         }
 
-        .login-error {
-            color: #ff6b6b;
-            font-size: 13px;
-            text-align: center;
-            margin-top: 10px;
-            min-height: 20px;
-        }
-
         .login-footer-text {
             text-align: center;
             font-size: 12px;
@@ -211,6 +209,14 @@
             color: rgba(255, 255, 255, 0.2);
         }
 
+        .login-error {
+            color: #ff6b6b;
+            font-size: 13px;
+            text-align: center;
+            margin-top: 10px;
+            min-height: 20px;
+        }
+
         .login-dev-signature {
             text-align: center;
             font-size: 12px;
@@ -220,7 +226,9 @@
             font-weight: 300;
         }
 
-        /* ========== 菜单卡片：始终一列垂直排列 ========== */
+        /* ============================================
+           菜单：永远一列，永不变成三列
+           ============================================ */
         .menu-grid {
             display: flex;
             flex-direction: column;
@@ -354,8 +362,10 @@
 
     <div class="app-container" id="app">
 
-        <!-- 登录页 -->
-        <div class="page" id="pageLogin">
+        <!-- =====================================================
+        登录页
+        ===================================================== -->
+        <div class="page active" id="pageLogin">
             <div class="app-title">万能媒体下载器</div>
             <hr class="login-divider">
             <div class="login-section-title">开发者通道</div>
@@ -374,7 +384,9 @@
             <div class="login-dev-signature">开发者：浮生若夢</div>
         </div>
 
-        <!-- 菜单页 -->
+        <!-- =====================================================
+        一级菜单
+        ===================================================== -->
         <div class="page" id="pageMenu">
             <div class="app-title" style="font-size:22px;margin-bottom:4px;">万能媒体下载器</div>
             <div id="menuModeBanner"></div>
@@ -400,7 +412,9 @@
 
     </div>
 
-    <!-- 访客提示弹窗 -->
+    <!-- =====================================================
+    访客提示弹窗
+    ===================================================== -->
     <div class="guest-tip-overlay hidden" id="guestTip">
         <div class="guest-tip-box">
             <div class="tip-icon">📌</div>
@@ -532,10 +546,14 @@
         // ============================================================
 
         function initPage() {
+            // 1. 检查是否从子页面返回
             var referrer = document.referrer || '';
             var isFromSubPage = referrer.includes('/x') || referrer.includes('/missav') || referrer.includes('/bilibili');
+
+            // 2. 检查 localStorage 是否有模式记录
             var savedMode = localStorage.getItem('userMode');
 
+            // 3. 如果是从子页面返回且有模式记录，直接进入菜单
             if (isFromSubPage && savedMode) {
                 if (savedMode === 'developer') {
                     fetch('/api/auth/check', { credentials: 'include' })
@@ -572,7 +590,7 @@
                 return;
             }
 
-            // 默认显示登录页
+            // 4. 默认显示登录页
             showPage('pageLogin');
         }
 
