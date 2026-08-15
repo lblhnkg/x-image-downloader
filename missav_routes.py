@@ -1,6 +1,6 @@
 # ============================================================
-# missav_routes.py - MissAV 完整功能（适配 missav.ws/dm1/）
-# 支持多域名、自动预热、多种路径探测
+# missav_routes.py - 超强反爬版（适配 missav.ws）
+# 使用 cloudscraper + 会话预热 + 真实浏览器指纹
 # ============================================================
 
 import re
@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 
 router = APIRouter(prefix="/missav", tags=["MissAV"])
 
+# 更真实的 User-Agent 池
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
@@ -23,42 +24,65 @@ USER_AGENTS = [
 
 class MissAVFetcher:
     def __init__(self):
-        self.base_domains = ["missav.ws", "missav.ai"]  # 主域名 + 备用
-        self.timeout = 30
-        self.max_retries = 3
-        self.session = None  # 用于持久化 cookies
+        self.base_domains = ["missav.ws", "missav.ai"]
+        self.timeout = 45  # 增加超时
+        self.max_retries = 5  # 增加重试
+        self.session = None
 
     def _get_session(self):
         if self.session is None:
+            # 使用更真实的浏览器指纹
             self.session = cloudscraper.create_scraper(
                 browser={
-                    'browser': random.choice(['chrome', 'firefox', 'safari']),
-                    'platform': random.choice(['windows', 'macos', 'linux']),
-                    'mobile': False
-                }
+                    'browser': 'chrome',
+                    'platform': 'windows',
+                    'mobile': False,
+                    'desktop': True,
+                },
+                delay=15,  # 模拟人类操作延迟
+                request_post_hooks=[],
             )
+            # 设置超时
+            self.session.timeout = self.timeout
         return self.session
 
     def _fetch(self, url, retries=None):
-        """带重试的请求，自动处理 Cloudflare 盾"""
         if retries is None:
             retries = self.max_retries
         headers = {
             "User-Agent": random.choice(USER_AGENTS),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-            "Referer": "https://" + self.base_domains[0] + "/",
+            "Accept-Encoding": "gzip, deflate, br",
             "Connection": "keep-alive",
             "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Cache-Control": "max-age=0",
         }
         session = self._get_session()
         for attempt in range(retries):
             try:
+                # 每次请求使用不同的 Referer
+                headers["Referer"] = random.choice([
+                    "https://missav.ws/",
+                    "https://missav.ws/search/",
+                    "https://missav.ai/",
+                ])
                 resp = session.get(url, headers=headers, timeout=self.timeout)
                 if resp.status_code == 200:
+                    # 检查是否返回了验证页
+                    if "Just a moment" in resp.text or "Cloudflare" in resp.text:
+                        print(f"[MissAV] 返回验证页，尝试重试 {attempt+1}/{retries}")
+                        # 重置会话
+                        self.session = None
+                        session = self._get_session()
+                        time.sleep(3 * (attempt + 1))
+                        continue
                     return resp.text
                 if resp.status_code in (403, 503):
-                    # 被盾 → 重置会话
+                    print(f"[MissAV] 被屏蔽 {resp.status_code}，尝试重设会话")
                     self.session = None
                     session = self._get_session()
                     time.sleep(2 ** attempt)
@@ -72,38 +96,47 @@ class MissAVFetcher:
         raise Exception("抓取失败，已达最大重试次数")
 
     def _warm_up(self, base_url):
-        """访问首页获取 Cloudflare cookies"""
+        """预热：访问首页获取初始 cookies"""
         try:
             self._fetch(base_url + "/")
-        except:
-            pass  # 即使失败也可能拿到部分 cookies
-
-    def _try_search(self, keyword):
-        """遍历域名和搜索路径"""
-        for domain in self.base_domains:
-            base = "https://" + domain
-            self._warm_up(base)
-            # 尝试两种搜索格式
-            for path in [f"/search/{quote(keyword)}", f"/search?q={quote(keyword)}"]:
-                url = base + path
-                try:
-                    html = self._fetch(url)
-                    return html, base
-                except Exception as e:
-                    print(f"[MissAV] 搜索尝试失败 {url}: {e}")
-                    continue
-        raise Exception("所有域名和搜索路径均失败")
+            time.sleep(1)
+        except Exception as e:
+            print(f"[MissAV] 预热失败（继续）: {e}")
 
     def search(self, keyword):
         if len(keyword) < 2:
             raise ValueError("至少输入2个字符")
 
-        html, base = self._try_search(keyword)
+        for domain in self.base_domains:
+            base = "https://" + domain
+            print(f"[MissAV] 尝试域名: {domain}")
+            self._warm_up(base)
+            # 尝试两种搜索格式
+            for path in [f"/search/{quote(keyword)}", f"/search?q={quote(keyword)}"]:
+                url = base + path
+                try:
+                    print(f"[MissAV] 尝试搜索: {url}")
+                    html = self._fetch(url)
+                    # 如果返回的 HTML 太短，可能有问题
+                    if len(html) < 500:
+                        print(f"[MissAV] HTML 太短 ({len(html)} 字符)，继续尝试")
+                        continue
+                    soup = BeautifulSoup(html, 'lxml')
+                    # 检查是否有结果
+                    links = soup.select('a[href*="/watch/"], a[href*="/dm1/"], a[href*="/v/"]')
+                    if not links:
+                        print(f"[MissAV] 未找到视频链接，继续尝试")
+                        continue
+                    return self._parse_search(html, base)
+                except Exception as e:
+                    print(f"[MissAV] 搜索尝试失败 {url}: {e}")
+                    continue
+        raise Exception("所有域名和搜索路径均失败")
+
+    def _parse_search(self, html, base):
         soup = BeautifulSoup(html, 'lxml')
         results = []
         seen = set()
-
-        # 查找所有可能的视频链接（/watch/, /dm1/, /v/）
         links = soup.select('a[href*="/watch/"], a[href*="/dm1/"], a[href*="/v/"]')
         if not links:
             links = soup.find_all('a', href=re.compile(r'/(watch|dm1|v)/[^/]+'))
@@ -114,7 +147,7 @@ class MissAVFetcher:
                 continue
             full_url = base + href if href.startswith('/') else href
 
-            # 提取视频ID（URL最后一段）
+            # 提取视频 ID（URL 最后一段）
             video_id = href.split('/')[-1] if href.split('/') else ""
 
             # 封面图
@@ -126,7 +159,7 @@ class MissAVFetcher:
                     src = "https:" + src
                 elif src.startswith('/'):
                     src = base + src
-            if not src:  # 尝试从 style 背景提取
+            if not src:
                 style = a.get('style', '')
                 bg_match = re.search(r'url\(["\']?(.*?)["\']?\)', style)
                 if bg_match:
@@ -136,19 +169,16 @@ class MissAVFetcher:
                     elif src.startswith('/'):
                         src = base + src
 
-            # 标题
             title = a.get('title', '')
             if not title and img:
                 title = img.get('alt', '')
             title = title.strip() or "未知标题"
 
-            # 番号（从标题或URL提取）
             code = ""
             code_match = re.search(r'([A-Z]{2,6}-\d{3,5})', title)
             if code_match:
                 code = code_match.group(1)
             else:
-                # 尝试从URL提取（如 fc2-ppv-4861514）
                 code_match_url = re.search(r'/(watch|dm1|v)/([^/]+)', href)
                 if code_match_url:
                     code = code_match_url.group(2)
@@ -166,11 +196,6 @@ class MissAVFetcher:
         return results
 
     def get_detail(self, video_id_or_url):
-        """
-        支持传入视频ID或完整详情页URL
-        自动尝试多种路径格式
-        """
-        # 如果是完整URL，直接抓取
         if video_id_or_url.startswith('http'):
             parsed = urlparse(video_id_or_url)
             base = f"{parsed.scheme}://{parsed.netloc}"
@@ -178,7 +203,6 @@ class MissAVFetcher:
             html = self._fetch(video_id_or_url)
             return self._parse_detail(html, base, video_id_or_url, video_id_or_url)
 
-        # 否则按ID尝试多种路径
         for domain in self.base_domains:
             base = "https://" + domain
             self._warm_up(base)
@@ -186,6 +210,8 @@ class MissAVFetcher:
                 url = base + path
                 try:
                     html = self._fetch(url)
+                    if len(html) < 500:
+                        continue
                     return self._parse_detail(html, base, video_id_or_url, url)
                 except Exception as e:
                     print(f"[MissAV] 详情尝试失败 {url}: {e}")
@@ -195,7 +221,6 @@ class MissAVFetcher:
     def _parse_detail(self, html, base, video_id, url):
         soup = BeautifulSoup(html, 'lxml')
 
-        # 标题
         title = "未知标题"
         h1 = soup.find('h1')
         if h1:
@@ -205,11 +230,9 @@ class MissAVFetcher:
             if meta_title:
                 title = meta_title.get('content', '').strip()
 
-        # 番号
         code_match = re.search(r'([A-Z]{2,6}-\d{3,5})', title)
         code = code_match.group(1) if code_match else ""
 
-        # 封面
         cover = ""
         meta_og = soup.find('meta', property='og:image')
         if meta_og:
@@ -223,7 +246,6 @@ class MissAVFetcher:
         elif cover and cover.startswith('/'):
             cover = base + cover
 
-        # 演员
         actors = []
         for a in soup.select('a[href*="/actor/"]'):
             name = a.text.strip()
@@ -231,7 +253,6 @@ class MissAVFetcher:
                 actors.append(name)
         actors = list(dict.fromkeys(actors))
 
-        # 简介
         desc = ""
         meta_desc = soup.find('meta', attrs={'name': 'description'})
         if meta_desc:
@@ -241,13 +262,11 @@ class MissAVFetcher:
             if meta_og_desc:
                 desc = meta_og_desc.get('content', '')
 
-        # 视频源 m3u8
         video_url = ""
         scripts = soup.find_all('script')
         for script in scripts:
             if script.string:
                 content = script.string
-                # 多种 pattern
                 patterns = [
                     r'video_url\s*[:=]\s*["\'](https?://[^"\']+\.m3u8[^"\']*)["\']',
                     r'videoUrl\s*[:=]\s*["\'](https?://[^"\']+\.m3u8[^"\']*)["\']',
@@ -270,7 +289,6 @@ class MissAVFetcher:
         if not video_url:
             raise Exception("未找到视频源 m3u8，页面可能改版")
 
-        # 规范化 URL
         if video_url.startswith('//'):
             video_url = "https:" + video_url
         elif video_url.startswith('/'):
@@ -295,7 +313,6 @@ async def missav_search(q: str = Query(..., min_length=1)):
         items = fetcher.search(q)
         return {"ok": True, "count": len(items), "items": items}
     except Exception as e:
-        # 返回具体错误信息供前端显示
         raise HTTPException(status_code=502, detail=f"搜索失败: {str(e)}")
 
 @router.get("/info")
