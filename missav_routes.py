@@ -2,6 +2,7 @@
 # missav_routes.py - MissAV 下载器（独立数据库版）
 # 使用 MISSAV_DATABASE_URL 连接独立 PostgreSQL
 # 开发者 Cookie 存数据库，访客 Cookie 通过请求头传递
+# 增强日志用于调试搜索失败问题
 # ============================================================
 
 import os
@@ -79,9 +80,11 @@ class MissAVFetcher:
         self.client = httpx.Client(timeout=self.timeout, follow_redirects=True)
 
     def _fetch_with_cookies(self, url, cookie_str):
-        """携带 Cookie 请求 MissAV"""
+        """携带 Cookie 请求 MissAV，增强日志"""
         if not cookie_str:
             raise Exception("未提供 Cookie")
+        # 打印部分 Cookie 用于调试（隐藏敏感信息）
+        print(f"[MissAV] 使用 Cookie (前50字符): {cookie_str[:50]}...")
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -92,13 +95,20 @@ class MissAVFetcher:
         for attempt in range(3):
             try:
                 resp = self.client.get(url, headers=headers)
+                print(f"[MissAV] 请求 {url} 状态码: {resp.status_code}")
                 if resp.status_code == 200:
                     # 检查是否被重定向到验证页
                     if "Just a moment" in resp.text or "Cloudflare" in resp.text[:500]:
+                        print("[MissAV] 返回验证页，可能 Cookie 已过期")
                         raise Exception("Cookie 已过期，请重新获取")
+                    # 打印响应前200字符（调试）
+                    print(f"[MissAV] 响应长度: {len(resp.text)}, 前200字符: {resp.text[:200]}")
                     return resp.text
-                time.sleep(1 * (attempt + 1))
+                else:
+                    print(f"[MissAV] 请求失败，状态码 {resp.status_code}，重试 {attempt+1}")
+                    time.sleep(1 * (attempt + 1))
             except Exception as e:
+                print(f"[MissAV] 请求异常 {attempt+1}: {e}")
                 if attempt == 2:
                     raise
                 time.sleep(1 * (attempt + 1))
@@ -115,6 +125,7 @@ class MissAVFetcher:
                 try:
                     html = self._fetch_with_cookies(url, cookie_str)
                     if len(html) < 500:
+                        print(f"[MissAV] HTML 长度 {len(html)}，小于500，跳过")
                         continue
                     soup = BeautifulSoup(html, 'lxml')
                     links = soup.select('a[href*="/watch/"], a[href*="/dm1/"], a[href*="/v/"]')
@@ -257,10 +268,12 @@ async def missav_search(request: Request, q: str = Query(..., min_length=1)):
             if not row:
                 raise HTTPException(status_code=400, detail="开发者 Cookie 未设置，请先获取")
             cookie = row["value"]
+            print("[MissAV] 使用开发者 Cookie（数据库）")
         else:
             # 访客模式：必须提供有效的 Cookie
             if not cookie:
                 raise HTTPException(status_code=400, detail="访客模式未设置 Cookie，请先获取")
+            print("[MissAV] 使用访客 Cookie（请求头）")
         items = fetcher.search(q, cookie)
         return {"ok": True, "count": len(items), "items": items}
     except Exception as e:
