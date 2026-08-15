@@ -13,3 +13,4 @@ curl_cffi>=0.5.10
 # PyPI: https://pypi.org/project/missAV-api/
 # 源码: https://github.com/EchterAlsFake/unofficial-api-for-missav
 missAV_api[full]>=2.2
+base_api<2.0.0
