@@ -133,7 +133,7 @@
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(12px);
+                transform: translateY(6px);
             }
             to {
                 opacity: 1;
@@ -563,6 +563,10 @@
             gap: 8px;
         }
 
+        .gallery.fade-in {
+            animation: fadeIn 0.35s ease;
+        }
+
         .item {
             background: rgba(255, 255, 255, 0.04);
             border-radius: 10px;
@@ -593,7 +597,6 @@
             font-size: 16px;
             color: #fff;
             transition: all 0.2s ease;
-            cursor: pointer;
             pointer-events: none;
         }
 
@@ -1240,10 +1243,10 @@
             </div>
         </div>
     </div>
-
-    <script>
+<script>
         // ============================================================
         // X 下载器 - 完整版（Turbo Drive 兼容）
+        // 修复：收藏功能 + 我的喜欢/书签平滑加载
         // ============================================================
 
         // ---- 状态 ----
@@ -1470,26 +1473,6 @@
             }
         }
 
-        profileInput.addEventListener('input', updateFavoriteButton);
-
-        favoriteAddBtn.addEventListener('click', function() {
-            var username = normalizeUsername(profileInput.value);
-            if (!username) {
-                showSearchStatus('请先输入博主名', 'error');
-                return;
-            }
-            var exists = favorites.some(function(f) { return f.username.toLowerCase() === username.toLowerCase(); });
-            if (exists) {
-                removeFavorite(username);
-            } else {
-                addFavorite(username);
-            }
-        });
-
-        favoriteToggleBtn.addEventListener('click', function() {
-            favoritesPanel.classList.toggle('hidden');
-        });
-
         function addFavorite(username) {
             if (currentMode === 'developer') {
                 fetch('/api/favorites', {
@@ -1654,12 +1637,6 @@
         }
 
         // ---- 搜索博主 ----
-        searchBtn.addEventListener('click', performSearch);
-        searchSubmitBtn.addEventListener('click', performSearch);
-        profileInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') performSearch();
-        });
-
         function performSearch() {
             var raw = profileInput.value.trim();
             var username = normalizeUsername(raw);
@@ -1723,7 +1700,9 @@
             libraryCount.textContent = '正在读取本地数据…';
             libraryStatus.classList.add('hidden');
             libraryResultHeader.classList.add('hidden');
+            // 清空画廊，准备加载
             libraryGallery.innerHTML = '';
+            libraryGallery.classList.remove('fade-in');
 
             var key = getStorageKey(source);
             var raw = localStorage.getItem(key);
@@ -1744,6 +1723,8 @@
                 libraryGallery.innerHTML = '<div class="library-placeholder"><span class="icon">📭</span>暂无数据，请安装采集器</div>';
                 libraryResultHeader.classList.add('hidden');
                 selectToggleBtn.classList.add('hidden');
+                // 即使没有数据也触发淡入（占位内容平滑出现）
+                libraryGallery.classList.add('fade-in');
                 return;
             }
 
@@ -1774,6 +1755,7 @@
                 libraryStatus.classList.add('hidden');
                 libraryResultHeader.classList.add('hidden');
                 libraryGallery.innerHTML = '';
+                libraryGallery.classList.remove('fade-in');
 
                 var params = new URLSearchParams();
                 params.set('source', source);
@@ -1827,6 +1809,7 @@
                             libraryCount.textContent = '会话已过期';
                             libraryGallery.innerHTML =
                             '<div class="library-placeholder"><span class="icon">🔒</span>请返回首页重新登录</div>';
+                            libraryGallery.classList.add('fade-in');
                             selectToggleBtn.classList.add('hidden');
                             return;
                         }
@@ -1836,6 +1819,7 @@
                         libraryCount.textContent = '连接失败';
                         libraryGallery.innerHTML =
                             '<div class="library-placeholder"><span class="icon">📡</span>无法连接服务器</div>';
+                        libraryGallery.classList.add('fade-in');
                         selectToggleBtn.classList.add('hidden');
                     });
             }
@@ -1873,8 +1857,11 @@
             libraryResultCount.textContent = '共 ' + allFilteredItems.length + ' 个媒体';
 
             libraryGallery.innerHTML = '';
+            libraryGallery.classList.remove('fade-in');
+
             if (!allFilteredItems || allFilteredItems.length === 0) {
                 libraryGallery.innerHTML = '<div class="loader">没有符合条件的媒体</div>';
+                libraryGallery.classList.add('fade-in');
                 return;
             }
 
@@ -1915,6 +1902,8 @@
             if (allLoaded || isLoadingMore) return;
             if (currentBatch * BATCH_SIZE >= allFilteredItems.length) {
                 allLoaded = true;
+                // 全部加载完成，触发淡入
+                libraryGallery.classList.add('fade-in');
                 return;
             }
 
@@ -1929,10 +1918,13 @@
                 }
                 libraryGallery.appendChild(fragment);
                 currentBatch++;
-                isLoadingMore = false;
+
+                // 如果当前批次已加载完毕，触发淡入
                 if (currentBatch * BATCH_SIZE >= allFilteredItems.length) {
                     allLoaded = true;
+                    libraryGallery.classList.add('fade-in');
                 }
+                isLoadingMore = false;
             });
         }
 
@@ -2462,6 +2454,32 @@
             openLibrary('bookmarks');
         });
 
+        // ---- 收藏事件绑定（独立函数，方便重新绑定） ----
+        function bindFavoriteEvents() {
+            // 收藏按钮
+            favoriteAddBtn.addEventListener('click', function() {
+                var username = normalizeUsername(profileInput.value);
+                if (!username) {
+                    showSearchStatus('请先输入博主名', 'error');
+                    return;
+                }
+                var exists = favorites.some(function(f) { return f.username.toLowerCase() === username.toLowerCase(); });
+                if (exists) {
+                    removeFavorite(username);
+                } else {
+                    addFavorite(username);
+                }
+            });
+
+            // 收藏面板切换
+            favoriteToggleBtn.addEventListener('click', function() {
+                favoritesPanel.classList.toggle('hidden');
+            });
+
+            // 输入框变化时更新收藏按钮状态
+            profileInput.addEventListener('input', updateFavoriteButton);
+        }
+
         // ---- 初始化函数（用于首次加载和 Turbo 切换） ----
         function initApp() {
             // 重新获取 DOM 引用（Turbo 替换后需重新获取）
@@ -2519,7 +2537,8 @@
             confirmCancel = $('confirmCancel');
             confirmDelete = $('confirmDelete');
 
-            // 重新绑定事件（Turbo 替换后事件会丢失）
+            // ---- 重新绑定事件 ----
+
             // 搜索
             searchBtn.addEventListener('click', performSearch);
             searchSubmitBtn.addEventListener('click', performSearch);
@@ -2527,29 +2546,15 @@
                 if (e.key === 'Enter') performSearch();
             });
 
-            // 收藏
-            profileInput.addEventListener('input', updateFavoriteButton);
-            favoriteAddBtn.addEventListener('click', function() {
-                var username = normalizeUsername(profileInput.value);
-                if (!username) {
-                    showSearchStatus('请先输入博主名', 'error');
-                    return;
-                }
-                var exists = favorites.some(function(f) { return f.username.toLowerCase() === username.toLowerCase(); });
-                if (exists) {
-                    removeFavorite(username);
-                } else {
-                    addFavorite(username);
-                }
-            });
-            favoriteToggleBtn.addEventListener('click', function() {
-                favoritesPanel.classList.toggle('hidden');
-            });
+            // 收藏（使用独立函数）
+            bindFavoriteEvents();
 
             // 选项按钮
             document.querySelectorAll('.option-row').forEach(function(row) {
                 row.querySelectorAll('.option-btn').forEach(function(btn) {
-                    btn.addEventListener('click', function() {
+                    // 移除旧监听器（防止重复绑定）
+                    btn.removeEventListener('click', btn._listener);
+                    var listener = function() {
                         var group = row.dataset.group;
                         row.querySelectorAll('.option-btn').forEach(function(b) { b.classList.remove('active'); });
                         btn.classList.add('active');
@@ -2570,7 +2575,9 @@
                             libraryMediaType = value;
                             resetPaginationAndRender();
                         }
-                    });
+                    };
+                    btn._listener = listener;
+                    btn.addEventListener('click', listener);
                 });
             });
 
@@ -2619,7 +2626,7 @@
                 openLibrary('bookmarks');
             });
 
-            // 读取用户模式
+            // ---- 读取用户模式 ----
             var savedMode = localStorage.getItem('userMode') || 'guest';
             currentMode = savedMode;
 
@@ -2654,7 +2661,21 @@
             console.log('当前模式：' + currentMode);
         }
 
-        // 绑定事件：Turbo 切换 + 常规加载
+        // ---- Turbo 缓存前清理 ----
+        document.addEventListener('turbo:before-cache', function() {
+            // 移除滚动监听，防止缓存后残留
+            if (scrollListenerAttached) {
+                window.removeEventListener('scroll', handleScroll);
+                scrollListenerAttached = false;
+            }
+            // 清理滚动定时器
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = null;
+            }
+        });
+
+        // ---- 绑定事件：Turbo 切换 + 常规加载 ----
         document.addEventListener('turbo:load', initApp);
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
