@@ -1,145 +1,77 @@
 # ============================================================
-# missav_routes.py - 使用节点池自动切换（最终版）
+# missav_routes.py - Cookie 会话方案（最终稳定版）
+# 用户从浏览器复制 Cookie，后端携带 Cookie 请求 MissAV
 # ============================================================
 
-import os
 import re
 import time
-import random
 from urllib.parse import quote, urlparse
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+from pydantic import BaseModel
+import httpx
 from bs4 import BeautifulSoup
-
-# 导入 singbox 代理库
-try:
-    from singbox2proxy import SingBoxProxy
-except ImportError:
-    print("⚠️ 请先安装 singbox2proxy: pip install singbox2proxy")
-    SingBoxProxy = None
 
 router = APIRouter(prefix="/missav", tags=["MissAV"])
 
-# ------------------------------------------------------------
-# 节点池（从你的订阅中提取的所有 vless 节点，去重后整理）
-# ------------------------------------------------------------
-NODES = [
-    # 日本节点（不同 host）
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.7770006.xyz:443?type=ws&encryption=none&host=jp1-lx.7770006.xyz&path=%2Fliangxin%2Fdata%2Fjp&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=safari&insecure=0&sni=jp1-lx.7770006.xyz#🇯🇵日本高速01",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.7770006.xyz:443?type=ws&encryption=none&host=jp2-lx.7770006.xyz&path=%2Fliangxin%2Fdata&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=safari&insecure=0&sni=jp2-lx.7770006.xyz#🇯🇵日本高速02",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.7770006.xyz:443?type=ws&encryption=none&host=jp3-lx.7770006.xyz&path=%2Fliangxin%2Fdash%2Fjp&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=chrome&insecure=0&sni=jp3-lx.7770006.xyz#🇯🇵日本高速06",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.7770006.xyz:443?type=ws&encryption=none&host=jp4-lx.7770006.xyz&path=%2Fliangxin%2Fdownload%2Fjp&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=chrome&insecure=0&sni=jp4-lx.7770006.xyz#🇯🇵日本高速08",
+# 存储用户 Cookie（内存存储，重启丢失）
+# 生产环境可改为数据库存储
+user_cookies = {}
 
-    # 香港节点（不同 host）
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link1.lxyun.xyz:36458?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=tls&flow=xtls-rprx-vision&fp=safari&insecure=1&sni=iosapps.itunes.apple.com&pcs=d5c39647e414c144b719bc49cb41c4b8f46f09f4cf26c863cae15c01d4a7b96a#🇭🇰香港高速01",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link2.lxyun.xyz:28346?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=tls&flow=xtls-rprx-vision&fp=safari&insecure=1&sni=www.lamer.com.hk&pcs=af0f11574724e7ddd96f64eb77a450f71ce2de61ee5afd6f2e27ed7604a6a9b1#🇭🇰香港高速02",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link3.lxyun.xyz:27786?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=ios&insecure=0&sni=www.lamer.com.hk&pbk=EYa4ic3GAxqznV61U-OOww-WKsu5wuQQptyS3fw7czM&sid=c50db39f#🇭🇰香港高速03",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link4.lxyun.xyz:23564?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=ios&insecure=0&sni=www.lamer.com.hk&pbk=3FPGTaxkfOM3nEUWUyCiqkH5oJGsOx-WxPJfADi1QWY&sid=7f369e14#🇭🇰香港高速04",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link5.lxyun.xyz:35332?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=ios&insecure=0&sni=www.lamer.com.hk&pbk=a11gdDetacKBsiBBfhsPvanTGMtVyZEIvax7gU5Wplg&sid=9bf38508#🇭🇰香港高速05",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.777078.xyz:443?type=ws&encryption=none&host=lx-hk1.7770008.xyz&path=%2Fliangxin%2Fdata%2Fhk1&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=safari&insecure=0&sni=lx-hk1.7770008.xyz#🇭🇰香港01住宅IP",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.777078.xyz:443?type=ws&encryption=none&host=lx-hk2.7770008.xyz&path=%2Fliangxin%2Fdata%2Fhk2&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=safari&insecure=0&sni=lx-hk2.7770008.xyz#🇭🇰香港02住宅IP",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.777078.xyz:443?type=ws&encryption=none&host=lx-hk3.7770008.xyz&path=%2Fliangxin%2Fdata%2Fhk3&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=safari&insecure=0&sni=lx-hk3.7770008.xyz#🇭🇰香港03住宅IP",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.777078.xyz:443?type=ws&encryption=none&host=lx-hk4.7770008.xyz&path=%2Fliangxin%2Fdata%2Fhk4&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=safari&insecure=0&sni=lx-hk4.7770008.xyz#🇭🇰香港04住宅IP",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.777078.xyz:443?type=ws&encryption=none&host=lx-hk5.7770008.xyz&path=%2Fliangxin%2Fdata%2Fhk5&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=safari&insecure=0&sni=lx-hk5.7770008.xyz#🇭🇰香港05住宅IP",
+class CookieSet(BaseModel):
+    cookie_string: str
 
-    # 新加坡节点（部分）
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link7.lxyun.xyz:48574?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=ios&insecure=0&sni=www.lamer.com.sg&pbk=lmxSayN8tUg2Dag2MPXrdqZ2SQK9K3OjlaKk8wVCRnc&sid=f8f18902#🇸🇬新加坡高速01",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link8.lxyun.xyz:39645?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=ios&insecure=0&sni=iosapps.itunes.apple.com&pbk=x7VqpFP7_PrY4ebNw8hi8Ec5Tm5Upmt5JOdrN1M9VnQ&sid=2b3b0b93#🇸🇬新加坡高速02",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link9.lxyun.xyz:23587?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=ios&insecure=0&sni=iosapps.itunes.apple.com&pbk=H66PLLf6HkZwHk4oFqisfTawIvw2cxkEwk8Ue8sHZgA&sid=19b580ae#🇸🇬新加坡高速03",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link30.lxyun.xyz:23568?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=safari&insecure=0&sni=www.lamer.com.hk&pbk=EjcM-ENrpWY8iIL82qJtQrZgRs4KlVqhdisqLAXonUY&sid=55d046dc#🇸🇬新加坡高速04",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@aws-link31.lxyun.xyz:443?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=safari&insecure=0&sni=download-porter.hoyoverse.com&pbk=wXayfckurSM2zWeis7OAL_QVGm9wBLr0WYp2zFtJFAE&sid=c7487aeb#🇸🇬新加坡高速05",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.7770008.xyz:443?type=ws&encryption=none&host=lx-1sg.lxy1015.top&path=%2Fliangxin%2Fsg1&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=chrome&insecure=0&sni=lx-1sg.lxy1015.top#🇸🇬新加坡高速06",
+@router.post("/set-cookie")
+async def set_cookie(data: CookieSet):
+    """用户提交 Cookie 字符串"""
+    cookie_dict = {}
+    for item in data.cookie_string.split(';'):
+        item = item.strip()
+        if '=' in item:
+            key, value = item.split('=', 1)
+            cookie_dict[key.strip()] = value.strip()
+    if not cookie_dict:
+        raise HTTPException(status_code=400, detail="无效的 Cookie 格式")
+    user_cookies['default'] = cookie_dict
+    return {"ok": True, "message": "Cookie 已保存"}
 
-    # 美国节点（部分）
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.777078.xyz:443?type=ws&encryption=none&host=lx-us1.777078.xyz&path=%2Fliangxin%2Fus&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=chrome&insecure=0&sni=lx-us1.777078.xyz#🇺🇸美国高速01",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@cfyes.777078.xyz:443?type=ws&encryption=none&host=lx-us2.777078.xyz&path=%2Fliangxin%2Fus&headerType=none&quicSecurity=none&serviceName=&security=tls&fp=chrome&insecure=0&sni=lx-us2.777078.xyz#🇺🇸美国高速02",
-    "vless://39225b24-bf38-47c7-863b-3341d45f853b@lxyus1.777078.xyz:443?type=tcp&encryption=none&host=&path=&headerType=none&quicSecurity=none&serviceName=&security=reality&flow=xtls-rprx-vision&fp=safari&insecure=0&sni=iosapps.itunes.apple.com&pbk=ulU6wfyain_FQnYt23NGunTAfBQNLhIBY49mvekiQB0&sid=ca032f81#🇺🇸美国洛杉矶01",
-]
+@router.get("/cookie-status")
+async def cookie_status():
+    has = 'default' in user_cookies and bool(user_cookies['default'])
+    return {"ok": True, "has_cookie": has}
 
-# ------------------------------------------------------------
-# 节点管理器
-# ------------------------------------------------------------
-class NodeManager:
-    def __init__(self, nodes):
-        self.nodes = nodes
-        self.current_index = 0
-        self.proxy_client = None
-
-    def get_next_node(self):
-        """轮询获取下一个节点"""
-        if not self.nodes:
-            raise Exception("节点列表为空")
-        node = self.nodes[self.current_index]
-        self.current_index = (self.current_index + 1) % len(self.nodes)
-        return node
-
-    def get_proxy_client(self):
-        """尝试创建代理客户端，如果失败则自动换节点"""
-        if self.proxy_client is not None:
-            # 如果已有客户端，先清理（可选）
-            pass
-
-        # 尝试最多 len(nodes) 次
-        for _ in range(len(self.nodes)):
-            node = self.get_next_node()
-            try:
-                print(f"[MissAV] 尝试使用节点: {node.split('#')[-1] if '#' in node else 'unnamed'}")
-                client = SingBoxProxy(node)
-                # 简单测试连接：请求一个健康检查页面（或者直接返回客户端）
-                # 由于无法在初始化时测试，我们返回客户端，在请求时捕获异常
-                self.proxy_client = client
-                return client
-            except Exception as e:
-                print(f"[MissAV] 节点初始化失败: {e}，切换到下一个")
-                self.proxy_client = None
-                continue
-        raise Exception("所有节点初始化均失败")
-
-    def reset(self):
-        """重置节点索引（可选）"""
-        self.current_index = 0
-        self.proxy_client = None
-
-# ------------------------------------------------------------
-# MissAV 抓取器
-# ------------------------------------------------------------
 class MissAVFetcher:
     def __init__(self):
         self.base_domains = ["missav.ws", "missav.ai"]
-        self.timeout = 60
-        self.node_manager = NodeManager(NODES)
-        self.current_proxy = None
+        self.timeout = 30
+        self.client = httpx.Client(timeout=self.timeout, follow_redirects=True)
 
-    def _fetch_via_proxy(self, url):
-        """通过节点池代理请求，自动切换"""
-        if not NODES:
-            raise Exception("节点列表为空，请检查配置")
+    def _fetch_with_cookies(self, url):
+        cookie_dict = user_cookies.get('default')
+        if not cookie_dict:
+            raise Exception("未设置 Cookie，请先粘贴 Cookie")
 
-        # 尝试所有节点（最多轮询一遍）
-        for attempt in range(len(NODES)):
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            "Referer": "https://missav.ws/",
+            "Cookie": "; ".join([f"{k}={v}" for k, v in cookie_dict.items()]),
+        }
+
+        for attempt in range(3):
             try:
-                # 获取一个可用节点
-                client = self.node_manager.get_proxy_client()
-                print(f"[MissAV] 通过代理请求 (尝试 {attempt+1}): {url}")
-                response = client.request("GET", url, timeout=self.timeout)
-                if response.status_code == 200:
-                    # 检查是否返回验证页
-                    if "Just a moment" in response.text or "Cloudflare" in response.text[:500]:
-                        print(f"[MissAV] 节点返回验证页，切换节点")
-                        self.node_manager.proxy_client = None  # 强制换节点
-                        continue
-                    return response.text
-                else:
-                    print(f"[MissAV] 节点返回状态码 {response.status_code}，切换节点")
-                    self.node_manager.proxy_client = None
-                    continue
+                resp = self.client.get(url, headers=headers)
+                if resp.status_code == 200:
+                    if "Just a moment" in resp.text or "Cloudflare" in resp.text[:500]:
+                        raise Exception("Cookie 已过期，请重新粘贴")
+                    return resp.text
+                time.sleep(1 * (attempt + 1))
             except Exception as e:
-                print(f"[MissAV] 节点请求异常: {e}，切换节点")
-                self.node_manager.proxy_client = None
-                continue
+                if attempt == 2:
+                    raise
+                time.sleep(1 * (attempt + 1))
+        raise Exception("请求失败")
 
-        raise Exception("所有节点均请求失败，请检查节点是否有效")
-
-    # ----- 以下 search, get_detail, _parse_search, _parse_detail 与之前完全一致 -----
     def search(self, keyword):
         if len(keyword) < 2:
             raise ValueError("至少输入2个字符")
@@ -148,7 +80,7 @@ class MissAVFetcher:
             for path in [f"/search/{quote(keyword)}", f"/search?q={quote(keyword)}"]:
                 url = base + path
                 try:
-                    html = self._fetch_via_proxy(url)
+                    html = self._fetch_with_cookies(url)
                     if len(html) < 500:
                         continue
                     soup = BeautifulSoup(html, 'lxml')
@@ -203,14 +135,14 @@ class MissAVFetcher:
         if video_id_or_url.startswith('http'):
             parsed = urlparse(video_id_or_url)
             base = f"{parsed.scheme}://{parsed.netloc}"
-            html = self._fetch_via_proxy(video_id_or_url)
+            html = self._fetch_with_cookies(video_id_or_url)
             return self._parse_detail(html, base, video_id_or_url, video_id_or_url)
         for domain in self.base_domains:
             base = "https://" + domain
             for path in [f"/watch/{video_id_or_url}", f"/dm1/{video_id_or_url}", f"/v/{video_id_or_url}"]:
                 url = base + path
                 try:
-                    html = self._fetch_via_proxy(url)
+                    html = self._fetch_with_cookies(url)
                     if len(html) < 500:
                         continue
                     return self._parse_detail(html, base, video_id_or_url, url)
@@ -273,9 +205,6 @@ class MissAVFetcher:
             "url": url,
         }
 
-# ------------------------------------------------------------
-# FastAPI 路由
-# ------------------------------------------------------------
 fetcher = MissAVFetcher()
 
 @router.get("/search")
