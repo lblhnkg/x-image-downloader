@@ -38,7 +38,7 @@ def is_developer(request: Request):
     return bool(request.cookies.get("session"))
 
 # ============================================================
-# Jable 抓取器（curl_cffi + HTTP 代理 + 随机延迟 + 智能重试）
+# Jable 抓取器（curl_cffi + HTTP 代理）
 # ============================================================
 
 class JableFetcher:
@@ -63,22 +63,21 @@ class JableFetcher:
             "http": "http://127.0.0.1:1081",
             "https": "http://127.0.0.1:1081"
         }
-        # 使用 curl_cffi 的 Session，模拟 Chrome 124 指纹
+        # 创建 curl_cffi Session，模拟 Chrome 124 指纹
         self.session = requests.Session(
             impersonate="chrome124",
-            proxies=self.proxies,
             timeout=self.timeout
         )
+        # 正确设置代理（必须通过属性赋值）
+        self.session.proxies = self.proxies
         self.session.headers.update(self.headers)
 
     def _fetch(self, url: str, is_retry: bool = False) -> str:
-        # 首次请求前随机延迟 1-3 秒
         if not is_retry:
             delay = random.uniform(1, 3)
             print(f"[Jable] 等待 {delay:.1f} 秒后请求...")
             time.sleep(delay)
         else:
-            # 重试前等待 10-20 秒随机
             delay = random.uniform(10, 20)
             print(f"[Jable] 重试前等待 {delay:.1f} 秒...")
             time.sleep(delay)
@@ -147,7 +146,6 @@ class JableFetcher:
             if len(results) >= 30:
                 break
 
-        # 精确匹配排序
         results.sort(key=lambda x: x["id"].lower() != norm_keyword)
         return results
 
