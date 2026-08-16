@@ -60,7 +60,6 @@ async def init_db():
                 addedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        # 检查并添加 addedAt 列（兼容旧表）
         try:
             await database.execute("ALTER TABLE favorites ADD COLUMN IF NOT EXISTS addedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
         except Exception:
@@ -73,7 +72,6 @@ async def init_db():
                 addedAt DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        # SQLite 不支持 IF NOT EXISTS 列添加，用备用方法
         try:
             await database.execute("ALTER TABLE favorites ADD COLUMN addedAt DATETIME DEFAULT CURRENT_TIMESTAMP")
         except Exception:
@@ -152,7 +150,7 @@ async def clear_all_media():
     await database.execute("DELETE FROM media")
 
 # ============================================================
-# 收藏操作（兼容 addedAt 缺失的情况）
+# 收藏操作
 # ============================================================
 
 async def load_all_favorites():
@@ -160,14 +158,12 @@ async def load_all_favorites():
     favorites = []
     for row in rows:
         if hasattr(row, "_mapping"):
-            # 使用 .get() 防止 KeyError
             favorites.append({
                 "username": row._mapping["username"],
                 "name": row._mapping["name"],
                 "addedAt": row._mapping.get("addedAt", datetime.now(timezone.utc).isoformat())
             })
         else:
-            # 索引访问，若 addedAt 缺失则使用当前时间
             try:
                 addedAt = row[2]
             except IndexError:
@@ -205,7 +201,7 @@ async def is_favorite(username):
     return row is not None
 
 # ============================================================
-# 内存缓存（所有模块共享）
+# 内存缓存
 # ============================================================
 
 media_library = {}
@@ -215,13 +211,11 @@ media_library = {}
 # ============================================================
 
 def safe_filename(value):
-    """清理文件名，去掉非法字符"""
     value = str(value or "")
     value = re.sub(r'[\\/:*?"<>|]+', "_", value)
     return value[:150]
 
 def parse_x_date(value):
-    """解析 X 时间格式"""
     if not value:
         return None
     formats = ["%a %b %d %H:%M:%S %z %Y", "%a %b %d %H:%M:%S %Y"]
@@ -236,7 +230,6 @@ def parse_x_date(value):
     return None
 
 def date_from_string(value, end_of_day=False):
-    """从字符串解析日期"""
     if not value:
         return None
     try:
@@ -248,7 +241,6 @@ def date_from_string(value, end_of_day=False):
         raise ValueError(f"日期格式错误：{value}")
 
 def normalize_x_media_url(url):
-    """规范化 X 媒体 URL，添加原图参数"""
     if not url:
         return ""
     url = str(url).strip()
@@ -267,14 +259,12 @@ def normalize_x_media_url(url):
     return url
 
 def make_proxy_url(media_url):
-    """生成代理 URL"""
     if not media_url:
         return ""
     media_url = normalize_x_media_url(media_url)
     return "/api/media-proxy?url=" + quote(media_url, safe="")
 
 def resolve_proxy_url(url):
-    """解析代理 URL 还原原始地址"""
     if not url:
         return url
     parsed = urlparse(url)
@@ -289,7 +279,6 @@ def resolve_proxy_url(url):
     return real_url
 
 def validate_media_url(url):
-    """验证 X 媒体地址"""
     try:
         parsed = urlparse(url)
     except Exception:
@@ -302,7 +291,6 @@ def validate_media_url(url):
     return url
 
 def validate_hls_url(url):
-    """验证 HLS 视频地址（支持 X、MissAV，未来可扩展 B站）"""
     try:
         parsed = urlparse(url)
     except Exception:
@@ -310,18 +298,16 @@ def validate_hls_url(url):
     if parsed.scheme != "https":
         raise HTTPException(status_code=400, detail="视频地址必须使用 HTTPS")
     hostname = (parsed.hostname or "").lower()
-    # 允许的域名列表（可扩展）
     allowed_hosts = {
         "video.twimg.com", "video.twimg.com.",
         "missav.com", "missav.ws", "cdn.missav.com",
-        # 未来可添加 B站: "upos-sz-mirror.bilivideo.com", etc.
     }
     if hostname not in allowed_hosts:
-        # 自用场景放行（也可改为严格模式）
         pass
     return url
+
 # ============================================================
-# MissAV / Jable 独立数据库连接
+# MissAV / Jable 独立数据库连接（追加）
 # ============================================================
 MISSAV_DATABASE_URL = os.environ.get("MISSAV_DATABASE_URL")
 if MISSAV_DATABASE_URL:
