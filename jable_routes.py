@@ -9,6 +9,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 import httpx
+from httpx_socks import SyncProxyTransport
 from bs4 import BeautifulSoup
 from shared import missav_db
 
@@ -48,14 +49,9 @@ class JableFetcher:
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         }
-        # 配置 SOCKS5 代理（sing-box 监听 127.0.0.1:1080）
-        self.proxies = {
-            "http://": "socks5://127.0.0.1:1080",
-            "https://": "socks5://127.0.0.1:1080"
-        }
-        # 创建带代理的 httpx 客户端
+        transport = SyncProxyTransport.from_url("socks5://127.0.0.1:1080")
         self.client = httpx.Client(
-            proxies=self.proxies,
+            transport=transport,
             timeout=self.timeout,
             follow_redirects=True,
             headers=self.headers
@@ -74,7 +70,6 @@ class JableFetcher:
             raise
 
     def search(self, keyword: str) -> list[dict]:
-        """搜索关键词，返回视频列表"""
         search_url = f"{self.base_url}/search/{quote(keyword)}/"
         html = self._fetch(search_url)
         soup = BeautifulSoup(html, 'lxml')
@@ -90,20 +85,17 @@ class JableFetcher:
 
             video_id = href.split('/')[-2] if href.endswith('/') else href.split('/')[-1]
 
-            # 封面图
             img = a.find('img')
             cover = ""
             if img:
                 cover = img.get('src') or img.get('data-src') or ""
                 if cover.startswith('//'):
                     cover = 'https:' + cover
-                # 如果封面是 placeholder，用 data-src
                 if 'placeholder' in cover and img.get('data-src'):
                     cover = img.get('data-src')
                     if cover.startswith('//'):
                         cover = 'https:' + cover
 
-            # 标题
             title = ""
             detail_div = a.find_parent('div', class_='video-img-box')
             if detail_div:
@@ -126,12 +118,10 @@ class JableFetcher:
         return results
 
     def detail(self, video_id: str) -> dict:
-        """获取视频详情"""
         detail_url = f"{self.base_url}/videos/{video_id}/"
         html = self._fetch(detail_url)
         soup = BeautifulSoup(html, 'lxml')
 
-        # 标题
         title_tag = soup.find('h1')
         title = title_tag.text.strip() if title_tag else ""
         if not title:
@@ -139,13 +129,11 @@ class JableFetcher:
             if meta_title:
                 title = meta_title.get('content', '')
 
-        # 番号
         code = ""
         code_match = re.match(r'^([A-Z]{2,6}-\d{3,5})', title)
         if code_match:
             code = code_match.group(1)
 
-        # 女优名
         actress = ""
         models = soup.select('a[href*="/models/"]')
         if models:
@@ -164,7 +152,6 @@ class JableFetcher:
                 if any('\u4e00' <= c <= '\u9fff' for word in possible for c in word):
                     actress = ' '.join(possible)
 
-        # 封面图
         cover = ""
         meta_og = soup.find('meta', property='og:image')
         if meta_og:
@@ -172,20 +159,17 @@ class JableFetcher:
         if cover and cover.startswith('//'):
             cover = 'https:' + cover
 
-        # 简介
         desc = ""
         meta_desc = soup.find('meta', attrs={'name': 'description'})
         if meta_desc:
             desc = meta_desc.get('content', '')
 
-        # 发布日期
         publish_date = ""
         date_pattern = re.compile(r'(\d{4}-\d{2}-\d{2})')
         date_match = date_pattern.search(html)
         if date_match:
             publish_date = date_match.group(1)
 
-        # m3u8 地址
         video_url = ""
         video_tag = soup.find('video')
         if video_tag and video_tag.get('src'):
