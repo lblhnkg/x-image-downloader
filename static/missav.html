@@ -454,33 +454,55 @@
         .modal-content {
             flex: 1;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 12px 16px;
-            overflow: auto;
             flex-direction: column;
+            align-items: center;
+            padding: 12px 16px;
+            overflow-y: auto;
+            gap: 16px;
         }
 
-        .modal-content video {
-            max-width: 100%;
-            max-height: 70vh;
+        .modal-content .modal-cover {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.03);
+            flex-shrink: 0;
+        }
+
+        .modal-content .modal-cover img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            object-fit: cover;
+        }
+
+        .modal-content .modal-cover .cover-fallback {
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 48px;
+            background: rgba(255, 255, 255, 0.03);
         }
 
         .modal-content .modal-info {
             width: 100%;
-            max-width: 600px;
-            margin-top: 16px;
-            color: rgba(255, 255, 255, 0.6);
+            max-width: 400px;
+            color: rgba(255, 255, 255, 0.7);
             font-size: 14px;
             font-weight: 300;
-            line-height: 1.6;
+            line-height: 1.8;
         }
 
         .modal-content .modal-info .mi-title {
             font-size: 18px;
             font-weight: 500;
             color: #fff;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            line-height: 1.4;
         }
 
         .modal-content .modal-info .mi-code {
@@ -489,15 +511,29 @@
         }
 
         .modal-content .modal-info .mi-actress {
-            font-size: 13px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .modal-content .modal-info .mi-duration {
+            font-size: 14px;
             color: rgba(255, 255, 255, 0.4);
+        }
+
+        .modal-content .modal-info .mi-desc {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.3);
             margin-top: 4px;
+            line-height: 1.6;
         }
 
         .modal-bottom {
             padding: 10px 16px 16px;
             display: flex;
             gap: 10px;
+            max-width: 400px;
+            width: 100%;
+            margin: 0 auto;
         }
 
         .modal-bottom button {
@@ -521,12 +557,12 @@
             opacity: 0.85;
         }
 
-        .modal-bottom .modal-original {
+        .modal-bottom .modal-preview {
             background: rgba(255, 255, 255, 0.08);
             color: rgba(255, 255, 255, 0.6);
         }
 
-        .modal-bottom .modal-original:hover {
+        .modal-bottom .modal-preview:hover {
             background: rgba(255, 255, 255, 0.15);
             color: #fff;
         }
@@ -570,6 +606,9 @@
             .item-actions button {
                 font-size: 9px;
                 padding: 4px 0;
+            }
+            .modal-content .modal-info .mi-title {
+                font-size: 16px;
             }
         }
 
@@ -635,13 +674,13 @@
 <!-- ===== 模态框 ===== -->
 <div class="modal-overlay hidden" id="modal">
     <div class="modal-top">
-        <span style="color:rgba(255,255,255,0.2);font-size:13px;font-weight:300;" id="modalTitle">影片预览</span>
+        <span style="color:rgba(255,255,255,0.2);font-size:13px;font-weight:300;" id="modalTitle">影片详情</span>
         <button class="modal-close" id="modalCloseBtn">关闭</button>
     </div>
     <div class="modal-content" id="modalContent"></div>
     <div class="modal-bottom">
-        <button class="modal-download" id="modalDownloadBtn">下载视频</button>
-        <button class="modal-original" id="modalOriginalBtn">打开原页</button>
+        <button class="modal-download" id="modalDownloadBtn">⬇️ 下载视频</button>
+        <button class="modal-preview" id="modalPreviewBtn">🔗 预览视频</button>
     </div>
 </div>
 
@@ -893,6 +932,7 @@
                     collectData.actress = data.item.actress || '';
                     collectData.publish_date = data.item.publish_date || '';
                     collectData.description = data.item.description || '';
+                    collectData.duration = data.item.duration || '';
                 }
                 return saveCollectItem(collectData);
             })
@@ -994,13 +1034,17 @@
                 title: item.title,
                 cover: item.cover_url,
                 url: item.source_url,
-                code: item.video_id
+                code: item.video_id,
+                actress: item.actress,
+                duration: item.duration,
+                publish_date: item.publish_date,
+                description: item.description
             };
             gallery.appendChild(createCard(cardData, 'collection'));
         });
     }
 
-    // ---- 详情（复用 X 的 video-stream） ----
+    // ---- 详情（新模态框：封面+信息+按钮） ----
     function fetchDetail(videoId) {
         const status = $('searchStatus');
         showStatus(status, '正在获取影片信息…', 'loading');
@@ -1024,46 +1068,45 @@
         const modal = $('modal');
         const content = $('modalContent');
         const title = $('modalTitle');
-        title.textContent = item.code || item.id || '影片预览';
+        title.textContent = item.code || item.id || '影片详情';
         content.innerHTML = '';
 
-        const video = document.createElement('video');
-        video.controls = true;
-        video.autoplay = true;
-        video.playsInline = true;
-        video.preload = 'metadata';
-        video.style.cssText = 'max-width:100%;max-height:70vh;';
+        // ---- 封面图 ----
+        const coverDiv = document.createElement('div');
+        coverDiv.className = 'modal-cover';
 
-        const streamUrl = '/api/video-stream?url=' + encodeURIComponent(item.video_url || '');
-        video.src = streamUrl;
-
-        video.onerror = function() {
-            if (video.src === streamUrl) {
-                video.src = item.video_url || '';
-            }
+        const img = document.createElement('img');
+        img.src = item.cover || '';
+        img.alt = item.title || '封面';
+        img.onerror = function() {
+            this.style.display = 'none';
+            const fallback = document.createElement('div');
+            fallback.className = 'cover-fallback';
+            fallback.textContent = '🎬';
+            coverDiv.appendChild(fallback);
         };
+        coverDiv.appendChild(img);
+        content.appendChild(coverDiv);
 
-        content.appendChild(video);
-
+        // ---- 信息 ----
         const infoDiv = document.createElement('div');
         infoDiv.className = 'modal-info';
-        infoDiv.innerHTML = `
-            <div class="mi-title">${item.title || '未知标题'}</div>
-            <div class="mi-code">番号：${item.code || item.id || '未知'}</div>
-            ${item.actress ? '<div class="mi-actress">演员：' + item.actress + '</div>' : ''}
-        `;
+
+        let infoHTML = '';
+        infoHTML += `<div class="mi-title">${item.title || '未知标题'}</div>`;
+        if (item.code) infoHTML += `<div class="mi-code">番号：${item.code}</div>`;
+        if (item.actress) infoHTML += `<div class="mi-actress">👩 出演：${item.actress}</div>`;
+        if (item.duration) infoHTML += `<div class="mi-duration">⏱️ 时长：${item.duration}</div>`;
+        if (item.publish_date) infoHTML += `<div class="mi-duration">📅 发行：${item.publish_date}</div>`;
+        if (item.description) infoHTML += `<div class="mi-desc">📝 ${item.description}</div>`;
+
+        infoDiv.innerHTML = infoHTML;
         content.appendChild(infoDiv);
 
         modal.classList.remove('hidden');
     }
 
     function closeModal() {
-        const video = $('modalContent').querySelector('video');
-        if (video) {
-            video.pause();
-            video.removeAttribute('src');
-            video.load();
-        }
         $('modal').classList.add('hidden');
         $('modalContent').innerHTML = '';
         currentItem = null;
@@ -1078,6 +1121,16 @@
         }
         const filename = (currentItem.code || currentItem.id || 'jable') + '.mp4';
         window.location.href = '/api/video-download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(filename);
+    }
+
+    function previewCurrent() {
+        if (!currentItem) return;
+        const url = currentItem.url || '';
+        if (!url) {
+            alert('没有原页地址');
+            return;
+        }
+        window.open(url, '_blank');
     }
 
     // ---- 事件绑定 ----
@@ -1095,11 +1148,7 @@
         if (e.key === 'Escape') closeModal();
     });
     $('modalDownloadBtn').addEventListener('click', downloadCurrent);
-    $('modalOriginalBtn').addEventListener('click', function() {
-        if (currentItem && currentItem.url) {
-            window.open(currentItem.url, '_blank');
-        }
-    });
+    $('modalPreviewBtn').addEventListener('click', previewCurrent);
 
     $('backToHome').addEventListener('click', function() {
         window.location.href = '/';
@@ -1125,7 +1174,6 @@
 
     // 暴露全局函数供外部调用（兼容旧油猴脚本）
     window.saveMissavItem = function(data) {
-        // 转为 Jable 格式
         const item = {
             video_id: data.video_id || data.id || '',
             title: data.title || '',
@@ -1134,7 +1182,8 @@
             m3u8_url: data.m3u8_url || '',
             source_url: data.source_url || data.url || '',
             publish_date: data.publish_date || '',
-            description: data.description || ''
+            description: data.description || '',
+            duration: data.duration || ''
         };
         return saveCollectItem(item);
     };
