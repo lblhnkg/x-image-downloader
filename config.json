@@ -16,14 +16,6 @@
   ],
   "outbounds": [
     {
-      "type": "urltest",
-      "tag": "proxy-selector",
-      "outbounds": ["hk1", "hk2", "hk3", "hk4", "hk5"],
-      "url": "https://jable.tv/",
-      "interval": "1m",
-      "tolerance": 50
-    },
-    {
       "type": "vless",
       "tag": "hk1",
       "server": "cfyes.777078.xyz",
@@ -41,87 +33,11 @@
         "path": "/liangxin/data/hk1",
         "headers": { "Host": "lx-hk1.7770008.xyz" }
       }
-    },
-    {
-      "type": "vless",
-      "tag": "hk2",
-      "server": "cfyes.777078.xyz",
-      "server_port": 443,
-      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
-      "flow": "",
-      "tls": {
-        "enabled": true,
-        "server_name": "lx-hk2.7770008.xyz",
-        "insecure": false,
-        "utls": { "enabled": true, "fingerprint": "safari" }
-      },
-      "transport": {
-        "type": "ws",
-        "path": "/liangxin/data/hk2",
-        "headers": { "Host": "lx-hk2.7770008.xyz" }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "hk3",
-      "server": "cfyes.777078.xyz",
-      "server_port": 443,
-      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
-      "flow": "",
-      "tls": {
-        "enabled": true,
-        "server_name": "lx-hk3.7770008.xyz",
-        "insecure": false,
-        "utls": { "enabled": true, "fingerprint": "safari" }
-      },
-      "transport": {
-        "type": "ws",
-        "path": "/liangxin/data/hk3",
-        "headers": { "Host": "lx-hk3.7770008.xyz" }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "hk4",
-      "server": "cfyes.777078.xyz",
-      "server_port": 443,
-      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
-      "flow": "",
-      "tls": {
-        "enabled": true,
-        "server_name": "lx-hk4.7770008.xyz",
-        "insecure": false,
-        "utls": { "enabled": true, "fingerprint": "safari" }
-      },
-      "transport": {
-        "type": "ws",
-        "path": "/liangxin/data/hk4",
-        "headers": { "Host": "lx-hk4.7770008.xyz" }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "hk5",
-      "server": "cfyes.777078.xyz",
-      "server_port": 443,
-      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
-      "flow": "",
-      "tls": {
-        "enabled": true,
-        "server_name": "lx-hk5.7770008.xyz",
-        "insecure": false,
-        "utls": { "enabled": true, "fingerprint": "safari" }
-      },
-      "transport": {
-        "type": "ws",
-        "path": "/liangxin/data/hk5",
-        "headers": { "Host": "lx-hk5.7770008.xyz" }
-      }
     }
   ],
   "route": {
     "rules": [
-      { "outbound": "proxy-selector", "network": "tcp" }
+      { "outbound": "hk1", "network": "tcp" }
     ]
   }
 }
