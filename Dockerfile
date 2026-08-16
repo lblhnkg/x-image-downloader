@@ -8,17 +8,16 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     wget \
-    unzip \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 下载并安装 sing-box v1.10.0（最新稳定版）
-ENV SING_BOX_VERSION=1.10.0
-RUN wget https://github.com/SagerNet/sing-box/releases/download/v${SING_BOX_VERSION}/sing-box-${SING_BOX_VERSION}-linux-amd64.zip && \
-    unzip -q sing-box-${SING_BOX_VERSION}-linux-amd64.zip && \
+# 下载并安装 sing-box v1.13.18（使用通用 amd64 tar.gz）
+ENV SING_BOX_VERSION=1.13.18
+RUN wget https://github.com/SagerNet/sing-box/releases/download/v${SING_BOX_VERSION}/sing-box-${SING_BOX_VERSION}-linux-amd64.tar.gz && \
+    tar -xzf sing-box-${SING_BOX_VERSION}-linux-amd64.tar.gz && \
     mv sing-box-${SING_BOX_VERSION}-linux-amd64/sing-box /usr/local/bin/ && \
     chmod +x /usr/local/bin/sing-box && \
-    rm -rf sing-box-${SING_BOX_VERSION}-linux-amd64.zip sing-box-${SING_BOX_VERSION}-linux-amd64
+    rm -rf sing-box-${SING_BOX_VERSION}-linux-amd64.tar.gz sing-box-${SING_BOX_VERSION}-linux-amd64
 
 # 复制依赖文件并安装
 COPY requirements.txt .
