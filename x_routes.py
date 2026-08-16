@@ -1,6 +1,5 @@
 # ============================================================
 # x_routes.py - X 全部功能（独立模块）
-# 修改：video_download 支持智能 Referer 映射（可扩展）
 # ============================================================
 
 import re
@@ -799,10 +798,14 @@ async def download(url: str = Query(...), filename: str = Query("x-media")):
     )
 
 # ============================================================
-# 修改后的 video_download（智能 Referer 映射版）
+# video_download（支持 referer 参数，用于 Jable 防盗链）
 # ============================================================
 @router.get("/api/video-download")
-async def video_download(url: str = Query(...), filename: str = Query("x-video.mp4")):
+async def video_download(
+    url: str = Query(...),
+    filename: str = Query("x-video.mp4"),
+    referer: str | None = Query(None)   # 前端可传递来源页 URL
+):
     url = resolve_proxy_url(url)
     validate_hls_url(url)
 
@@ -813,25 +816,35 @@ async def video_download(url: str = Query(...), filename: str = Query("x-video.m
     temp_dir = tempfile.mkdtemp(prefix="x-video-")
     output_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp4")
 
-    # ===== 智能 Referer 映射（可扩展） =====
-    parsed = urlparse(url)
-    netloc = parsed.netloc.lower() if parsed.netloc else ""
+    # ===== 确定 Referer =====
+    if referer:
+        # 如果前端传递了 referer，直接使用（确保是有效 URL）
+        try:
+            parsed_ref = urlparse(referer)
+            if parsed_ref.scheme and parsed_ref.netloc:
+                final_referer = referer
+            else:
+                final_referer = "https://jable.tv/"
+        except:
+            final_referer = "https://jable.tv/"
+    else:
+        # 原有的域名映射逻辑（兜底）
+        parsed = urlparse(url)
+        netloc = parsed.netloc.lower() if parsed.netloc else ""
+        REFERER_MAP = {
+            "jable.tv": "https://jable.tv/",
+            "missav.ws": "https://missav.ws/",
+            "missav.com": "https://missav.com/",
+            # 未来新网站在此添加
+        }
+        default_referer = "https://x.com/"
+        final_referer = default_referer
+        for domain, ref in REFERER_MAP.items():
+            if domain in netloc or netloc.endswith(f".{domain}"):
+                final_referer = ref
+                break
 
-    REFERER_MAP = {
-        "jable.tv": "https://jable.tv/",
-        "missav.ws": "https://missav.ws/",
-        "missav.com": "https://missav.com/",
-        # 未来新网站在此添加
-    }
-
-    default_referer = "https://x.com/"
-    referer = default_referer
-    for domain, ref in REFERER_MAP.items():
-        if domain in netloc or netloc.endswith(f".{domain}"):
-            referer = ref
-            break
-
-    headers_str = f"User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1\r\nReferer: {referer}\r\nOrigin: {referer}\r\n"
+    headers_str = f"User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1\r\nReferer: {final_referer}\r\nOrigin: {final_referer}\r\n"
 
     command = [
         "ffmpeg",
