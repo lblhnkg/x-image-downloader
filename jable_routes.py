@@ -1,7 +1,5 @@
 # ============================================================
-# jable_routes.py - Jable 模块（代理版 + 完整解析）
-# 数据源：https://jable.tv
-# 复用 shared.missav_db
+# jable_routes.py - Jable 模块（HTTP 代理版）
 # ============================================================
 
 import re
@@ -9,7 +7,6 @@ from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 import httpx
-from httpx_socks import SyncProxyTransport
 from bs4 import BeautifulSoup
 from shared import missav_db
 
@@ -37,7 +34,7 @@ def is_developer(request: Request):
     return bool(request.cookies.get("session"))
 
 # ============================================================
-# Jable 抓取器（代理版）
+# Jable 抓取器（HTTP 代理）
 # ============================================================
 
 class JableFetcher:
@@ -49,9 +46,9 @@ class JableFetcher:
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         }
-        transport = SyncProxyTransport.from_url("socks5://127.0.0.1:1080")
+        # 使用 HTTP 代理（sing-box HTTP 入站监听 127.0.0.1:1081）
         self.client = httpx.Client(
-            transport=transport,
+            proxy="http://127.0.0.1:1081",
             timeout=self.timeout,
             follow_redirects=True,
             headers=self.headers
@@ -69,6 +66,7 @@ class JableFetcher:
             print(f"[Jable] 请求失败: {e}")
             raise
 
+    # search 和 detail 方法保持不变（与之前相同）
     def search(self, keyword: str) -> list[dict]:
         search_url = f"{self.base_url}/search/{quote(keyword)}/"
         html = self._fetch(search_url)
@@ -194,7 +192,7 @@ class JableFetcher:
 fetcher = JableFetcher()
 
 # ============================================================
-# API 路由
+# API 路由（保持不变）
 # ============================================================
 
 @router.get("/search")
@@ -220,7 +218,7 @@ async def info_jable(video_id: str = Query(...)):
         raise HTTPException(status_code=502, detail=f"获取详情失败: {str(e)}")
 
 # ============================================================
-# 采集（存储到数据库）
+# 采集、收藏等接口（与之前相同，保持不变）
 # ============================================================
 
 @router.post("/collect")
@@ -275,10 +273,6 @@ async def collect_jable_item(request: Request, item: CollectItem):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ============================================================
-# 我的收藏
-# ============================================================
-
 @router.get("/my-items")
 async def get_my_items(request: Request):
     if not is_developer(request):
@@ -290,10 +284,6 @@ async def get_my_items(request: Request):
         return {"ok": True, "items": [dict(row) for row in rows], "mode": "developer"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-# ============================================================
-# 数据库内搜索
-# ============================================================
 
 @router.get("/db-search")
 async def search_db_items(q: str = ""):
@@ -307,10 +297,6 @@ async def search_db_items(q: str = ""):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ============================================================
-# 按女优搜索
-# ============================================================
-
 @router.get("/actress/{name}")
 async def actress_items(name: str):
     try:
@@ -323,10 +309,6 @@ async def actress_items(name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ============================================================
-# 统计
-# ============================================================
-
 @router.get("/stats")
 async def stats():
     try:
@@ -335,10 +317,6 @@ async def stats():
         return {"ok": True, "total": total, "actresses": actresses}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-# ============================================================
-# 清空
-# ============================================================
 
 @router.delete("/clear")
 async def clear_items(request: Request):
@@ -349,10 +327,6 @@ async def clear_items(request: Request):
         return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-# ============================================================
-# 诊断
-# ============================================================
 
 @router.get("/debug-db")
 async def debug_db():
