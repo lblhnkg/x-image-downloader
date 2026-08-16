@@ -1,16 +1,15 @@
 # ============================================================
-# jable_routes.py - Jable 模块
+# jable_routes.py - Jable 模块（完整修正版）
 # 数据源：https://jable.tv
 # 复用 shared.missav_db
 # ============================================================
 
 import re
 from urllib.parse import quote
-from fastapi import APIRouter, HTTPException, Request, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 import httpx
 from bs4 import BeautifulSoup
-
 from shared import missav_db
 
 router = APIRouter(prefix="/api/jable", tags=["Jable"])
@@ -52,7 +51,9 @@ class JableFetcher:
         self.client = httpx.Client(timeout=self.timeout, follow_redirects=True, headers=self.headers)
 
     def _fetch(self, url: str) -> str:
+        print(f"[Jable] 请求 {url}")
         resp = self.client.get(url)
+        print(f"[Jable] 状态码 {resp.status_code}")
         if resp.status_code != 200:
             raise Exception(f"HTTP {resp.status_code}")
         return resp.text
@@ -65,6 +66,7 @@ class JableFetcher:
         results = []
         seen = set()
 
+        # 选择器：a[href*="/videos/"]
         for a in soup.select('a[href*="/videos/"]'):
             href = a.get('href')
             if not href or href in seen:
@@ -72,18 +74,36 @@ class JableFetcher:
             if href.startswith('/'):
                 href = self.base_url + href
 
-            img = a.find('img')
-            title = a.get('title') or (img.get('alt') if img else '')
-            cover = img.get('src') or img.get('data-src') if img else ''
-            if cover.startswith('//'):
-                cover = 'https:' + cover
-
+            # 提取 video_id
             video_id = href.split('/')[-2] if href.endswith('/') else href.split('/')[-1]
+
+            # 封面图
+            img = a.find('img')
+            cover = ""
+            if img:
+                cover = img.get('src') or img.get('data-src') or ""
+                if cover.startswith('//'):
+                    cover = 'https:' + cover
+                # 如果封面是 placeholder，用 data-src
+                if 'placeholder' in cover and img.get('data-src'):
+                    cover = img.get('data-src')
+                    if cover.startswith('//'):
+                        cover = 'https:' + cover
+
+            # 标题（从 h6.title a 中提取）
+            title = ""
+            detail_div = a.find_parent('div', class_='video-img-box')
+            if detail_div:
+                title_tag = detail_div.select_one('h6.title a')
+                if title_tag:
+                    title = title_tag.text.strip()
+            if not title:
+                title = a.get('title') or ''
 
             results.append({
                 "id": video_id,
                 "url": href,
-                "title": title.strip(),
+                "title": title,
                 "cover": cover,
             })
             seen.add(href)
@@ -100,23 +120,43 @@ class JableFetcher:
 
         # 标题
         title_tag = soup.find('h1')
-        title = title_tag.text.strip() if title_tag else "未知"
+        title = title_tag.text.strip() if title_tag else ""
 
-        # 女优
+        if not title:
+            meta_title = soup.find('meta', property='og:title')
+            if meta_title:
+                title = meta_title.get('content', '')
+
+        # 番号
+        code = ""
+        code_match = re.match(r'^([A-Z]{2,6}-\d{3,5})', title)
+        if code_match:
+            code = code_match.group(1)
+
+        # 女优名
         actress = ""
-        actress_link = soup.select_one('a[href*="/actress/"]')
-        if actress_link:
-            actress = actress_link.text.strip()
-        elif '※' in title:
-            parts = title.split('※')
-            if len(parts) > 1:
-                actress = parts[-1].strip()
+        models = soup.select('a[href*="/models/"]')
+        if models:
+            actress_names = []
+            for m in models:
+                name = m.text.strip()
+                if name:
+                    actress_names.append(name)
+            actress = ' '.join(actress_names)
 
-        # 封面
+        if not actress and title:
+            title_without_code = re.sub(r'^[A-Z]{2,6}-\d{3,5}\s*', '', title)
+            words = title_without_code.split(' ')
+            if len(words) >= 2:
+                possible = words[-2:]
+                if any('\u4e00' <= c <= '\u9fff' for word in possible for c in word):
+                    actress = ' '.join(possible)
+
+        # 封面图
         cover = ""
         meta_og = soup.find('meta', property='og:image')
         if meta_og:
-            cover = meta_og.get('content')
+            cover = meta_og.get('content', '')
         if cover and cover.startswith('//'):
             cover = 'https:' + cover
 
@@ -133,25 +173,21 @@ class JableFetcher:
         if date_match:
             publish_date = date_match.group(1)
 
-        # m3u8 地址
+        # m3u8 地址：直接从 video 标签的 src 提取
         video_url = ""
         video_tag = soup.find('video')
         if video_tag and video_tag.get('src'):
             video_url = video_tag.get('src')
-        if not video_url:
-            for script in soup.find_all('script'):
-                if script.string:
-                    matches = re.search(r'(https?://[^\s"\']+\.m3u8[^\s"\']*)', script.string)
-                    if matches:
-                        video_url = matches.group(1)
-                        break
-        if not video_url:
-            iframe = soup.find('iframe')
-            if iframe and iframe.get('src'):
-                video_url = iframe.get('src')
+            # 处理 &amp; 转义
+            if '&amp;' in video_url:
+                video_url = video_url.replace('&amp;', '&')
+            # 如果是相对路径，补全域名
+            if video_url.startswith('/'):
+                video_url = self.base_url + video_url
 
         return {
             "id": video_id,
+            "code": code,
             "title": title,
             "actress": actress,
             "cover": cover,
@@ -164,31 +200,42 @@ class JableFetcher:
 fetcher = JableFetcher()
 
 # ============================================================
-# API
+# API 路由
 # ============================================================
 
 @router.get("/search")
 async def search_jable(q: str = Query(..., min_length=1)):
     try:
+        print(f"[Jable] 搜索: {q}")
         items = fetcher.search(q)
+        print(f"[Jable] 找到 {len(items)} 个结果")
         return {"ok": True, "count": len(items), "items": items}
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=502, detail=f"搜索失败: {str(e)}")
 
 @router.get("/info")
-async def info_jable(video_id: str):
+async def info_jable(video_id: str = Query(...)):
     try:
         data = fetcher.detail(video_id)
         return {"ok": True, "item": data}
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=502, detail=f"获取详情失败: {str(e)}")
+
+# ============================================================
+# 采集（存储到数据库）
+# ============================================================
 
 @router.post("/collect")
 async def collect_jable_item(request: Request, item: CollectItem):
     if not is_developer(request):
         return {"ok": True, "stored": False, "message": "guest mode"}
     if missav_db is None:
-        raise HTTPException(status_code=500, detail="MissAV 数据库未配置")
+        raise HTTPException(status_code=500, detail="数据库未配置")
+
     try:
         await missav_db.execute("""
             CREATE TABLE IF NOT EXISTS public.missav_items (
@@ -204,6 +251,7 @@ async def collect_jable_item(request: Request, item: CollectItem):
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
         existing = await missav_db.fetch_one(
             "SELECT id FROM public.missav_items WHERE video_id = :video_id",
             {"video_id": item.video_id}
@@ -211,16 +259,12 @@ async def collect_jable_item(request: Request, item: CollectItem):
         params = item.dict()
         if existing:
             await missav_db.execute("""
-                UPDATE public.missav_items SET
-                    title = :title,
-                    actress = :actress,
-                    description = :description,
-                    publish_date = :publish_date,
-                    cover_url = :cover_url,
-                    m3u8_url = :m3u8_url,
-                    source_url = :source_url,
-                    created_at = CURRENT_TIMESTAMP
-                WHERE video_id = :video_id
+                UPDATE public.missav_items
+                SET title=:title, actress=:actress, description=:description,
+                    publish_date=:publish_date, cover_url=:cover_url,
+                    m3u8_url=:m3u8_url, source_url=:source_url,
+                    created_at=CURRENT_TIMESTAMP
+                WHERE video_id=:video_id
             """, params)
         else:
             await missav_db.execute("""
@@ -237,6 +281,10 @@ async def collect_jable_item(request: Request, item: CollectItem):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============================================================
+# 我的收藏
+# ============================================================
+
 @router.get("/my-items")
 async def get_my_items(request: Request):
     if not is_developer(request):
@@ -248,6 +296,10 @@ async def get_my_items(request: Request):
         return {"ok": True, "items": [dict(row) for row in rows], "mode": "developer"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================
+# 数据库内搜索
+# ============================================================
 
 @router.get("/db-search")
 async def search_db_items(q: str = ""):
@@ -261,6 +313,10 @@ async def search_db_items(q: str = ""):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============================================================
+# 按女优搜索
+# ============================================================
+
 @router.get("/actress/{name}")
 async def actress_items(name: str):
     try:
@@ -273,6 +329,10 @@ async def actress_items(name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============================================================
+# 统计
+# ============================================================
+
 @router.get("/stats")
 async def stats():
     try:
@@ -281,6 +341,10 @@ async def stats():
         return {"ok": True, "total": total, "actresses": actresses}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================
+# 清空
+# ============================================================
 
 @router.delete("/clear")
 async def clear_items(request: Request):
@@ -291,6 +355,10 @@ async def clear_items(request: Request):
         return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================
+# 诊断
+# ============================================================
 
 @router.get("/debug-db")
 async def debug_db():
