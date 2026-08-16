@@ -1,0 +1,216 @@
+{
+  "log": { "level": "info" },
+  "inbounds": [
+    {
+      "type": "socks",
+      "tag": "socks-in",
+      "listen": "127.0.0.1",
+      "listen_port": 1080
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "vless",
+      "tag": "hk1",
+      "server": "cfyes.777078.xyz",
+      "server_port": 443,
+      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
+      "flow": "",
+      "tls": {
+        "enabled": true,
+        "server_name": "lx-hk1.7770008.xyz",
+        "insecure": false,
+        "utls": { "enabled": true, "fingerprint": "safari" }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/liangxin/data/hk1",
+        "headers": { "Host": "lx-hk1.7770008.xyz" }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "hk2",
+      "server": "cfyes.777078.xyz",
+      "server_port": 443,
+      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
+      "flow": "",
+      "tls": {
+        "enabled": true,
+        "server_name": "lx-hk2.7770008.xyz",
+        "insecure": false,
+        "utls": { "enabled": true, "fingerprint": "safari" }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/liangxin/data/hk2",
+        "headers": { "Host": "lx-hk2.7770008.xyz" }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "hk3",
+      "server": "cfyes.777078.xyz",
+      "server_port": 443,
+      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
+      "flow": "",
+      "tls": {
+        "enabled": true,
+        "server_name": "lx-hk3.7770008.xyz",
+        "insecure": false,
+        "utls": { "enabled": true, "fingerprint": "safari" }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/liangxin/data/hk3",
+        "headers": { "Host": "lx-hk3.7770008.xyz" }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "hk4",
+      "server": "cfyes.777078.xyz",
+      "server_port": 443,
+      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
+      "flow": "",
+      "tls": {
+        "enabled": true,
+        "server_name": "lx-hk4.7770008.xyz",
+        "insecure": false,
+        "utls": { "enabled": true, "fingerprint": "safari" }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/liangxin/data/hk4",
+        "headers": { "Host": "lx-hk4.7770008.xyz" }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "hk5",
+      "server": "cfyes.777078.xyz",
+      "server_port": 443,
+      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
+      "flow": "",
+      "tls": {
+        "enabled": true,
+        "server_name": "lx-hk5.7770008.xyz",
+        "insecure": false,
+        "utls": { "enabled": true, "fingerprint": "safari" }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/liangxin/data/hk5",
+        "headers": { "Host": "lx-hk5.7770008.xyz" }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "jp1",
+      "server": "cfyes.7770006.xyz",
+      "server_port": 443,
+      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
+      "flow": "",
+      "tls": {
+        "enabled": true,
+        "server_name": "jp1-lx.7770006.xyz",
+        "insecure": false,
+        "utls": { "enabled": true, "fingerprint": "safari" }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/liangxin/data/jp",
+        "headers": { "Host": "jp1-lx.7770006.xyz" }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "jp2",
+      "server": "cfyes.7770006.xyz",
+      "server_port": 443,
+      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
+      "flow": "",
+      "tls": {
+        "enabled": true,
+        "server_name": "jp2-lx.7770006.xyz",
+        "insecure": false,
+        "utls": { "enabled": true, "fingerprint": "safari" }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/liangxin/data",
+        "headers": { "Host": "jp2-lx.7770006.xyz" }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "sg1",
+      "server": "cfyes.7770008.xyz",
+      "server_port": 443,
+      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
+      "flow": "",
+      "tls": {
+        "enabled": true,
+        "server_name": "lx-1sg.lxy1015.top",
+        "insecure": false,
+        "utls": { "enabled": true, "fingerprint": "chrome" }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/liangxin/sg1",
+        "headers": { "Host": "lx-1sg.lxy1015.top" }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "sg2",
+      "server": "cfyes.7770008.xyz",
+      "server_port": 443,
+      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
+      "flow": "",
+      "tls": {
+        "enabled": true,
+        "server_name": "lx-1sg.lxy1015.top",
+        "insecure": false,
+        "utls": { "enabled": true, "fingerprint": "chrome" }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/liangxin/sg1",
+        "headers": { "Host": "lx-1sg.lxy1015.top" }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "us1",
+      "server": "cfyes.777078.xyz",
+      "server_port": 443,
+      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
+      "flow": "",
+      "tls": {
+        "enabled": true,
+        "server_name": "lx-us1.777078.xyz",
+        "insecure": false,
+        "utls": { "enabled": true, "fingerprint": "chrome" }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/liangxin/us",
+        "headers": { "Host": "lx-us1.777078.xyz" }
+      }
+    },
+    {
+      "type": "urltest",
+      "tag": "proxy-selector",
+      "outbounds": ["hk1", "hk2", "hk3", "hk4", "hk5", "jp1", "jp2", "sg1", "sg2", "us1"],
+      "url": "https://www.google.com",
+      "interval": "5m",
+      "tolerance": 50
+    }
+  ],
+  "route": {
+    "rules": [
+      { "outbound": "proxy-selector", "network": "tcp" }
+    ]
+  }
+}
