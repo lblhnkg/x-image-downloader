@@ -1,13 +1,13 @@
 # ============================================================
 # jable_routes.py - Jable 模块（curl_cffi + Safari 指纹）
 # 数据源：https://jable.tv
-# 修复女优名提取（从 data-original-title 获取）
-# 修复时长提取（从 data-ts-session-duration 获取）
+# 修复：女优名清洗、video_url 从 hlsUrl 提取、日期转换
 # ============================================================
 
 import re
 import time
 import random
+from datetime import datetime
 from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
@@ -39,7 +39,7 @@ def is_developer(request: Request):
     return bool(request.cookies.get("session"))
 
 # ============================================================
-# Jable 抓取器（curl_cffi + HTTP 代理 + Safari 指纹）
+# Jable 抓取器
 # ============================================================
 
 class JableFetcher:
@@ -59,12 +59,10 @@ class JableFetcher:
             "Sec-Fetch-User": "?1",
             "Cache-Control": "max-age=0",
         }
-        # HTTP 代理（sing-box 监听 127.0.0.1:1081）
         self.proxies = {
             "http": "http://127.0.0.1:1081",
             "https": "http://127.0.0.1:1081"
         }
-        # 使用 curl_cffi 的 Session，模拟 Safari 指纹
         self.session = requests.Session(
             impersonate="safari15_5",
             proxies=self.proxies,
@@ -168,30 +166,30 @@ class JableFetcher:
         if code_match:
             code = code_match.group(1)
 
-        # ===== 修复：女优提取（优先从 data-original-title 获取） =====
+        # 女优提取（彻底清洗）
         actress = ""
         models = soup.select('a[href*="/models/"]')
         if models:
             actress_names = []
             for m in models:
-                # 优先从 span 的 data-original-title 或 title 获取
                 span = m.find('span')
                 name = ""
                 if span:
                     name = span.get('data-original-title') or span.get('title', '')
                 if not name:
-                    # 如果没有，再尝试从 a 的 title 或文本获取
                     name = m.get('title', '') or m.text.strip()
                 if name:
-                    # 清洗多余前缀
+                    # 清洗：“按女優”前缀
                     name = re.sub(r'^按女優\s*', '', name).strip()
                     # 只保留中/日文、字母、数字、空格
                     name = re.sub(r'[^\u4e00-\u9fff\u3040-\u30ffa-zA-Z0-9\s]', '', name)
                     if name:
                         actress_names.append(name)
             actress = ' '.join(actress_names)
+            # 再次整体清洗
+            actress = re.sub(r'^按女優\s*', '', actress).strip()
 
-        # 如果从 models 没提取到，尝试从标题中提取
+        # 如果没提取到，从标题中提取
         if not actress and title:
             title_without_code = re.sub(r'^[A-Z]{2,6}-\d{3,5}\s*', '', title)
             parts = title_without_code.split(' ')
@@ -209,11 +207,13 @@ class JableFetcher:
         if cover and cover.startswith('//'):
             cover = 'https:' + cover
 
-        # 简介
+        # 简介（过滤默认文案）
         desc = ""
         meta_desc = soup.find('meta', attrs={'name': 'description'})
         if meta_desc:
             desc = meta_desc.get('content', '')
+            if "免費高清AV在線看" in desc:
+                desc = ""
 
         # 发布日期
         publish_date = ""
@@ -222,7 +222,7 @@ class JableFetcher:
         if date_match:
             publish_date = date_match.group(1)
 
-        # ===== 时长：从 data-ts-session-duration 提取 =====
+        # 时长
         duration_str = ""
         duration_seconds = None
         for script in soup.find_all('script'):
@@ -232,7 +232,6 @@ class JableFetcher:
                     break
                 except:
                     pass
-        # 如果没找到，尝试从 video 标签提取
         if not duration_seconds:
             video_tag = soup.find('video')
             if video_tag and video_tag.get('duration'):
@@ -240,7 +239,6 @@ class JableFetcher:
                     duration_seconds = int(float(video_tag.get('duration')))
                 except:
                     pass
-        # 如果还没找到，尝试从页面可见文本提取
         if not duration_seconds:
             duration_elem = soup.select_one('.label, .duration, .time')
             if duration_elem:
@@ -251,7 +249,6 @@ class JableFetcher:
                     m = int(match.group(2))
                     s = int(match.group(3)) if match.group(3) else 0
                     duration_seconds = h*3600 + m*60 + s
-        # 格式化为 HH:MM:SS 或 MM:SS
         if duration_seconds:
             hours = duration_seconds // 3600
             minutes = (duration_seconds % 3600) // 60
@@ -261,15 +258,25 @@ class JableFetcher:
             else:
                 duration_str = f"{minutes:02d}:{seconds:02d}"
 
-        # ===== 视频地址 m3u8 =====
+        # ===== video_url：优先从 hlsUrl 变量提取 =====
         video_url = ""
-        video_tag = soup.find('video')
-        if video_tag and video_tag.get('src'):
-            video_url = video_tag.get('src')
-            if '&amp;' in video_url:
-                video_url = video_url.replace('&amp;', '&')
-            if video_url.startswith('/'):
-                video_url = self.base_url + video_url
+        for script in soup.find_all('script'):
+            if script.string:
+                content = script.string
+                # 搜索 var hlsUrl = '...m3u8'
+                match = re.search(r"var\s+hlsUrl\s*=\s*'([^']+\.m3u8[^']*)'", content)
+                if match:
+                    video_url = match.group(1)
+                    break
+        # 如果没找到，再从 video 标签提取
+        if not video_url:
+            video_tag = soup.find('video')
+            if video_tag and video_tag.get('src'):
+                video_url = video_tag.get('src')
+                if '&amp;' in video_url:
+                    video_url = video_url.replace('&amp;', '&')
+                if video_url.startswith('/'):
+                    video_url = self.base_url + video_url
 
         return {
             "id": video_id,
@@ -313,7 +320,7 @@ async def info_jable(video_id: str = Query(...)):
         raise HTTPException(status_code=502, detail=f"获取详情失败: {str(e)}")
 
 # ============================================================
-# 采集、收藏等接口（保持不变）
+# 采集
 # ============================================================
 
 @router.post("/collect")
@@ -343,7 +350,14 @@ async def collect_jable_item(request: Request, item: CollectItem):
             "SELECT id FROM public.missav_items WHERE video_id = :video_id",
             {"video_id": item.video_id}
         )
+
         params = item.dict()
+        if params.get("publish_date"):
+            try:
+                params["publish_date"] = datetime.strptime(params["publish_date"], "%Y-%m-%d").date()
+            except:
+                params["publish_date"] = None
+
         if existing:
             await missav_db.execute("""
                 UPDATE public.missav_items
@@ -367,6 +381,10 @@ async def collect_jable_item(request: Request, item: CollectItem):
         return {"ok": True, "stored": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================
+# 我的收藏
+# ============================================================
 
 @router.get("/my-items")
 async def get_my_items(request: Request):
