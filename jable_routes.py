@@ -1,12 +1,14 @@
 # ============================================================
-# jable_routes.py - Jable 模块（HTTP 代理版）
+# jable_routes.py - Jable 模块（requests + HTTP 代理）
+# 数据源：https://jable.tv
+# 复用 shared.missav_db
 # ============================================================
 
 import re
 from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
-import httpx
+import requests
 from bs4 import BeautifulSoup
 from shared import missav_db
 
@@ -34,7 +36,7 @@ def is_developer(request: Request):
     return bool(request.cookies.get("session"))
 
 # ============================================================
-# Jable 抓取器（HTTP 代理）
+# Jable 抓取器（requests + HTTP 代理）
 # ============================================================
 
 class JableFetcher:
@@ -46,18 +48,20 @@ class JableFetcher:
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         }
-        # 使用 HTTP 代理（sing-box HTTP 入站监听 127.0.0.1:1081）
-        self.client = httpx.Client(
-            proxy="http://127.0.0.1:1081",
-            timeout=self.timeout,
-            follow_redirects=True,
-            headers=self.headers
-        )
+        # HTTP 代理（sing-box HTTP 入站监听 127.0.0.1:1081）
+        self.proxies = {
+            "http": "http://127.0.0.1:1081",
+            "https": "http://127.0.0.1:1081"
+        }
+        self.session = requests.Session()
+        self.session.headers.update(self.headers)
+        self.session.proxies.update(self.proxies)
+        self.session.timeout = self.timeout
 
     def _fetch(self, url: str) -> str:
         print(f"[Jable] 请求 {url}")
         try:
-            resp = self.client.get(url)
+            resp = self.session.get(url)
             print(f"[Jable] 状态码 {resp.status_code}")
             if resp.status_code != 200:
                 raise Exception(f"HTTP {resp.status_code}")
@@ -66,7 +70,6 @@ class JableFetcher:
             print(f"[Jable] 请求失败: {e}")
             raise
 
-    # search 和 detail 方法保持不变（与之前相同）
     def search(self, keyword: str) -> list[dict]:
         search_url = f"{self.base_url}/search/{quote(keyword)}/"
         html = self._fetch(search_url)
