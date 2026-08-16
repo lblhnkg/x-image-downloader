@@ -2,11 +2,12 @@
 # jable_routes.py - Jable 模块（requests + HTTP 代理）
 # 数据源：https://jable.tv
 # 复用 shared.missav_db
-# 增加请求间隔，防止被封
+# 请求间隔随机 1-3 秒，失败重试等待 10-20 秒
 # ============================================================
 
 import re
 import time
+import random
 from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
@@ -38,7 +39,7 @@ def is_developer(request: Request):
     return bool(request.cookies.get("session"))
 
 # ============================================================
-# Jable 抓取器（requests + HTTP 代理 + 请求间隔）
+# Jable 抓取器（requests + HTTP 代理 + 随机间隔 + 智能重试）
 # ============================================================
 
 class JableFetcher:
@@ -50,7 +51,7 @@ class JableFetcher:
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         }
-        # 只使用 HTTP 代理（端口 1081），不使用 SOCKS5
+        # 只使用 HTTP 代理（端口 1081）
         self.proxies = {
             "http": "http://127.0.0.1:1081",
             "https": "http://127.0.0.1:1081"
@@ -60,17 +61,34 @@ class JableFetcher:
         self.session.proxies.update(self.proxies)
         self.session.timeout = self.timeout
 
-    def _fetch(self, url: str) -> str:
-        # 每次请求前等待 1.5 秒，降低被识别为爬虫的风险
-        time.sleep(1.5)
+    def _fetch(self, url: str, is_retry: bool = False) -> str:
+        # 如果不是重试，则等待 1-3 秒随机（模拟人类操作节奏）
+        if not is_retry:
+            delay = random.uniform(1, 3)
+            print(f"[Jable] 等待 {delay:.1f} 秒后请求...")
+            time.sleep(delay)
+        else:
+            # 重试前等待 10-20 秒随机（模拟人类犹豫）
+            delay = random.uniform(10, 20)
+            print(f"[Jable] 重试前等待 {delay:.1f} 秒...")
+            time.sleep(delay)
+
         print(f"[Jable] 请求 {url}")
         try:
             resp = self.session.get(url)
             print(f"[Jable] 状态码 {resp.status_code}")
             if resp.status_code != 200:
+                # 如果是 403 且不是重试，则等待后重试一次
+                if resp.status_code == 403 and not is_retry:
+                    print(f"[Jable] 收到 403，将重试一次（等待 10-20 秒）...")
+                    return self._fetch(url, is_retry=True)
                 raise Exception(f"HTTP {resp.status_code}")
             return resp.text
         except Exception as e:
+            # 如果是连接异常且不是重试，则等待后重试一次
+            if not is_retry and ("SSLError" in str(e) or "Connection" in str(e) or "Max retries" in str(e)):
+                print(f"[Jable] 请求异常，将重试一次（等待 10-20 秒）...")
+                return self._fetch(url, is_retry=True)
             print(f"[Jable] 请求失败: {e}")
             raise
 
@@ -121,7 +139,7 @@ class JableFetcher:
             if len(results) >= 30:
                 break
 
-        # 精确匹配排序（可选）
+        # 精确匹配排序
         results.sort(key=lambda x: x["id"].lower() != norm_keyword)
         return results
 
@@ -228,7 +246,7 @@ async def info_jable(video_id: str = Query(...)):
         raise HTTPException(status_code=502, detail=f"获取详情失败: {str(e)}")
 
 # ============================================================
-# 采集（存储到数据库）
+# 采集、收藏等接口（与之前相同，保持不变）
 # ============================================================
 
 @router.post("/collect")
