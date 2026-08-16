@@ -113,7 +113,6 @@
             color: rgba(0, 200, 255, 0.5);
         }
 
-        /* ---- 标签切换 ---- */
         .tab-bar {
             display: flex;
             gap: 4px;
@@ -166,7 +165,6 @@
             }
         }
 
-        /* ---- 搜索 ---- */
         .search-label {
             font-size: 13px;
             color: rgba(255, 255, 255, 0.4);
@@ -294,7 +292,6 @@
             font-weight: 300;
         }
 
-        /* ---- 卡片 ---- */
         .gallery {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -319,7 +316,7 @@
         .media-wrap img {
             display: block;
             width: 100%;
-            aspect-ratio: 16 / 9;  /* 改为 16:9 适应横向封面 */
+            aspect-ratio: 16 / 9;
             object-fit: cover;
             cursor: pointer;
         }
@@ -410,7 +407,6 @@
             color: rgba(255, 255, 255, 0.7);
         }
 
-        /* ---- 模态框 ---- */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -473,7 +469,7 @@
         .modal-content .modal-cover img {
             display: block;
             width: 100%;
-            aspect-ratio: 16 / 9;  /* 改为 16:9 适应横向封面 */
+            aspect-ratio: 16 / 9;
             object-fit: cover;
         }
 
@@ -506,9 +502,9 @@
         }
 
         .modal-content .modal-info .mi-code {
-            font-size: 16px;          /* 增大字号 */
-            color: rgba(255, 255, 255, 0.8);  /* 更亮 */
-            font-weight: 500;         /* 加粗 */
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
         }
 
         .modal-content .modal-info .mi-actress {
@@ -635,13 +631,11 @@
 
     <div id="modeBanner"></div>
 
-    <!-- ===== 标签切换 ===== -->
     <div class="tab-bar">
         <button class="tab-btn active" data-tab="search">🔍 搜索</button>
         <button class="tab-btn" data-tab="collection">📦 我的收藏</button>
     </div>
 
-    <!-- ===== 搜索标签页 ===== -->
     <div class="tab-content active" id="tabSearch">
         <div class="search-section">
             <label class="search-label">搜索 Jable</label>
@@ -660,7 +654,6 @@
         </div>
     </div>
 
-    <!-- ===== 收藏标签页 ===== -->
     <div class="tab-content" id="tabCollection">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
             <span style="font-size:12px;color:rgba(255,255,255,0.25);font-weight:300;" id="collectionCount">共 0 个</span>
@@ -672,7 +665,6 @@
     <div class="dev-signature">开发者：浮生若夢</div>
 </div>
 
-<!-- ===== 模态框 ===== -->
 <div class="modal-overlay hidden" id="modal">
     <div class="modal-top">
         <span style="color:rgba(255,255,255,0.2);font-size:13px;font-weight:300;" id="modalTitle">影片详情</span>
@@ -686,10 +678,6 @@
 </div>
 
 <script>
-    // ============================================================
-    // Jable 下载器（搜索 + 收藏 + 下载）
-    // ============================================================
-
     const API_BASE = '/api/jable';
     const STORAGE_KEY = 'jable_items';
     let currentItem = null;
@@ -700,7 +688,6 @@
         return localStorage.getItem('userMode') || 'guest';
     }
 
-    // ---- 模式横幅 ----
     function updateModeBanner() {
         const mode = getMode();
         const banner = $('modeBanner');
@@ -719,7 +706,6 @@
         }
     }
 
-    // ---- 标签切换 ----
     document.querySelectorAll('.tab-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
@@ -735,7 +721,6 @@
         });
     });
 
-    // ---- 状态提示 ----
     function showStatus(el, msg, type) {
         type = type || '';
         el.classList.remove('hidden');
@@ -749,7 +734,6 @@
         el.className = 'status-box';
     }
 
-    // ---- 搜索 ----
     function performSearch() {
         const input = $('searchInput');
         const keyword = input.value.trim();
@@ -802,7 +786,6 @@
         });
     }
 
-    // ---- 卡片 ----
     function createCard(item, mode) {
         const wrapper = document.createElement('div');
         wrapper.className = 'item';
@@ -843,7 +826,6 @@
         const actions = document.createElement('div');
         actions.className = 'item-actions';
 
-        // 详情/播放按钮
         const viewBtn = document.createElement('button');
         viewBtn.className = 'btn-view';
         viewBtn.textContent = '📺 详情';
@@ -853,7 +835,6 @@
         });
         actions.appendChild(viewBtn);
 
-        // 采集按钮
         const collectBtn = document.createElement('button');
         collectBtn.className = 'btn-collect';
         collectBtn.textContent = '⭐ 收藏';
@@ -863,7 +844,6 @@
         });
         actions.appendChild(collectBtn);
 
-        // 原页按钮
         const originBtn = document.createElement('button');
         originBtn.className = 'btn-original';
         originBtn.textContent = '🔗 原页';
@@ -876,7 +856,6 @@
         info.appendChild(actions);
         wrapper.appendChild(info);
 
-        // 检查是否已收藏
         checkIfCollected(item.id).then(function(isCollected) {
             if (isCollected) {
                 collectBtn.textContent = '✅ 已收藏';
@@ -887,7 +866,6 @@
         return wrapper;
     }
 
-    // ---- 收藏状态检查 ----
     function checkIfCollected(videoId) {
         const mode = getMode();
         if (mode === 'developer') {
@@ -910,7 +888,6 @@
         }
     }
 
-    // ---- 采集 ----
     function collectItem(item, btn) {
         const mode = getMode();
         const collectData = {
@@ -924,7 +901,6 @@
             description: ''
         };
 
-        // 先获取详情拿到 m3u8
         fetch(API_BASE + '/info?video_id=' + encodeURIComponent(item.id))
             .then(res => res.json())
             .then(data => {
@@ -941,7 +917,6 @@
                 if (result && result.ok) {
                     btn.textContent = '✅ 已收藏';
                     btn.className = 'btn-collect collected';
-                    // 如果收藏标签页已打开，刷新
                     if ($('tabCollection').classList.contains('active')) {
                         loadCollection();
                     }
@@ -988,7 +963,6 @@
         }
     }
 
-    // ---- 收藏列表 ----
     function loadCollection() {
         const gallery = $('collectionGallery');
         const count = $('collectionCount');
@@ -1045,7 +1019,6 @@
         });
     }
 
-    // ---- 详情（新模态框：封面+信息+按钮） ----
     function fetchDetail(videoId) {
         const status = $('searchStatus');
         showStatus(status, '正在获取影片信息…', 'loading');
@@ -1072,7 +1045,6 @@
         title.textContent = item.code || item.id || '影片详情';
         content.innerHTML = '';
 
-        // ---- 封面图 ----
         const coverDiv = document.createElement('div');
         coverDiv.className = 'modal-cover';
 
@@ -1089,7 +1061,6 @@
         coverDiv.appendChild(img);
         content.appendChild(coverDiv);
 
-        // ---- 信息（去掉表情符号） ----
         const infoDiv = document.createElement('div');
         infoDiv.className = 'modal-info';
 
@@ -1097,9 +1068,11 @@
         infoHTML += `<div class="mi-title">${item.title || '未知标题'}</div>`;
         if (item.code) infoHTML += `<div class="mi-code">番号：${item.code}</div>`;
         if (item.actress) infoHTML += `<div class="mi-actress">出演：${item.actress}</div>`;
-        if (item.duration) infoHTML += `<div class="mi-duration">⏱️ 时长：${item.duration}</div>`;
-        if (item.publish_date) infoHTML += `<div class="mi-duration">📅 发行：${item.publish_date}</div>`;
-        if (item.description) infoHTML += `<div class="mi-desc">📝 ${item.description}</div>`;
+        if (item.duration) infoHTML += `<div class="mi-duration">时长：${item.duration}</div>`;
+        if (item.publish_date) infoHTML += `<div class="mi-duration">发行：${item.publish_date}</div>`;
+        if (item.description && !item.description.includes("免費高清AV在線看")) {
+            infoHTML += `<div class="mi-desc">${item.description}</div>`;
+        }
 
         infoDiv.innerHTML = infoHTML;
         content.appendChild(infoDiv);
@@ -1134,7 +1107,6 @@
         window.open(url, '_blank');
     }
 
-    // ---- 事件绑定 ----
     $('searchBtn').addEventListener('click', performSearch);
     $('searchSubmitBtn').addEventListener('click', performSearch);
     $('searchInput').addEventListener('keydown', function(e) {
@@ -1157,10 +1129,8 @@
 
     $('refreshCollectionBtn').addEventListener('click', loadCollection);
 
-    // ---- 初始化 ----
     function initApp() {
         updateModeBanner();
-        // 默认显示搜索标签页
         $('tabSearch').classList.add('active');
         $('tabCollection').classList.remove('active');
         document.querySelectorAll('.tab-btn').forEach(function(btn) {
@@ -1173,7 +1143,6 @@
     document.addEventListener('turbo:load', initApp);
     document.addEventListener('DOMContentLoaded', initApp);
 
-    // 暴露全局函数供外部调用（兼容旧油猴脚本）
     window.saveMissavItem = function(data) {
         const item = {
             video_id: data.video_id || data.id || '',
