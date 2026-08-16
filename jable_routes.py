@@ -1,5 +1,5 @@
 # ============================================================
-# jable_routes.py - Jable 模块（完整修正版）
+# jable_routes.py - Jable 模块（代理版 + 完整解析）
 # 数据源：https://jable.tv
 # 复用 shared.missav_db
 # ============================================================
@@ -36,7 +36,7 @@ def is_developer(request: Request):
     return bool(request.cookies.get("session"))
 
 # ============================================================
-# Jable 抓取器
+# Jable 抓取器（代理版）
 # ============================================================
 
 class JableFetcher:
@@ -48,15 +48,30 @@ class JableFetcher:
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         }
-        self.client = httpx.Client(timeout=self.timeout, follow_redirects=True, headers=self.headers)
+        # 配置 SOCKS5 代理（sing-box 监听 127.0.0.1:1080）
+        self.proxies = {
+            "http://": "socks5://127.0.0.1:1080",
+            "https://": "socks5://127.0.0.1:1080"
+        }
+        # 创建带代理的 httpx 客户端
+        self.client = httpx.Client(
+            proxies=self.proxies,
+            timeout=self.timeout,
+            follow_redirects=True,
+            headers=self.headers
+        )
 
     def _fetch(self, url: str) -> str:
         print(f"[Jable] 请求 {url}")
-        resp = self.client.get(url)
-        print(f"[Jable] 状态码 {resp.status_code}")
-        if resp.status_code != 200:
-            raise Exception(f"HTTP {resp.status_code}")
-        return resp.text
+        try:
+            resp = self.client.get(url)
+            print(f"[Jable] 状态码 {resp.status_code}")
+            if resp.status_code != 200:
+                raise Exception(f"HTTP {resp.status_code}")
+            return resp.text
+        except Exception as e:
+            print(f"[Jable] 请求失败: {e}")
+            raise
 
     def search(self, keyword: str) -> list[dict]:
         """搜索关键词，返回视频列表"""
@@ -66,7 +81,6 @@ class JableFetcher:
         results = []
         seen = set()
 
-        # 选择器：a[href*="/videos/"]
         for a in soup.select('a[href*="/videos/"]'):
             href = a.get('href')
             if not href or href in seen:
@@ -74,7 +88,6 @@ class JableFetcher:
             if href.startswith('/'):
                 href = self.base_url + href
 
-            # 提取 video_id
             video_id = href.split('/')[-2] if href.endswith('/') else href.split('/')[-1]
 
             # 封面图
@@ -90,7 +103,7 @@ class JableFetcher:
                     if cover.startswith('//'):
                         cover = 'https:' + cover
 
-            # 标题（从 h6.title a 中提取）
+            # 标题
             title = ""
             detail_div = a.find_parent('div', class_='video-img-box')
             if detail_div:
@@ -121,7 +134,6 @@ class JableFetcher:
         # 标题
         title_tag = soup.find('h1')
         title = title_tag.text.strip() if title_tag else ""
-
         if not title:
             meta_title = soup.find('meta', property='og:title')
             if meta_title:
@@ -173,15 +185,13 @@ class JableFetcher:
         if date_match:
             publish_date = date_match.group(1)
 
-        # m3u8 地址：直接从 video 标签的 src 提取
+        # m3u8 地址
         video_url = ""
         video_tag = soup.find('video')
         if video_tag and video_tag.get('src'):
             video_url = video_tag.get('src')
-            # 处理 &amp; 转义
             if '&amp;' in video_url:
                 video_url = video_url.replace('&amp;', '&')
-            # 如果是相对路径，补全域名
             if video_url.startswith('/'):
                 video_url = self.base_url + video_url
 
