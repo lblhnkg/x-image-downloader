@@ -1,206 +1,256 @@
 # ============================================================
-# missav_routes.py - MissAV 模块（V2 + 数据库诊断）
+# jable_routes.py - Jable 模块（复用 missav_db）
+# 数据源：https://jable.tv
+# 表名：public.missav_items
 # ============================================================
 
-import os
-
-from databases import Database
-from fastapi import APIRouter
-from fastapi import HTTPException
-from fastapi import Request
+import re
+from urllib.parse import quote
+from fastapi import APIRouter, HTTPException, Request, Query
 from pydantic import BaseModel
+import httpx
+from bs4 import BeautifulSoup
 
-
-# ============================================================
-# 数据库
-# ============================================================
-
-MISSAV_DATABASE_URL = os.environ.get("MISSAV_DATABASE_URL")
-
-if not MISSAV_DATABASE_URL:
-    raise RuntimeError(
-        "❌ MISSAV_DATABASE_URL 环境变量未设置"
-    )
-
-missav_db = Database(MISSAV_DATABASE_URL)
-
-
-# ============================================================
-# 数据库表
-# ============================================================
-
-MISSAV_TABLE = "public.missav_items"
-
-
-# ============================================================
-# Router
-# ============================================================
+# 复用 missav_routes 中的数据库连接
+from missav_routes import missav_db
 
 router = APIRouter(
-    prefix="/api/missav",
-    tags=["MissAV"]
+    prefix="/api/jable",
+    tags=["Jable"]
 )
 
-
 # ============================================================
-# Model
+# 模型
 # ============================================================
 
 class CollectItem(BaseModel):
-
     video_id: str
-
     title: str
-
     actress: str | None = None
-
     description: str | None = None
-
     publish_date: str | None = None
-
     cover_url: str | None = None
-
     m3u8_url: str
-
     source_url: str | None = None
 
+# ============================================================
+# 建表函数（供 startup 调用）
+# ============================================================
+
+async def init_jable_table():
+    """创建 missav_items 表（如果不存在）"""
+    await missav_db.execute("""
+        CREATE TABLE IF NOT EXISTS public.missav_items (
+            id SERIAL PRIMARY KEY,
+            video_id TEXT UNIQUE NOT NULL,
+            title TEXT NOT NULL,
+            actress TEXT,
+            description TEXT,
+            publish_date DATE,
+            cover_url TEXT,
+            m3u8_url TEXT,
+            source_url TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    print("[Jable] 表初始化完成（复用 missav_items）")
 
 # ============================================================
-# 工具
+# 工具函数
 # ============================================================
 
 def is_developer(request: Request):
-
-    return bool(
-        request.cookies.get("session")
-    )
-
+    return bool(request.cookies.get("session"))
 
 # ============================================================
-# 数据库诊断
+# Jable 抓取器
 # ============================================================
 
-@router.get("/debug-db")
-async def debug_db():
+class JableFetcher:
+    def __init__(self):
+        self.base_url = "https://jable.tv"
+        self.timeout = 30
+        self.headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        }
+        self.client = httpx.Client(timeout=self.timeout, follow_redirects=True, headers=self.headers)
 
+    def _fetch(self, url: str) -> str:
+        resp = self.client.get(url)
+        if resp.status_code != 200:
+            raise Exception(f"HTTP {resp.status_code}")
+        return resp.text
+
+    def search(self, keyword: str) -> list[dict]:
+        """搜索关键词，返回视频列表"""
+        search_url = f"{self.base_url}/search/{quote(keyword)}/"
+        html = self._fetch(search_url)
+        soup = BeautifulSoup(html, 'lxml')
+        results = []
+        seen = set()
+
+        # 根据之前你提供的HTML，选择器为 a[href*="/videos/"]
+        for a in soup.select('a[href*="/videos/"]'):
+            href = a.get('href')
+            if not href or href in seen:
+                continue
+            if href.startswith('/'):
+                href = self.base_url + href
+
+            img = a.find('img')
+            title = a.get('title') or (img.get('alt') if img else '')
+            cover = img.get('src') or img.get('data-src') if img else ''
+            if cover.startswith('//'):
+                cover = 'https:' + cover
+
+            # 提取 video_id（例如 ssis-005）
+            video_id = href.split('/')[-2] if href.endswith('/') else href.split('/')[-1]
+
+            results.append({
+                "id": video_id,
+                "url": href,
+                "title": title.strip(),
+                "cover": cover,
+            })
+            seen.add(href)
+            if len(results) >= 30:
+                break
+
+        return results
+
+    def detail(self, video_id: str) -> dict:
+        """获取视频详情"""
+        detail_url = f"{self.base_url}/videos/{video_id}/"
+        html = self._fetch(detail_url)
+        soup = BeautifulSoup(html, 'lxml')
+
+        # 标题
+        title_tag = soup.find('h1')
+        title = title_tag.text.strip() if title_tag else "未知"
+
+        # 女优（从标题中提取，或从 actress 链接）
+        actress = ""
+        actress_link = soup.select_one('a[href*="/actress/"]')
+        if actress_link:
+            actress = actress_link.text.strip()
+        else:
+            # 有些页面女优在标题中，尝试从标题提取（如 SSIS-005 ※... 坂道美琉）
+            # 这里简单处理：如果标题包含 ※，取 ※ 后的部分
+            if '※' in title:
+                parts = title.split('※')
+                if len(parts) > 1:
+                    # 取最后一段（可能包含女优名）
+                    last = parts[-1].strip()
+                    # 如果最后一段包含常见女优名关键词（可进一步优化）
+                    # 此处仅做示例，实际可交给用户自行处理
+                    actress = last
+
+        # 封面
+        cover = ""
+        meta_og = soup.find('meta', property='og:image')
+        if meta_og:
+            cover = meta_og.get('content')
+        if cover and cover.startswith('//'):
+            cover = 'https:' + cover
+
+        # 简介
+        desc = ""
+        meta_desc = soup.find('meta', attrs={'name': 'description'})
+        if meta_desc:
+            desc = meta_desc.get('content', '')
+
+        # 发布日期
+        publish_date = ""
+        date_pattern = re.compile(r'(\d{4}-\d{2}-\d{2})')
+        date_match = date_pattern.search(html)
+        if date_match:
+            publish_date = date_match.group(1)
+
+        # m3u8 地址
+        video_url = ""
+        # 方法1：从 video 标签提取
+        video_tag = soup.find('video')
+        if video_tag and video_tag.get('src'):
+            video_url = video_tag.get('src')
+        # 方法2：从 script 中搜索 .m3u8
+        if not video_url:
+            for script in soup.find_all('script'):
+                if script.string:
+                    matches = re.search(r'(https?://[^\s"\']+\.m3u8[^\s"\']*)', script.string)
+                    if matches:
+                        video_url = matches.group(1)
+                        break
+        # 方法3：从 iframe 提取
+        if not video_url:
+            iframe = soup.find('iframe')
+            if iframe and iframe.get('src'):
+                video_url = iframe.get('src')
+
+        return {
+            "id": video_id,
+            "title": title,
+            "actress": actress,
+            "cover": cover,
+            "description": desc,
+            "publish_date": publish_date,
+            "video_url": video_url,
+            "url": detail_url,
+        }
+
+fetcher = JableFetcher()
+
+# ============================================================
+# API：搜索（实时抓取）
+# ============================================================
+
+@router.get("/search")
+async def search_jable(q: str = Query(..., min_length=1)):
+    """搜索 Jable 视频（实时）"""
     try:
-
-        identity = await missav_db.fetch_one(
-            """
-            SELECT
-                current_database() AS database_name,
-                current_user AS user_name,
-                current_schema() AS schema_name,
-                inet_server_addr() AS server_address,
-                inet_server_port() AS server_port,
-                current_setting('search_path') AS search_path
-            """
-        )
-
-        table_info = await missav_db.fetch_one(
-            """
-            SELECT
-                table_catalog,
-                table_schema,
-                table_name
-            FROM information_schema.tables
-            WHERE table_schema = 'public'
-              AND table_name = 'missav_items'
-            """
-        )
-
-        table_count = None
-
-        if table_info:
-
-            table_count = await missav_db.fetch_val(
-                f"""
-                SELECT COUNT(*)
-                FROM {MISSAV_TABLE}
-                """
-            )
-
+        items = fetcher.search(q)
         return {
-
             "ok": True,
-
-            "connection": {
-
-                "database": identity["database_name"]
-                if identity
-                else None,
-
-                "user": identity["user_name"]
-                if identity
-                else None,
-
-                "schema": identity["schema_name"]
-                if identity
-                else None,
-
-                "server_address": str(
-                    identity["server_address"]
-                )
-                if identity and identity["server_address"]
-                else None,
-
-                "server_port": identity["server_port"]
-                if identity
-                else None,
-
-                "search_path": identity["search_path"]
-                if identity
-                else None
-            },
-
-            "missav_items": {
-
-                "exists": bool(table_info),
-
-                "catalog": (
-                    table_info["table_catalog"]
-                    if table_info
-                    else None
-                ),
-
-                "schema": (
-                    table_info["table_schema"]
-                    if table_info
-                    else None
-                ),
-
-                "table": (
-                    table_info["table_name"]
-                    if table_info
-                    else None
-                ),
-
-                "count": table_count
-            }
+            "count": len(items),
+            "items": items
         }
-
     except Exception as e:
-
-        return {
-
-            "ok": False,
-
-            "error": str(e)
-        }
-
+        raise HTTPException(
+            status_code=502,
+            detail=f"搜索失败: {str(e)}"
+        )
 
 # ============================================================
-# 采集
+# API：详情（实时抓取）
+# ============================================================
+
+@router.get("/info")
+async def info_jable(video_id: str):
+    """获取视频详情（实时）"""
+    try:
+        data = fetcher.detail(video_id)
+        return {
+            "ok": True,
+            "item": data
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"获取详情失败: {str(e)}"
+        )
+
+# ============================================================
+# API：采集（存入数据库）
 # ============================================================
 
 @router.post("/collect")
-async def collect_missav_item(
+async def collect_jable_item(
     request: Request,
     item: CollectItem
 ):
-
+    """开发者模式：存入数据库"""
     if not is_developer(request):
-
         return {
             "ok": True,
             "stored": False,
@@ -208,112 +258,53 @@ async def collect_missav_item(
         }
 
     try:
+        # 确保表存在
+        await missav_db.execute("""
+            CREATE TABLE IF NOT EXISTS public.missav_items (
+                id SERIAL PRIMARY KEY,
+                video_id TEXT UNIQUE NOT NULL,
+                title TEXT NOT NULL,
+                actress TEXT,
+                description TEXT,
+                publish_date DATE,
+                cover_url TEXT,
+                m3u8_url TEXT,
+                source_url TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
         existing = await missav_db.fetch_one(
-            f"""
-            SELECT id
-            FROM {MISSAV_TABLE}
-            WHERE video_id=:video_id
-            """,
-            {
-                "video_id": item.video_id
-            }
+            "SELECT id FROM public.missav_items WHERE video_id = :video_id",
+            {"video_id": item.video_id}
         )
 
-        params = {
-
-            "video_id": item.video_id,
-
-            "title": item.title,
-
-            "actress": item.actress,
-
-            "description": item.description,
-
-            "publish_date": item.publish_date,
-
-            "cover_url": item.cover_url,
-
-            "m3u8_url": item.m3u8_url,
-
-            "source_url": item.source_url
-        }
-
+        params = item.dict()
         if existing:
-
-            await missav_db.execute(
-                f"""
-                UPDATE {MISSAV_TABLE}
-
+            await missav_db.execute("""
+                UPDATE public.missav_items
                 SET
-
-                    title=:title,
-
-                    actress=:actress,
-
-                    description=:description,
-
-                    publish_date=:publish_date,
-
-                    cover_url=:cover_url,
-
-                    m3u8_url=:m3u8_url,
-
-                    source_url=:source_url,
-
-                    created_at=CURRENT_TIMESTAMP
-
-                WHERE video_id=:video_id
-                """,
-                params
-            )
-
+                    title = :title,
+                    actress = :actress,
+                    description = :description,
+                    publish_date = :publish_date,
+                    cover_url = :cover_url,
+                    m3u8_url = :m3u8_url,
+                    source_url = :source_url,
+                    created_at = CURRENT_TIMESTAMP
+                WHERE video_id = :video_id
+            """, params)
         else:
-
-            await missav_db.execute(
-                f"""
-                INSERT INTO {MISSAV_TABLE}(
-                    
-                    video_id,
-
-                    title,
-
-                    actress,
-
-                    description,
-
-                    publish_date,
-
-                    cover_url,
-
-                    m3u8_url,
-
-                    source_url
-
+            await missav_db.execute("""
+                INSERT INTO public.missav_items (
+                    video_id, title, actress, description,
+                    publish_date, cover_url, m3u8_url, source_url
                 )
-
-                VALUES(
-
-                    :video_id,
-
-                    :title,
-
-                    :actress,
-
-                    :description,
-
-                    :publish_date,
-
-                    :cover_url,
-
-                    :m3u8_url,
-
-                    :source_url
-
+                VALUES (
+                    :video_id, :title, :actress, :description,
+                    :publish_date, :cover_url, :m3u8_url, :source_url
                 )
-                """,
-                params
-            )
+            """, params)
 
         return {
             "ok": True,
@@ -321,24 +312,18 @@ async def collect_missav_item(
         }
 
     except Exception as e:
-
         raise HTTPException(
             status_code=500,
             detail=str(e)
         )
 
-
 # ============================================================
-# 获取全部
+# API：获取我的收藏（从数据库）
 # ============================================================
 
 @router.get("/my-items")
-async def get_items(
-    request: Request
-):
-
+async def get_my_items(request: Request):
     if not is_developer(request):
-
         return {
             "ok": True,
             "items": [],
@@ -346,249 +331,178 @@ async def get_items(
         }
 
     try:
-
         rows = await missav_db.fetch_all(
-            f"""
-            SELECT *
-
-            FROM {MISSAV_TABLE}
-
-            ORDER BY created_at DESC
-            """
+            "SELECT * FROM public.missav_items ORDER BY created_at DESC"
         )
-
-        items = []
-
-        for row in rows:
-
-            items.append({
-
-                "id": row["id"],
-
-                "video_id": row["video_id"],
-
-                "title": row["title"],
-
-                "actress": row["actress"],
-
-                "description": row["description"],
-
-                "publish_date": row["publish_date"],
-
-                "cover_url": row["cover_url"],
-
-                "m3u8_url": row["m3u8_url"],
-
-                "source_url": row["source_url"],
-
-                "created_at": (
-                    row["created_at"].isoformat()
-                    if row["created_at"]
-                    else None
-                )
-            })
-
+        items = [dict(row) for row in rows]
         return {
-
             "ok": True,
-
             "items": items,
-
             "mode": "developer"
         }
-
     except Exception as e:
-
         raise HTTPException(
             status_code=500,
             detail=str(e)
         )
 
-
 # ============================================================
-# 搜索
+# API：数据库内搜索（按 video_id / title）
 # ============================================================
 
-@router.get("/search")
-async def search_items(
-    q: str = ""
-):
-
+@router.get("/db-search")
+async def search_db_items(q: str = ""):
     try:
-
         rows = await missav_db.fetch_all(
-            f"""
-            SELECT *
-
-            FROM {MISSAV_TABLE}
-
+            """
+            SELECT * FROM public.missav_items
             WHERE
-
-                LOWER(video_id)
-                LIKE LOWER(:q)
-
-                OR
-
-                LOWER(title)
-                LIKE LOWER(:q)
-
+                LOWER(video_id) LIKE LOWER(:q)
+                OR LOWER(title) LIKE LOWER(:q)
             ORDER BY created_at DESC
             """,
-            {
-                "q": f"%{q}%"
-            }
+            {"q": f"%{q}%"}
         )
-
         return {
-
             "ok": True,
-
             "items": [dict(row) for row in rows]
         }
-
     except Exception as e:
-
         raise HTTPException(
             status_code=500,
             detail=str(e)
         )
 
-
 # ============================================================
-# 女优搜索
+# API：按女优搜索（数据库内）
 # ============================================================
 
 @router.get("/actress/{name}")
-async def actress_items(
-    name: str
-):
-
+async def actress_items(name: str):
     try:
-
         rows = await missav_db.fetch_all(
-            f"""
-            SELECT *
-
-            FROM {MISSAV_TABLE}
-
-            WHERE
-
-                LOWER(actress)
-                LIKE LOWER(:name)
-
+            """
+            SELECT * FROM public.missav_items
+            WHERE LOWER(actress) LIKE LOWER(:name)
             ORDER BY created_at DESC
             """,
-            {
-                "name": f"%{name}%"
-            }
+            {"name": f"%{name}%"}
         )
-
         return {
-
             "ok": True,
-
             "items": [dict(row) for row in rows]
         }
-
     except Exception as e:
-
         raise HTTPException(
             status_code=500,
             detail=str(e)
         )
 
-
 # ============================================================
-# 统计
+# API：统计
 # ============================================================
 
 @router.get("/stats")
 async def stats():
-
     try:
-
         total = await missav_db.fetch_val(
-            f"""
-            SELECT COUNT(*)
-
-            FROM {MISSAV_TABLE}
-            """
+            "SELECT COUNT(*) FROM public.missav_items"
         )
-
         actresses = await missav_db.fetch_val(
-            f"""
-            SELECT COUNT(
-                DISTINCT actress
-            )
-
-            FROM {MISSAV_TABLE}
-            """
+            "SELECT COUNT(DISTINCT actress) FROM public.missav_items"
         )
-
         return {
-
             "ok": True,
-
             "total": total,
-
             "actresses": actresses
         }
-
     except Exception as e:
-
         raise HTTPException(
             status_code=500,
             detail=str(e)
         )
 
-
 # ============================================================
-# 清空
+# API：清空（仅开发者）
 # ============================================================
 
 @router.delete("/clear")
-async def clear_items(
-    request: Request
-):
-
+async def clear_items(request: Request):
     if not is_developer(request):
-
         raise HTTPException(
             status_code=403,
             detail="permission denied"
         )
-
     try:
-
-        await missav_db.execute(
-            f"""
-            DELETE FROM {MISSAV_TABLE}
-            """
-        )
-
-        return {
-
-            "ok": True
-        }
-
+        await missav_db.execute("DELETE FROM public.missav_items")
+        return {"ok": True}
     except Exception as e:
-
         raise HTTPException(
             status_code=500,
             detail=str(e)
         )
 
+# ============================================================
+# API：诊断数据库
+# ============================================================
+
+@router.get("/debug-db")
+async def debug_db():
+    try:
+        identity = await missav_db.fetch_one("""
+            SELECT
+                current_database() AS database_name,
+                current_user AS user_name,
+                current_schema() AS schema_name,
+                inet_server_addr() AS server_address,
+                inet_server_port() AS server_port,
+                current_setting('search_path') AS search_path
+        """)
+        table_info = await missav_db.fetch_one("""
+            SELECT
+                table_catalog,
+                table_schema,
+                table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+              AND table_name = 'missav_items'
+        """)
+        table_count = None
+        if table_info:
+            table_count = await missav_db.fetch_val(
+                "SELECT COUNT(*) FROM public.missav_items"
+            )
+        return {
+            "ok": True,
+            "connection": {
+                "database": identity["database_name"] if identity else None,
+                "user": identity["user_name"] if identity else None,
+                "schema": identity["schema_name"] if identity else None,
+                "server_address": str(identity["server_address"]) if identity and identity["server_address"] else None,
+                "server_port": identity["server_port"] if identity else None,
+                "search_path": identity["search_path"] if identity else None,
+            },
+            "missav_items": {
+                "exists": bool(table_info),
+                "catalog": table_info["table_catalog"] if table_info else None,
+                "schema": table_info["table_schema"] if table_info else None,
+                "table": table_info["table_name"] if table_info else None,
+                "count": table_count,
+            }
+        }
+    except Exception as e:
+        return {
+            "ok": False,
+            "error": str(e)
+        }
 
 # ============================================================
-# 预留：同步我的喜欢
+# 预留：同步（未实现）
 # ============================================================
 
 @router.post("/sync-saved")
 async def sync_saved():
-
     return {
-
         "ok": False,
-
         "message": "not implemented"
     }
