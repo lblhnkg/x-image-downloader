@@ -320,3 +320,12 @@ def validate_hls_url(url):
         # 自用场景放行（也可改为严格模式）
         pass
     return url
+# ============================================================
+# MissAV / Jable 独立数据库连接
+# ============================================================
+MISSAV_DATABASE_URL = os.environ.get("MISSAV_DATABASE_URL")
+if MISSAV_DATABASE_URL:
+    missav_db = Database(MISSAV_DATABASE_URL)
+else:
+    missav_db = None
+    print("⚠️ 警告：MISSAV_DATABASE_URL 未设置，MissAV/Jable 功能将不可用")
