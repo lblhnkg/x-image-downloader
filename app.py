@@ -7,12 +7,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from shared import database, init_db
+from shared import database, init_db, missav_db  # 从 shared 导入 missav_db
 
 # 导入各模块路由
 from x_routes import router as x_router
-from missav_routes import router as missav_router, missav_db   # 新增导入 missav_db
-from jable_routes import router as jable_router                # 新增 Jable 路由
+from missav_routes import router as missav_router
+from jable_routes import router as jable_router
 from bilibili_routes import router as bilibili_router
 
 # 创建主应用
@@ -32,16 +32,20 @@ app.add_middleware(
 async def startup():
     await database.connect()
     await init_db()
-    await missav_db.connect()          # 新增：连接 MissAV 独立数据库
+    if missav_db is not None:
+        await missav_db.connect()
+        print("[MissAV DB] 连接成功")
+    else:
+        print("[MissAV DB] 未配置，跳过")
     print("[DB] 主数据库连接成功")
-    print("[MissAV DB] 连接成功")
 
 @app.on_event("shutdown")
 async def shutdown():
     await database.disconnect()
-    await missav_db.disconnect()       # 新增：断开 MissAV 数据库
+    if missav_db is not None:
+        await missav_db.disconnect()
+        print("[MissAV DB] 已断开")
     print("[DB] 主数据库已断开")
-    print("[MissAV DB] 已断开")
 
 # ============================================================
 # 注册路由
