@@ -1,7 +1,8 @@
 # ============================================================
 # jable_routes.py - Jable 模块（curl_cffi + Safari 指纹）
 # 数据源：https://jable.tv
-# 增加时长提取
+# 修复女优名提取（从 data-original-title 获取）
+# 修复时长提取（从 data-ts-session-duration 获取）
 # ============================================================
 
 import re
@@ -167,24 +168,38 @@ class JableFetcher:
         if code_match:
             code = code_match.group(1)
 
-        # 女优
+        # ===== 修复：女优提取（优先从 data-original-title 获取） =====
         actress = ""
         models = soup.select('a[href*="/models/"]')
         if models:
             actress_names = []
             for m in models:
-                name = m.text.strip()
+                # 优先从 span 的 data-original-title 或 title 获取
+                span = m.find('span')
+                name = ""
+                if span:
+                    name = span.get('data-original-title') or span.get('title', '')
+                if not name:
+                    # 如果没有，再尝试从 a 的 title 或文本获取
+                    name = m.get('title', '') or m.text.strip()
                 if name:
-                    actress_names.append(name)
+                    # 清洗多余前缀
+                    name = re.sub(r'^按女優\s*', '', name).strip()
+                    # 只保留中/日文、字母、数字、空格
+                    name = re.sub(r'[^\u4e00-\u9fff\u3040-\u30ffa-zA-Z0-9\s]', '', name)
+                    if name:
+                        actress_names.append(name)
             actress = ' '.join(actress_names)
 
+        # 如果从 models 没提取到，尝试从标题中提取
         if not actress and title:
             title_without_code = re.sub(r'^[A-Z]{2,6}-\d{3,5}\s*', '', title)
-            words = title_without_code.split(' ')
-            if len(words) >= 2:
-                possible = words[-2:]
-                if any('\u4e00' <= c <= '\u9fff' for word in possible for c in word):
-                    actress = ' '.join(possible)
+            parts = title_without_code.split(' ')
+            for i in range(min(3, len(parts)), 0, -1):
+                candidate = ' '.join(parts[-i:])
+                if re.search(r'[\u4e00-\u9fff]', candidate):
+                    actress = candidate
+                    break
 
         # 封面
         cover = ""
@@ -207,17 +222,17 @@ class JableFetcher:
         if date_match:
             publish_date = date_match.group(1)
 
-        # ===== 新增：时长 =====
+        # ===== 时长：从 data-ts-session-duration 提取 =====
         duration_str = ""
         duration_seconds = None
-        # 尝试从 og:video:duration 获取
-        duration_meta = soup.find('meta', property='og:video:duration')
-        if duration_meta:
-            try:
-                duration_seconds = int(duration_meta.get('content', 0))
-            except:
-                pass
-        # 如果没有，尝试从 video 标签的 duration 属性获取
+        for script in soup.find_all('script'):
+            if script.get('data-ts-session-duration'):
+                try:
+                    duration_seconds = int(script.get('data-ts-session-duration'))
+                    break
+                except:
+                    pass
+        # 如果没找到，尝试从 video 标签提取
         if not duration_seconds:
             video_tag = soup.find('video')
             if video_tag and video_tag.get('duration'):
@@ -225,6 +240,17 @@ class JableFetcher:
                     duration_seconds = int(float(video_tag.get('duration')))
                 except:
                     pass
+        # 如果还没找到，尝试从页面可见文本提取
+        if not duration_seconds:
+            duration_elem = soup.select_one('.label, .duration, .time')
+            if duration_elem:
+                time_str = duration_elem.text.strip()
+                match = re.match(r'(\d{1,2}):(\d{2})(?::(\d{2}))?', time_str)
+                if match:
+                    h = int(match.group(1)) if match.group(1) else 0
+                    m = int(match.group(2))
+                    s = int(match.group(3)) if match.group(3) else 0
+                    duration_seconds = h*3600 + m*60 + s
         # 格式化为 HH:MM:SS 或 MM:SS
         if duration_seconds:
             hours = duration_seconds // 3600
@@ -253,7 +279,7 @@ class JableFetcher:
             "cover": cover,
             "description": desc,
             "publish_date": publish_date,
-            "duration": duration_str,   # 新增
+            "duration": duration_str,
             "video_url": video_url,
             "url": detail_url,
         }
