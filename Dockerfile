@@ -20,8 +20,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN python generate_config.py || echo "⚠️ config.json 生成失败"
-
 EXPOSE 8000
 
 CMD ["sh", "-c", "sing-box run -c config.json & sleep 3 && uvicorn app:app --host 0.0.0.0 --port 8000"]
