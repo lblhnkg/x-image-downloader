@@ -1,7 +1,7 @@
 # ============================================================
 # jable_routes.py - Jable 模块（curl_cffi + Safari 指纹）
 # 数据源：https://jable.tv
-# 使用 curl_cffi 模拟 Safari TLS 指纹
+# 增加时长提取
 # ============================================================
 
 import re
@@ -64,7 +64,6 @@ class JableFetcher:
             "https": "http://127.0.0.1:1081"
         }
         # 使用 curl_cffi 的 Session，模拟 Safari 指纹
-        # 可选的指纹：safari15_5, safari15_3, safari_ios, safari_ios_17, etc.
         self.session = requests.Session(
             impersonate="safari15_5",
             proxies=self.proxies,
@@ -154,6 +153,7 @@ class JableFetcher:
         html = self._fetch(detail_url)
         soup = BeautifulSoup(html, 'lxml')
 
+        # 标题
         title_tag = soup.find('h1')
         title = title_tag.text.strip() if title_tag else ""
         if not title:
@@ -161,11 +161,13 @@ class JableFetcher:
             if meta_title:
                 title = meta_title.get('content', '')
 
+        # 番号
         code = ""
         code_match = re.match(r'^([A-Z]{2,6}-\d{3,5})', title)
         if code_match:
             code = code_match.group(1)
 
+        # 女优
         actress = ""
         models = soup.select('a[href*="/models/"]')
         if models:
@@ -184,6 +186,7 @@ class JableFetcher:
                 if any('\u4e00' <= c <= '\u9fff' for word in possible for c in word):
                     actress = ' '.join(possible)
 
+        # 封面
         cover = ""
         meta_og = soup.find('meta', property='og:image')
         if meta_og:
@@ -191,17 +194,48 @@ class JableFetcher:
         if cover and cover.startswith('//'):
             cover = 'https:' + cover
 
+        # 简介
         desc = ""
         meta_desc = soup.find('meta', attrs={'name': 'description'})
         if meta_desc:
             desc = meta_desc.get('content', '')
 
+        # 发布日期
         publish_date = ""
         date_pattern = re.compile(r'(\d{4}-\d{2}-\d{2})')
         date_match = date_pattern.search(html)
         if date_match:
             publish_date = date_match.group(1)
 
+        # ===== 新增：时长 =====
+        duration_str = ""
+        duration_seconds = None
+        # 尝试从 og:video:duration 获取
+        duration_meta = soup.find('meta', property='og:video:duration')
+        if duration_meta:
+            try:
+                duration_seconds = int(duration_meta.get('content', 0))
+            except:
+                pass
+        # 如果没有，尝试从 video 标签的 duration 属性获取
+        if not duration_seconds:
+            video_tag = soup.find('video')
+            if video_tag and video_tag.get('duration'):
+                try:
+                    duration_seconds = int(float(video_tag.get('duration')))
+                except:
+                    pass
+        # 格式化为 HH:MM:SS 或 MM:SS
+        if duration_seconds:
+            hours = duration_seconds // 3600
+            minutes = (duration_seconds % 3600) // 60
+            seconds = duration_seconds % 60
+            if hours > 0:
+                duration_str = f"{hours}:{minutes:02d}:{seconds:02d}"
+            else:
+                duration_str = f"{minutes:02d}:{seconds:02d}"
+
+        # ===== 视频地址 m3u8 =====
         video_url = ""
         video_tag = soup.find('video')
         if video_tag and video_tag.get('src'):
@@ -219,6 +253,7 @@ class JableFetcher:
             "cover": cover,
             "description": desc,
             "publish_date": publish_date,
+            "duration": duration_str,   # 新增
             "video_url": video_url,
             "url": detail_url,
         }
