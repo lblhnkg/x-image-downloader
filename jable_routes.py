@@ -1,7 +1,7 @@
 # ============================================================
 # jable_routes.py - Jable 模块（curl_cffi + Safari 指纹）
-# 数据源：https://jable.tv
-# 修复：女优名清洗、video_url 从 hlsUrl 提取、日期转换
+# 修复：/collect 接口 m3u8_url 允许空值
+# 女优名清洗、video_url 从 hlsUrl 提取
 # ============================================================
 
 import re
@@ -18,7 +18,7 @@ from shared import missav_db
 router = APIRouter(prefix="/api/jable", tags=["Jable"])
 
 # ============================================================
-# 模型
+# 模型（m3u8_url 改为可选）
 # ============================================================
 
 class CollectItem(BaseModel):
@@ -28,7 +28,7 @@ class CollectItem(BaseModel):
     description: str | None = None
     publish_date: str | None = None
     cover_url: str | None = None
-    m3u8_url: str
+    m3u8_url: str | None = None  # 允许为空
     source_url: str | None = None
 
 # ============================================================
@@ -179,17 +179,13 @@ class JableFetcher:
                 if not name:
                     name = m.get('title', '') or m.text.strip()
                 if name:
-                    # 清洗：“按女優”前缀
                     name = re.sub(r'^按女優\s*', '', name).strip()
-                    # 只保留中/日文、字母、数字、空格
                     name = re.sub(r'[^\u4e00-\u9fff\u3040-\u30ffa-zA-Z0-9\s]', '', name)
                     if name:
                         actress_names.append(name)
             actress = ' '.join(actress_names)
-            # 再次整体清洗
             actress = re.sub(r'^按女優\s*', '', actress).strip()
 
-        # 如果没提取到，从标题中提取
         if not actress and title:
             title_without_code = re.sub(r'^[A-Z]{2,6}-\d{3,5}\s*', '', title)
             parts = title_without_code.split(' ')
@@ -258,17 +254,15 @@ class JableFetcher:
             else:
                 duration_str = f"{minutes:02d}:{seconds:02d}"
 
-        # ===== video_url：优先从 hlsUrl 变量提取 =====
+        # video_url：优先从 hlsUrl 变量提取
         video_url = ""
         for script in soup.find_all('script'):
             if script.string:
                 content = script.string
-                # 搜索 var hlsUrl = '...m3u8'
                 match = re.search(r"var\s+hlsUrl\s*=\s*'([^']+\.m3u8[^']*)'", content)
                 if match:
                     video_url = match.group(1)
                     break
-        # 如果没找到，再从 video 标签提取
         if not video_url:
             video_tag = soup.find('video')
             if video_tag and video_tag.get('src'):
@@ -320,7 +314,7 @@ async def info_jable(video_id: str = Query(...)):
         raise HTTPException(status_code=502, detail=f"获取详情失败: {str(e)}")
 
 # ============================================================
-# 采集
+# 采集（m3u8_url 允许为空）
 # ============================================================
 
 @router.post("/collect")
@@ -352,11 +346,15 @@ async def collect_jable_item(request: Request, item: CollectItem):
         )
 
         params = item.dict()
+        # 转换日期
         if params.get("publish_date"):
             try:
                 params["publish_date"] = datetime.strptime(params["publish_date"], "%Y-%m-%d").date()
             except:
                 params["publish_date"] = None
+        # m3u8_url 允许为空，None 会存为 NULL
+        if not params.get("m3u8_url"):
+            params["m3u8_url"] = None
 
         if existing:
             await missav_db.execute("""
