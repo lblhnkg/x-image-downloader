@@ -12,6 +12,7 @@ from shared import database, init_db
 # 导入各模块路由
 from x_routes import router as x_router
 from missav_routes import router as missav_router, missav_db   # 新增导入 missav_db
+from jable_routes import router as jable_router                # 新增 Jable 路由
 from bilibili_routes import router as bilibili_router
 
 # 创建主应用
@@ -51,6 +52,9 @@ app.include_router(x_router)
 
 # MissAV API（/api/missav/*）
 app.include_router(missav_router)
+
+# Jable API（/api/jable/*）
+app.include_router(jable_router)
 
 # Bilibili API（/bilibili/*）
 app.include_router(bilibili_router)
