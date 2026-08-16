@@ -1,5 +1,5 @@
 # ============================================================
-# missav_routes.py - MissAV 模块（V2）
+# missav_routes.py - MissAV 模块（V2 + 数据库诊断）
 # ============================================================
 
 import os
@@ -29,9 +29,6 @@ missav_db = Database(MISSAV_DATABASE_URL)
 # 数据库表
 # ============================================================
 
-# 明确指定 public schema。
-# 避免 Render / Neon 的 search_path 不一致导致：
-# relation "missav_items" does not exist
 MISSAV_TABLE = "public.missav_items"
 
 
@@ -77,6 +74,119 @@ def is_developer(request: Request):
     return bool(
         request.cookies.get("session")
     )
+
+
+# ============================================================
+# 数据库诊断
+# ============================================================
+
+@router.get("/debug-db")
+async def debug_db():
+
+    try:
+
+        identity = await missav_db.fetch_one(
+            """
+            SELECT
+                current_database() AS database_name,
+                current_user AS user_name,
+                current_schema() AS schema_name,
+                inet_server_addr() AS server_address,
+                inet_server_port() AS server_port,
+                current_setting('search_path') AS search_path
+            """
+        )
+
+        table_info = await missav_db.fetch_one(
+            """
+            SELECT
+                table_catalog,
+                table_schema,
+                table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+              AND table_name = 'missav_items'
+            """
+        )
+
+        table_count = None
+
+        if table_info:
+
+            table_count = await missav_db.fetch_val(
+                f"""
+                SELECT COUNT(*)
+                FROM {MISSAV_TABLE}
+                """
+            )
+
+        return {
+
+            "ok": True,
+
+            "connection": {
+
+                "database": identity["database_name"]
+                if identity
+                else None,
+
+                "user": identity["user_name"]
+                if identity
+                else None,
+
+                "schema": identity["schema_name"]
+                if identity
+                else None,
+
+                "server_address": str(
+                    identity["server_address"]
+                )
+                if identity and identity["server_address"]
+                else None,
+
+                "server_port": identity["server_port"]
+                if identity
+                else None,
+
+                "search_path": identity["search_path"]
+                if identity
+                else None
+            },
+
+            "missav_items": {
+
+                "exists": bool(table_info),
+
+                "catalog": (
+                    table_info["table_catalog"]
+                    if table_info
+                    else None
+                ),
+
+                "schema": (
+                    table_info["table_schema"]
+                    if table_info
+                    else None
+                ),
+
+                "table": (
+                    table_info["table_name"]
+                    if table_info
+                    else None
+                ),
+
+                "count": table_count
+            }
+        }
+
+    except Exception as e:
+
+        return {
+
+            "ok": False,
+
+            "error": str(e)
+        }
 
 
 # ============================================================
