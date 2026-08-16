@@ -1096,31 +1096,40 @@
         currentItem = null;
     }
 
-    // ===== 修改后的 downloadCurrent：传递 referer =====
+    // ===== 修改后的 downloadCurrent：复制 m3u8 链接到剪贴板 =====
     function downloadCurrent() {
         if (!currentItem) return;
-        const videoId = currentItem.id || currentItem.video_id;
-        if (!videoId) {
-            alert('没有番号');
+        const url = currentItem.video_url || '';
+        if (!url) {
+            alert('没有可用的 m3u8 地址');
             return;
         }
-        // 实时获取最新 m3u8 地址
-        fetch(API_BASE + '/info?video_id=' + encodeURIComponent(videoId))
-            .then(res => res.json())
-            .then(data => {
-                if (data.ok && data.item && data.item.video_url) {
-                    const url = data.item.video_url;
-                    const filename = (currentItem.code || currentItem.id || 'jable') + '.mp4';
-                    // 获取原页地址作为 referer
-                    const referer = currentItem.url || 'https://jable.tv/';
-                    window.location.href = '/api/video-download?url=' + encodeURIComponent(url) +
-                        '&filename=' + encodeURIComponent(filename) +
-                        '&referer=' + encodeURIComponent(referer);
-                } else {
-                    alert('无法获取视频地址，请稍后重试');
-                }
-            })
-            .catch(() => alert('获取视频地址失败'));
+        // 复制到剪贴板
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('✅ m3u8 地址已复制到剪贴板！\n请粘贴到第三方下载工具中。');
+            }).catch(() => {
+                fallbackCopy(url);
+            });
+        } else {
+            fallbackCopy(url);
+        }
+    }
+
+    function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            alert('✅ m3u8 地址已复制到剪贴板！\n请粘贴到第三方下载工具中。');
+        } catch (e) {
+            alert('复制失败，请手动复制以下地址：\n' + text);
+        }
+        document.body.removeChild(textarea);
     }
 
     function previewCurrent() {
