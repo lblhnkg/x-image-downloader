@@ -18,28 +18,47 @@
     {
       "type": "urltest",
       "tag": "proxy-selector",
-      "outbounds": ["hk1", "hk2", "hk3", "hk4", "hk5", "jp1", "jp2", "sg1", "sg2", "us1"],
+      "outbounds": ["jp1", "jp2", "hk2", "hk3", "hk4", "hk5", "sg1", "sg2", "us1"],
       "url": "https://www.google.com",
-      "interval": "1m",
+      "interval": "30s",
       "tolerance": 50
     },
     {
       "type": "vless",
-      "tag": "hk1",
-      "server": "cfyes.777078.xyz",
+      "tag": "jp1",
+      "server": "cfyes.7770006.xyz",
       "server_port": 443,
       "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
       "flow": "",
       "tls": {
         "enabled": true,
-        "server_name": "lx-hk1.7770008.xyz",
+        "server_name": "jp1-lx.7770006.xyz",
         "insecure": false,
         "utls": { "enabled": true, "fingerprint": "safari" }
       },
       "transport": {
         "type": "ws",
-        "path": "/liangxin/data/hk1",
-        "headers": { "Host": "lx-hk1.7770008.xyz" }
+        "path": "/liangxin/data/jp",
+        "headers": { "Host": "jp1-lx.7770006.xyz" }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "jp2",
+      "server": "cfyes.7770006.xyz",
+      "server_port": 443,
+      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
+      "flow": "",
+      "tls": {
+        "enabled": true,
+        "server_name": "jp2-lx.7770006.xyz",
+        "insecure": false,
+        "utls": { "enabled": true, "fingerprint": "safari" }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/liangxin/data",
+        "headers": { "Host": "jp2-lx.7770006.xyz" }
       }
     },
     {
@@ -116,44 +135,6 @@
         "type": "ws",
         "path": "/liangxin/data/hk5",
         "headers": { "Host": "lx-hk5.7770008.xyz" }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "jp1",
-      "server": "cfyes.7770006.xyz",
-      "server_port": 443,
-      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
-      "flow": "",
-      "tls": {
-        "enabled": true,
-        "server_name": "jp1-lx.7770006.xyz",
-        "insecure": false,
-        "utls": { "enabled": true, "fingerprint": "safari" }
-      },
-      "transport": {
-        "type": "ws",
-        "path": "/liangxin/data/jp",
-        "headers": { "Host": "jp1-lx.7770006.xyz" }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "jp2",
-      "server": "cfyes.7770006.xyz",
-      "server_port": 443,
-      "uuid": "39225b24-bf38-47c7-863b-3341d45f853b",
-      "flow": "",
-      "tls": {
-        "enabled": true,
-        "server_name": "jp2-lx.7770006.xyz",
-        "insecure": false,
-        "utls": { "enabled": true, "fingerprint": "safari" }
-      },
-      "transport": {
-        "type": "ws",
-        "path": "/liangxin/data",
-        "headers": { "Host": "jp2-lx.7770006.xyz" }
       }
     },
     {
