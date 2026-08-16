@@ -1,8 +1,7 @@
 # ============================================================
-# jable_routes.py - Jable 模块（requests + HTTP 代理）
+# jable_routes.py - Jable 模块（curl_cffi + HTTP 代理）
 # 数据源：https://jable.tv
-# 复用 shared.missav_db
-# 请求间隔随机 1-3 秒，失败重试等待 10-20 秒
+# 使用 curl_cffi 模拟 Chrome TLS 指纹
 # ============================================================
 
 import re
@@ -11,7 +10,7 @@ import random
 from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
-import requests
+from curl_cffi import requests
 from bs4 import BeautifulSoup
 from shared import missav_db
 
@@ -39,7 +38,7 @@ def is_developer(request: Request):
     return bool(request.cookies.get("session"))
 
 # ============================================================
-# Jable 抓取器（requests + HTTP 代理 + 随机间隔 + 智能重试）
+# Jable 抓取器（curl_cffi + HTTP 代理 + 随机延迟 + 智能重试）
 # ============================================================
 
 class JableFetcher:
@@ -50,25 +49,36 @@ class JableFetcher:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Cache-Control": "max-age=0",
         }
-        # 只使用 HTTP 代理（端口 1081）
+        # HTTP 代理（sing-box 监听 127.0.0.1:1081）
         self.proxies = {
             "http": "http://127.0.0.1:1081",
             "https": "http://127.0.0.1:1081"
         }
-        self.session = requests.Session()
+        # 使用 curl_cffi 的 Session，模拟 Chrome 124 指纹
+        self.session = requests.Session(
+            impersonate="chrome124",
+            proxies=self.proxies,
+            timeout=self.timeout
+        )
         self.session.headers.update(self.headers)
-        self.session.proxies.update(self.proxies)
-        self.session.timeout = self.timeout
 
     def _fetch(self, url: str, is_retry: bool = False) -> str:
-        # 如果不是重试，则等待 1-3 秒随机（模拟人类操作节奏）
+        # 首次请求前随机延迟 1-3 秒
         if not is_retry:
             delay = random.uniform(1, 3)
             print(f"[Jable] 等待 {delay:.1f} 秒后请求...")
             time.sleep(delay)
         else:
-            # 重试前等待 10-20 秒随机（模拟人类犹豫）
+            # 重试前等待 10-20 秒随机
             delay = random.uniform(10, 20)
             print(f"[Jable] 重试前等待 {delay:.1f} 秒...")
             time.sleep(delay)
@@ -78,14 +88,12 @@ class JableFetcher:
             resp = self.session.get(url)
             print(f"[Jable] 状态码 {resp.status_code}")
             if resp.status_code != 200:
-                # 如果是 403 且不是重试，则等待后重试一次
                 if resp.status_code == 403 and not is_retry:
                     print(f"[Jable] 收到 403，将重试一次（等待 10-20 秒）...")
                     return self._fetch(url, is_retry=True)
                 raise Exception(f"HTTP {resp.status_code}")
             return resp.text
         except Exception as e:
-            # 如果是连接异常且不是重试，则等待后重试一次
             if not is_retry and ("SSLError" in str(e) or "Connection" in str(e) or "Max retries" in str(e)):
                 print(f"[Jable] 请求异常，将重试一次（等待 10-20 秒）...")
                 return self._fetch(url, is_retry=True)
@@ -246,7 +254,7 @@ async def info_jable(video_id: str = Query(...)):
         raise HTTPException(status_code=502, detail=f"获取详情失败: {str(e)}")
 
 # ============================================================
-# 采集、收藏等接口（与之前相同，保持不变）
+# 采集、收藏等接口（保持不变）
 # ============================================================
 
 @router.post("/collect")
