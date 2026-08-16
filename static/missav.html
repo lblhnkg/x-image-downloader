@@ -1096,6 +1096,7 @@
         currentItem = null;
     }
 
+    // ===== 修改后的 downloadCurrent：传递 referer =====
     function downloadCurrent() {
         if (!currentItem) return;
         const videoId = currentItem.id || currentItem.video_id;
@@ -1110,7 +1111,11 @@
                 if (data.ok && data.item && data.item.video_url) {
                     const url = data.item.video_url;
                     const filename = (currentItem.code || currentItem.id || 'jable') + '.mp4';
-                    window.location.href = '/api/video-download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(filename);
+                    // 获取原页地址作为 referer
+                    const referer = currentItem.url || 'https://jable.tv/';
+                    window.location.href = '/api/video-download?url=' + encodeURIComponent(url) +
+                        '&filename=' + encodeURIComponent(filename) +
+                        '&referer=' + encodeURIComponent(referer);
                 } else {
                     alert('无法获取视频地址，请稍后重试');
                 }
