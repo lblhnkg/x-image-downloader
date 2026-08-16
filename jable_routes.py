@@ -1,7 +1,7 @@
 # ============================================================
-# jable_routes.py - Jable 模块（curl_cffi + HTTP 代理）
+# jable_routes.py - Jable 模块（curl_cffi + Safari 指纹）
 # 数据源：https://jable.tv
-# 使用 curl_cffi 模拟 Chrome TLS 指纹
+# 使用 curl_cffi 模拟 Safari TLS 指纹
 # ============================================================
 
 import re
@@ -38,7 +38,7 @@ def is_developer(request: Request):
     return bool(request.cookies.get("session"))
 
 # ============================================================
-# Jable 抓取器（curl_cffi + HTTP 代理）
+# Jable 抓取器（curl_cffi + HTTP 代理 + Safari 指纹）
 # ============================================================
 
 class JableFetcher:
@@ -46,7 +46,7 @@ class JableFetcher:
         self.base_url = "https://jable.tv"
         self.timeout = 30
         self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
             "Accept-Encoding": "gzip, deflate, br",
@@ -63,13 +63,13 @@ class JableFetcher:
             "http": "http://127.0.0.1:1081",
             "https": "http://127.0.0.1:1081"
         }
-        # 创建 curl_cffi Session，模拟 Chrome 124 指纹
+        # 使用 curl_cffi 的 Session，模拟 Safari 指纹
+        # 可选的指纹：safari15_5, safari15_3, safari_ios, safari_ios_17, etc.
         self.session = requests.Session(
-            impersonate="chrome124",
+            impersonate="safari15_5",
+            proxies=self.proxies,
             timeout=self.timeout
         )
-        # 正确设置代理（必须通过属性赋值）
-        self.session.proxies = self.proxies
         self.session.headers.update(self.headers)
 
     def _fetch(self, url: str, is_retry: bool = False) -> str:
