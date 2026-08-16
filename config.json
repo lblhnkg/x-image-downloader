@@ -16,6 +16,14 @@
   ],
   "outbounds": [
     {
+      "type": "urltest",
+      "tag": "proxy-selector",
+      "outbounds": ["hk1", "hk2", "hk3", "hk4", "hk5", "jp1", "jp2", "sg1", "sg2", "us1"],
+      "url": "https://www.google.com",
+      "interval": "1m",
+      "tolerance": 50
+    },
+    {
       "type": "vless",
       "tag": "hk1",
       "server": "cfyes.777078.xyz",
@@ -204,14 +212,6 @@
         "path": "/liangxin/us",
         "headers": { "Host": "lx-us1.777078.xyz" }
       }
-    },
-    {
-      "type": "urltest",
-      "tag": "proxy-selector",
-      "outbounds": ["hk1", "hk2", "hk3", "hk4", "hk5", "jp1", "jp2", "sg1", "sg2", "us1"],
-      "url": "https://www.google.com",
-      "interval": "5m",
-      "tolerance": 50
     }
   ],
   "route": {
