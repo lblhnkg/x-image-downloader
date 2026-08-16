@@ -319,14 +319,14 @@
         .media-wrap img {
             display: block;
             width: 100%;
-            aspect-ratio: 1 / 1;
+            aspect-ratio: 16 / 9;  /* 改为 16:9 适应横向封面 */
             object-fit: cover;
             cursor: pointer;
         }
 
         .media-error {
             width: 100%;
-            aspect-ratio: 1 / 1;
+            aspect-ratio: 16 / 9;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -473,13 +473,13 @@
         .modal-content .modal-cover img {
             display: block;
             width: 100%;
-            aspect-ratio: 3 / 4;
+            aspect-ratio: 16 / 9;  /* 改为 16:9 适应横向封面 */
             object-fit: cover;
         }
 
         .modal-content .modal-cover .cover-fallback {
             width: 100%;
-            aspect-ratio: 3 / 4;
+            aspect-ratio: 16 / 9;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -506,13 +506,14 @@
         }
 
         .modal-content .modal-info .mi-code {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.3);
+            font-size: 16px;          /* 增大字号 */
+            color: rgba(255, 255, 255, 0.8);  /* 更亮 */
+            font-weight: 500;         /* 加粗 */
         }
 
         .modal-content .modal-info .mi-actress {
             font-size: 14px;
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.6);
         }
 
         .modal-content .modal-info .mi-duration {
@@ -1088,14 +1089,14 @@
         coverDiv.appendChild(img);
         content.appendChild(coverDiv);
 
-        // ---- 信息 ----
+        // ---- 信息（去掉表情符号） ----
         const infoDiv = document.createElement('div');
         infoDiv.className = 'modal-info';
 
         let infoHTML = '';
         infoHTML += `<div class="mi-title">${item.title || '未知标题'}</div>`;
         if (item.code) infoHTML += `<div class="mi-code">番号：${item.code}</div>`;
-        if (item.actress) infoHTML += `<div class="mi-actress">👩 出演：${item.actress}</div>`;
+        if (item.actress) infoHTML += `<div class="mi-actress">出演：${item.actress}</div>`;
         if (item.duration) infoHTML += `<div class="mi-duration">⏱️ 时长：${item.duration}</div>`;
         if (item.publish_date) infoHTML += `<div class="mi-duration">📅 发行：${item.publish_date}</div>`;
         if (item.description) infoHTML += `<div class="mi-desc">📝 ${item.description}</div>`;
