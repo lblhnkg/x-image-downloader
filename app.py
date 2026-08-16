@@ -7,11 +7,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from shared import database, init_db, missav_db  # 从 shared 导入 missav_db
+from shared import database, init_db, missav_db
 
 # 导入各模块路由
 from x_routes import router as x_router
-from missav_routes import router as missav_router
 from jable_routes import router as jable_router
 from bilibili_routes import router as bilibili_router
 
@@ -51,40 +50,28 @@ async def shutdown():
 # 注册路由
 # ============================================================
 
-# X API（/api/*）
-app.include_router(x_router)
-
-# MissAV API（/api/missav/*）
-app.include_router(missav_router)
-
-# Jable API（/api/jable/*）
-app.include_router(jable_router)
-
-# Bilibili API（/bilibili/*）
-app.include_router(bilibili_router)
+app.include_router(x_router)          # X API（/api/*）
+app.include_router(jable_router)      # Jable API（/api/jable/*）
+app.include_router(bilibili_router)   # Bilibili API（/bilibili/*）
 
 # ============================================================
-# 静态页面（每个网站独立）
+# 静态页面
 # ============================================================
 
 @app.get("/")
 async def root():
-    """首页：登录 + 三个卡片入口"""
     return FileResponse("static/index.html")
 
 @app.get("/x")
 async def x_page():
-    """X 下载器完整页面"""
     return FileResponse("static/x.html")
 
 @app.get("/missav")
 async def missav_page():
-    """MissAV 采集列表页面（已改造）"""
     return FileResponse("static/missav.html")
 
 @app.get("/bilibili")
 async def bilibili_page():
-    """Bilibili 下载器占位页面"""
     return FileResponse("static/bilibili.html")
 
 @app.get("/health")
