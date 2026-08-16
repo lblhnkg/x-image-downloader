@@ -2,9 +2,11 @@
 # jable_routes.py - Jable 模块（requests + HTTP 代理）
 # 数据源：https://jable.tv
 # 复用 shared.missav_db
+# 增加请求间隔，防止被封
 # ============================================================
 
 import re
+import time
 from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
@@ -36,7 +38,7 @@ def is_developer(request: Request):
     return bool(request.cookies.get("session"))
 
 # ============================================================
-# Jable 抓取器（requests + HTTP 代理）
+# Jable 抓取器（requests + HTTP 代理 + 请求间隔）
 # ============================================================
 
 class JableFetcher:
@@ -48,7 +50,7 @@ class JableFetcher:
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         }
-        # HTTP 代理（sing-box HTTP 入站监听 127.0.0.1:1081）
+        # 只使用 HTTP 代理（端口 1081），不使用 SOCKS5
         self.proxies = {
             "http": "http://127.0.0.1:1081",
             "https": "http://127.0.0.1:1081"
@@ -59,6 +61,8 @@ class JableFetcher:
         self.session.timeout = self.timeout
 
     def _fetch(self, url: str) -> str:
+        # 每次请求前等待 1.5 秒，降低被识别为爬虫的风险
+        time.sleep(1.5)
         print(f"[Jable] 请求 {url}")
         try:
             resp = self.session.get(url)
@@ -76,6 +80,7 @@ class JableFetcher:
         soup = BeautifulSoup(html, 'lxml')
         results = []
         seen = set()
+        norm_keyword = keyword.strip().lower()
 
         for a in soup.select('a[href*="/videos/"]'):
             href = a.get('href')
@@ -116,6 +121,8 @@ class JableFetcher:
             if len(results) >= 30:
                 break
 
+        # 精确匹配排序（可选）
+        results.sort(key=lambda x: x["id"].lower() != norm_keyword)
         return results
 
     def detail(self, video_id: str) -> dict:
@@ -195,7 +202,7 @@ class JableFetcher:
 fetcher = JableFetcher()
 
 # ============================================================
-# API 路由（保持不变）
+# API 路由
 # ============================================================
 
 @router.get("/search")
@@ -221,7 +228,7 @@ async def info_jable(video_id: str = Query(...)):
         raise HTTPException(status_code=502, detail=f"获取详情失败: {str(e)}")
 
 # ============================================================
-# 采集、收藏等接口（与之前相同，保持不变）
+# 采集（存储到数据库）
 # ============================================================
 
 @router.post("/collect")
