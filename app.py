@@ -3,8 +3,11 @@
 # ============================================================
 
 import os
+import re
+import httpx
+from urllib.parse import quote
 import requests
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
@@ -81,6 +84,45 @@ app.include_router(jable_router)      # Jable API（/api/jable/*）
 app.include_router(bilibili_router)   # Bilibili API（/bilibili/*）
 
 # ============================================================
+# 代理路由（为 M3U8 工具提供 CORS 绕过 + 解密支持）
+# ============================================================
+
+proxy_client = httpx.AsyncClient(proxies="http://127.0.0.1:1081", timeout=30.0)
+
+@app.get("/proxy/m3u8")
+async def proxy_m3u8(url: str):
+    resp = await proxy_client.get(url)
+    content = resp.text
+    
+    def repl_ts(m):
+        ts_url = m.group(0)
+        if not ts_url.startswith("http"):
+            base = "/".join(url.split("/")[:-1]) + "/"
+            ts_url = base + ts_url
+        return f'/proxy/ts?url={quote(ts_url)}'
+    content = re.sub(r'(https?://[^\s"\']+\.ts|[\w\-./]+\.ts)', repl_ts, content)
+    
+    def repl_key(m):
+        key_url = m.group(1)
+        if not key_url.startswith("http"):
+            base = "/".join(url.split("/")[:-1]) + "/"
+            key_url = base + key_url
+        return f'URI="/proxy/key?url={quote(key_url)}"'
+    content = re.sub(r'URI="([^"]+)"', repl_key, content)
+    
+    return Response(content=content, media_type="application/vnd.apple.mpegurl")
+
+@app.get("/proxy/ts")
+async def proxy_ts(url: str):
+    resp = await proxy_client.get(url)
+    return Response(content=resp.content, media_type="video/MP2T")
+
+@app.get("/proxy/key")
+async def proxy_key(url: str):
+    resp = await proxy_client.get(url)
+    return Response(content=resp.content, media_type="application/octet-stream")
+
+# ============================================================
 # 静态页面
 # ============================================================
 
@@ -99,6 +141,10 @@ async def missav_page():
 @app.get("/bilibili")
 async def bilibili_page():
     return FileResponse("static/bilibili.html")
+
+@app.get("/m3u8")
+async def m3u8_page():
+    return FileResponse("static/m3u8.html")
 
 @app.get("/health")
 async def health():
