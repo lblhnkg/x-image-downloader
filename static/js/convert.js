@@ -1,6 +1,6 @@
 /**
- * convert.js — M3U8 → MP4 转换引擎 v3.3 (支持 ts 代理)
- * 新增：下载 ts 分片时，若 window.__useProxy === true，则自动通过 /proxy/ts 代理请求
+ * convert.js — M3U8 → MP4 转换引擎 v3.4 (修复 mux.js 数据传递)
+ * 修复：onSegment 中传入 data 而非 data.buffer，避免 subarray 错误
  */
 
 // ============================================================
@@ -285,7 +285,7 @@ export async function downloadSegments(segments, options = {}) {
 
   if (signal && signal.aborted) throw new DOMException('下载已取消', 'AbortError');
 
-  // 【关键】检测是否启用代理（由 m3u8.html 设置）
+  // 检测是否启用代理
   const useProxy = window.__useProxy === true;
 
   const results = new Array(segments.length);
@@ -304,7 +304,6 @@ export async function downloadSegments(segments, options = {}) {
     const maxRetries = 3;
     let lastError = null;
 
-    // 如果启用代理，将分片 URL 转为代理路径
     let targetUrl = seg.url;
     if (useProxy && targetUrl.startsWith('http')) {
       targetUrl = `/proxy/ts?url=${encodeURIComponent(targetUrl)}`;
@@ -429,7 +428,8 @@ export async function convertRemux(segments, options = {}) {
     onLog: log,
     onSegment: (idx, data) => {
       try {
-        muxer.push(data.buffer);
+        // 【修复】直接传入 data（Uint8Array），而非 data.buffer（ArrayBuffer）
+        muxer.push(data);
       } catch (e) {
         log(`分片 ${idx} mux 失败: ${e.message}`, 'warn');
       }
