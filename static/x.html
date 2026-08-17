@@ -69,23 +69,6 @@
                 flex-direction: column;
                 justify-content: center;
             }
-            .user-info-card {
-                flex-direction: row !important;
-                align-items: center;
-                gap: 16px;
-                padding: 16px 20px !important;
-            }
-            .user-info-card .user-avatar {
-                width: 56px !important;
-                height: 56px !important;
-                flex-shrink: 0;
-            }
-            .user-info-card .user-details {
-                flex: 1;
-            }
-            .user-info-card .user-meta {
-                flex-wrap: wrap;
-            }
         }
 
         @media (min-width: 1024px) {
@@ -104,10 +87,6 @@
             }
             .submenu-card-title {
                 font-size: 18px;
-            }
-            .user-info-card .user-avatar {
-                width: 64px !important;
-                height: 64px !important;
             }
         }
 
@@ -128,16 +107,6 @@
             }
             .submenu-card-title {
                 font-size: 15px;
-            }
-            .user-info-card .user-avatar {
-                width: 44px !important;
-                height: 44px !important;
-            }
-            .user-info-card {
-                padding: 12px 14px !important;
-            }
-            .user-info-card .user-name {
-                font-size: 14px !important;
             }
         }
 
@@ -386,7 +355,6 @@
         .favorite-item .fav-info {
             flex: 1;
             min-width: 0;
-            cursor: pointer;
         }
 
         .favorite-item .fav-name {
@@ -577,98 +545,6 @@
             background: rgba(255, 107, 107, 0.04);
         }
 
-        /* ========== 博主信息卡片 ========== */
-        .user-info-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 14px;
-            padding: 14px 16px;
-            margin-top: 10px;
-            margin-bottom: 16px;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .user-info-card .user-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            flex-shrink: 0;
-            background: rgba(255, 255, 255, 0.06);
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .user-info-card .user-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .user-info-card .user-avatar .avatar-placeholder {
-            font-size: 22px;
-            color: rgba(255, 255, 255, 0.2);
-        }
-
-        .user-info-card .user-details {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .user-info-card .user-name {
-            font-size: 16px;
-            font-weight: 500;
-            color: #fff;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .user-info-card .user-handle {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.35);
-        }
-
-        .user-info-card .user-bio {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.4);
-            margin-top: 2px;
-            line-height: 1.5;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .user-info-card .user-meta {
-            display: flex;
-            gap: 14px;
-            margin-top: 4px;
-            flex-wrap: wrap;
-        }
-
-        .user-info-card .user-meta span {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.3);
-        }
-
-        .user-info-card .user-meta strong {
-            color: rgba(255, 255, 255, 0.7);
-            font-weight: 500;
-        }
-
-        .user-info-card .user-loading {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.3);
-            font-weight: 300;
-        }
-
-        /* ========== 画廊 ========== */
         .result-header {
             display: flex;
             justify-content: space-between;
@@ -1213,7 +1089,7 @@
         </div>
 
         <!-- =====================================================
-        搜索博主页（复用为博主专属页）
+        搜索博主页
         ===================================================== -->
         <div class="page" id="pageSearch">
             <div class="back-row" id="backFromSearch">
@@ -1222,7 +1098,7 @@
             <div class="submenu-title" id="searchPageTitle">搜索博主</div>
             <div class="submenu-desc" id="searchPageDesc">输入 X 用户名，搜索该博主的所有媒体</div>
 
-            <!-- ===== 搜索输入区域（专属页隐藏） ===== -->
+            <!-- ===== 搜索输入区域 ===== -->
             <div class="search-section" id="searchInputArea">
                 <label class="search-label">博主</label>
                 <div class="search-row">
@@ -1275,22 +1151,6 @@
                     <button class="option-btn active" data-value="all">全部</button>
                     <button class="option-btn" data-value="original">原创</button>
                     <button class="option-btn" data-value="repost">转帖 / 引用</button>
-                </div>
-            </div>
-
-            <!-- ===== 博主信息卡片 ===== -->
-            <div id="userInfoCard" class="user-info-card hidden">
-                <div class="user-avatar" id="userAvatar">
-                    <span class="avatar-placeholder">👤</span>
-                </div>
-                <div class="user-details">
-                    <div class="user-name" id="userDisplayName">-</div>
-                    <div class="user-handle" id="userHandle">@-</div>
-                    <div class="user-bio" id="userBio"></div>
-                    <div class="user-meta" id="userMeta">
-                        <span>粉丝 <strong id="userFollowers">-</strong></span>
-                        <span>推文 <strong id="userTweets">-</strong></span>
-                    </div>
                 </div>
             </div>
 
@@ -1417,14 +1277,6 @@
     <script>
         // ============================================================
         // X 下载器 - 完整版（Turbo Drive 兼容）
-        // 修复：
-        //   1. 收藏按钮失效 → 直接绑定事件 + 事件委托
-        //   2. 博主专属页面（从喜欢/书签点击 @用户名 跳转）
-        //   3. 博主信息卡片（头像、昵称、简介、粉丝数、推文数）
-        //   4. 媒体类型顺序：全部 → 图片 → 视频
-        //   5. 按钮文案：开始收集媒体
-        //   6. 视频预览加速：MP4 直链直接播放
-        //   7. 跳转逻辑修正：直接跳转，返回直接回到来源列表
         // ============================================================
 
         // ---- 状态 ----
@@ -1434,7 +1286,7 @@
         let currentHls = null;
 
         let range = 'all';
-        let mediaType = 'all'; // 默认全部
+        let mediaType = 'all';
         let sourceType = 'all';
         let libraryMediaType = 'all';
         let libraryRange = 'all';
@@ -1448,8 +1300,7 @@
         // ---- 博主专属模式状态 ----
         let isGalleryMode = false;
         let galleryUsername = '';
-        let galleryUserInfo = null;
-        let returnSource = ''; // 'likes' 或 'bookmarks'
+        let returnSource = '';
 
         const API_KEY = 'fushengruomeng';
         const FAVORITE_KEY = 'universal_downloader_favorites';
@@ -1495,15 +1346,6 @@
         var searchGallery = $('searchGallery');
         var searchInputArea = $('searchInputArea');
 
-        // ---- 博主信息卡片 ----
-        var userInfoCard = $('userInfoCard');
-        var userAvatar = $('userAvatar');
-        var userDisplayName = $('userDisplayName');
-        var userHandle = $('userHandle');
-        var userBio = $('userBio');
-        var userFollowers = $('userFollowers');
-        var userTweets = $('userTweets');
-
         var libraryTitle = $('libraryTitle');
         var libraryDesc = $('libraryDesc');
         var libraryCount = $('libraryCount');
@@ -1548,7 +1390,7 @@
             if (isSelectMode) exitSelectMode();
         }
 
-        // ---- 模式横幅（初始隐藏，由 JS 控制显示） ----
+        // ---- 模式横幅 ----
         function updateModeBanners() {
             if (currentMode === 'guest') {
                 xModeBanner.textContent = '📌 访客模式 · 数据来自本地浏览器';
@@ -1571,7 +1413,7 @@
             libraryModeBanner.innerHTML = bannerHtml;
         }
 
-        // ---- 收藏功能（兼容双模式） ----
+        // ---- 收藏功能 ----
         function loadFavorites() {
             if (currentMode === 'developer') {
                 loadFavoritesFromServer();
@@ -1622,9 +1464,9 @@
                 var div = document.createElement('div');
                 div.className = 'favorite-item';
                 div.innerHTML =
-                    '<div class="fav-info" data-index="' + index + '"><div class="fav-name">' + (fav.name || fav
-                        .username) +
-                    '</div><div class="fav-handle" data-index="' + index + '">@' + fav.username + '</div></div>' +
+                    '<div class="fav-info"><div class="fav-name">' + (fav.name || fav.username) +
+                    '</div><div class="fav-handle" data-username="' + fav.username + '">@' + fav.username +
+                    '</div></div>' +
                     '<div class="fav-actions">' +
                     '<button class="fav-delete" data-index="' + index + '">删除</button>' +
                     '</div>';
@@ -1632,12 +1474,11 @@
             });
 
             // 点击 @用户名 进入博主专属页
-            favoritesPanel.querySelectorAll('.fav-info, .fav-handle').forEach(function(el) {
+            favoritesPanel.querySelectorAll('.fav-handle').forEach(function(el) {
                 el.addEventListener('click', function() {
-                    var idx = parseInt(el.dataset.index);
-                    var fav = favorites[idx];
-                    if (fav) {
-                        openGallery(fav.username, returnSource || 'likes');
+                    var username = el.dataset.username;
+                    if (username) {
+                        openGallery(username);
                     }
                 });
             });
@@ -1670,9 +1511,13 @@
             }
         }
 
-        // ---- 收藏按钮事件 ----
         function bindFavoriteEvents() {
             // 收藏按钮
+            var oldBtn = favoriteAddBtn;
+            var newBtn = oldBtn.cloneNode(true);
+            oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+            favoriteAddBtn = newBtn;
+
             favoriteAddBtn.addEventListener('click', function() {
                 var username = normalizeUsername(profileInput.value);
                 if (!username) {
@@ -1688,14 +1533,21 @@
             });
 
             // 收藏面板切换
+            var oldToggle = favoriteToggleBtn;
+            var newToggle = oldToggle.cloneNode(true);
+            oldToggle.parentNode.replaceChild(newToggle, oldToggle);
+            favoriteToggleBtn = newToggle;
+
             favoriteToggleBtn.addEventListener('click', function() {
                 favoritesPanel.classList.toggle('hidden');
             });
 
             // 输入框变化更新收藏按钮
-            profileInput.addEventListener('input', function() {
+            profileInput.removeEventListener('input', profileInput._inputHandler);
+            profileInput._inputHandler = function() {
                 updateFavoriteButton();
-            });
+            };
+            profileInput.addEventListener('input', profileInput._inputHandler);
         }
 
         function addFavorite(username) {
@@ -1761,6 +1613,89 @@
                 renderFavorites();
                 updateFavoriteButton();
             }
+        }
+
+        // ---- 博主专属模式 ----
+        function openGallery(username) {
+            isGalleryMode = true;
+            galleryUsername = username;
+            returnSource = currentSubPage;
+
+            // 更新 UI
+            searchPageTitle.textContent = '@' + username + ' 的媒体';
+            searchPageDesc.textContent = '';
+
+            // 隐藏输入框和搜索按钮，保留收藏按钮
+            var inputRow = document.querySelector('.search-row');
+            if (inputRow) {
+                inputRow.querySelector('input').style.display = 'none';
+                inputRow.querySelector('.search-btn-icon').style.display = 'none';
+                // 收藏按钮保留，位置不变
+                var favBtn = inputRow.querySelector('.search-favorite-btn');
+                if (favBtn) favBtn.style.display = 'inline-block';
+            }
+
+            // 隐藏"我的收藏"面板
+            var favoriteEntry = document.querySelector('.favorite-entry');
+            if (favoriteEntry) favoriteEntry.style.display = 'none';
+
+            // 更新返回按钮文字
+            var sourceLabel = returnSource === 'likes' ? '我的喜欢' : '我的书签';
+            backFromSearchText.textContent = '返回 ' + sourceLabel;
+
+            // 将用户名填入输入框
+            profileInput.value = username;
+
+            // 切换到搜索页
+            showPage('pageSearch');
+
+            // 清空旧结果
+            searchGallery.innerHTML = '';
+            searchResultHeader.classList.add('hidden');
+            hideSearchStatus();
+
+            // 自动搜索
+            performSearch();
+        }
+
+        function exitGallery() {
+            isGalleryMode = false;
+            galleryUsername = '';
+            var source = returnSource;
+            returnSource = '';
+
+            // 恢复 UI
+            searchPageTitle.textContent = '搜索博主';
+            searchPageDesc.textContent = '输入 X 用户名，搜索该博主的所有媒体';
+
+            // 恢复输入框和搜索按钮
+            var inputRow = document.querySelector('.search-row');
+            if (inputRow) {
+                inputRow.querySelector('input').style.display = '';
+                inputRow.querySelector('.search-btn-icon').style.display = '';
+                var favBtn = inputRow.querySelector('.search-favorite-btn');
+                if (favBtn) favBtn.style.display = 'inline-block';
+            }
+
+            // 恢复"我的收藏"面板
+            var favoriteEntry = document.querySelector('.favorite-entry');
+            if (favoriteEntry) favoriteEntry.style.display = '';
+
+            backFromSearchText.textContent = '返回';
+
+            profileInput.value = '';
+            searchGallery.innerHTML = '';
+            searchResultHeader.classList.add('hidden');
+            hideSearchStatus();
+
+            // 延迟后回到来源列表
+            setTimeout(function() {
+                if (source) {
+                    openLibrary(source);
+                } else {
+                    showPage('pageXSub');
+                }
+            }, 50);
         }
 
         // ---- 工具函数 ----
@@ -1861,149 +1796,7 @@
             searchStatus.className = 'status-box';
         }
 
-        // ---- 博主信息卡片（独立获取） ----
-        function fetchUserInfo(username) {
-            return fetch('/api/user-info?username=' + encodeURIComponent(username))
-                .then(function(res) { return res.json(); })
-                .then(function(data) {
-                    if (data.ok) {
-                        return data;
-                    }
-                    return null;
-                })
-                .catch(function() { return null; });
-        }
-
-        function renderUserInfo(info) {
-            if (!info) {
-                userInfoCard.classList.add('hidden');
-                return;
-            }
-
-            userInfoCard.classList.remove('hidden');
-
-            // 头像
-            userAvatar.innerHTML = '';
-            if (info.avatar) {
-                var img = document.createElement('img');
-                img.src = info.avatar;
-                img.alt = info.username;
-                img.onerror = function() {
-                    userAvatar.innerHTML = '<span class="avatar-placeholder">👤</span>';
-                };
-                userAvatar.appendChild(img);
-            } else {
-                userAvatar.innerHTML = '<span class="avatar-placeholder">👤</span>';
-            }
-
-            userDisplayName.textContent = info.display_name || info.username;
-            userHandle.textContent = '@' + info.username;
-            userBio.textContent = info.bio || '';
-
-            var followerCount = info.follower_count;
-            var tweetCount = info.tweet_count;
-
-            if (followerCount !== undefined && followerCount !== null) {
-                var followerDisplay = followerCount >= 1000000 ?
-                    (followerCount / 1000000).toFixed(1) + 'M' :
-                    followerCount >= 1000 ?
-                    (followerCount / 1000).toFixed(1) + 'K' :
-                    String(followerCount);
-                userFollowers.textContent = followerDisplay;
-            } else {
-                userFollowers.textContent = '-';
-            }
-
-            if (tweetCount !== undefined && tweetCount !== null) {
-                var tweetDisplay = tweetCount >= 1000000 ?
-                    (tweetCount / 1000000).toFixed(1) + 'M' :
-                    tweetCount >= 1000 ?
-                    (tweetCount / 1000).toFixed(1) + 'K' :
-                    String(tweetCount);
-                userTweets.textContent = tweetDisplay;
-            } else {
-                userTweets.textContent = '-';
-            }
-        }
-
-        function showUserInfoLoading() {
-            userInfoCard.classList.remove('hidden');
-            userAvatar.innerHTML = '<span class="avatar-placeholder">⏳</span>';
-            userDisplayName.textContent = '加载中...';
-            userHandle.textContent = '@' + galleryUsername;
-            userBio.textContent = '';
-            userFollowers.textContent = '-';
-            userTweets.textContent = '-';
-        }
-
-        // ---- 博主专属模式 ----
-        function openGallery(username, source) {
-            isGalleryMode = true;
-            galleryUsername = username;
-            returnSource = source || 'likes';
-
-            // 更新 UI
-            searchPageTitle.textContent = '@' + username + ' 的媒体';
-            searchPageDesc.textContent = '';
-            searchInputArea.classList.add('hidden');
-
-            var sourceLabel = source === 'likes' ? '我的喜欢' : '我的书签';
-            backFromSearchText.textContent = '返回 ' + sourceLabel;
-
-            // 将用户名填入输入框
-            profileInput.value = username;
-
-            // 直接切换到搜索页（如果当前在二级菜单或库页）
-            showPage('pageSearch');
-
-            // 清空之前的搜索结果
-            searchGallery.innerHTML = '';
-            searchResultHeader.classList.add('hidden');
-            hideSearchStatus();
-
-            // 显示加载状态
-            showUserInfoLoading();
-
-            // 获取博主信息
-            fetchUserInfo(username).then(function(info) {
-                if (info) {
-                    galleryUserInfo = info;
-                    renderUserInfo(info);
-                } else {
-                    userInfoCard.classList.remove('hidden');
-                    userAvatar.innerHTML = '<span class="avatar-placeholder">👤</span>';
-                    userDisplayName.textContent = username;
-                    userHandle.textContent = '@' + username;
-                    userBio.textContent = '用户信息获取失败';
-                    userFollowers.textContent = '-';
-                    userTweets.textContent = '-';
-                }
-            });
-
-            // 自动触发搜索
-            performSearch();
-        }
-
-        function exitGallery() {
-            isGalleryMode = false;
-            galleryUsername = '';
-            galleryUserInfo = null;
-            // 注意：不在这里切换页面，让调用者决定跳转到哪里
-            // 只清理状态和 UI
-
-            searchPageTitle.textContent = '搜索博主';
-            searchPageDesc.textContent = '输入 X 用户名，搜索该博主的所有媒体';
-            searchInputArea.classList.remove('hidden');
-            backFromSearchText.textContent = '返回';
-            userInfoCard.classList.add('hidden');
-
-            profileInput.value = '';
-            searchGallery.innerHTML = '';
-            searchResultHeader.classList.add('hidden');
-            hideSearchStatus();
-        }
-
-        // ---- 搜索博主 ----
+        // ---- 搜索 ----
         function performSearch() {
             var raw = profileInput.value.trim();
             var username = normalizeUsername(raw);
@@ -2011,23 +1804,16 @@
                 showSearchStatus('无法识别博主。可以输入：NASA / @NASA / x.com/NASA', 'error');
                 return;
             }
-
             var dates = getDates();
             if (dates.start && dates.end && dates.start > dates.end) {
                 showSearchStatus('开始日期不能晚于结束日期', 'error');
                 return;
             }
-
             searchSubmitBtn.disabled = true;
             searchSubmitBtn.textContent = '正在收集…';
             hideSearchStatus();
             searchResultHeader.classList.add('hidden');
             searchGallery.innerHTML = '';
-
-            // 如果是专属模式，确保输入框的值与当前博主一致
-            if (isGalleryMode && galleryUsername) {
-                profileInput.value = galleryUsername;
-            }
 
             var params = new URLSearchParams();
             params.set('profile', 'https://x.com/' + username);
@@ -2040,17 +1826,6 @@
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     if (!data.ok) throw new Error(data.detail || '搜索失败');
-
-                    // 如果是专属模式且之前没获取到用户信息，这里再尝试一次
-                    if (isGalleryMode && !galleryUserInfo) {
-                        fetchUserInfo(username).then(function(info) {
-                            if (info) {
-                                galleryUserInfo = info;
-                                renderUserInfo(info);
-                            }
-                        });
-                    }
-
                     renderSearchResults(data, username);
                 })
                 .catch(function(err) {
@@ -2076,7 +1851,7 @@
             });
         }
 
-        // ---- 媒体库（双模式） ----
+        // ---- 媒体库 ----
         function getStorageKey(source) {
             return 'universal_downloader_' + source;
         }
@@ -2350,7 +2125,6 @@
                         if (group === 'range') {
                             range = value;
                             customDates.classList.toggle('hidden', value !== 'custom');
-                            // 如果是专属模式，搜索后自动刷新
                             if (isGalleryMode && galleryUsername) {
                                 performSearch();
                             }
@@ -2616,7 +2390,7 @@
                         e.stopPropagation();
                         var username = item.author;
                         if (username) {
-                            openGallery(username, currentSubPage);
+                            openGallery(username);
                         }
                     });
                 }
@@ -2740,17 +2514,7 @@
                 container.appendChild(errorMsg);
                 modalContent.appendChild(container);
 
-                // 【优化】MP4 直链直接播放，不经过 FFmpeg 转码
-                if (isMp4Url) {
-                    var proxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
-                    video.src = proxyUrl;
-                    video.onloadedmetadata = function() {
-                        // 自动播放
-                        video.play().catch(function() {});
-                    };
-                    modalDownloadBtn.textContent = '下载视频';
-                } else if (isHlsUrl) {
-                    // HLS 流走 FFmpeg 转码（预览会慢一些）
+                if (isHlsUrl) {
                     var streamUrl = '/api/video-stream?url=' + encodeURIComponent(rawVideoUrl);
                     video.src = streamUrl;
                     var loadingMsg = document.createElement('div');
@@ -2762,11 +2526,14 @@
                         if (loadingMsg.parentNode) loadingMsg.remove();
                         if (errorMsg.parentNode) errorMsg.style.display = 'none';
                     };
-                    modalDownloadBtn.textContent = '下载视频';
+                } else if (isMp4Url) {
+                    var proxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
+                    video.src = proxyUrl;
+                    video.onloadedmetadata = function() {
+                        video.play().catch(function() {});
+                    };
                 } else {
-                    // 兜底
                     video.src = rawVideoUrl;
-                    modalDownloadBtn.textContent = '下载视频';
                 }
 
                 video.onerror = function() {
@@ -2778,7 +2545,7 @@
                     }
                 };
 
-                modal.classList.remove('hidden');
+                modalDownloadBtn.textContent = '下载视频';
             } else {
                 var img = document.createElement('img');
                 img.src = item.media_url || item.url || item.originalUrl || '';
@@ -2795,8 +2562,9 @@
                 };
                 modalContent.appendChild(img);
                 modalDownloadBtn.textContent = '下载原图';
-                modal.classList.remove('hidden');
             }
+
+            modal.classList.remove('hidden');
         }
 
         modalCloseBtn.addEventListener('click', closeModal);
@@ -2842,13 +2610,7 @@
 
         backFromSearch.addEventListener('click', function() {
             if (isGalleryMode) {
-                // 专属模式：回到来源列表（我的喜欢 或 我的书签）
-                var source = returnSource || 'likes';
-                exitGallery();  // 清理状态
-                // 延迟一帧确保状态清理完成后再跳转
-                setTimeout(function() {
-                    openLibrary(source);
-                }, 50);
+                exitGallery();
             } else {
                 showPage('pageXSub');
             }
@@ -2859,7 +2621,7 @@
             if (isSelectMode) exitSelectMode();
         });
 
-        // ---- 二级菜单子卡片 ----
+        // ---- 二级菜单 ----
         subSearch.addEventListener('click', function() {
             showPage('pageSearch');
         });
@@ -2872,7 +2634,7 @@
             openLibrary('bookmarks');
         });
 
-        // ---- 重新获取 DOM 引用（每次加载时更新） ----
+        // ---- 刷新 DOM 引用 ----
         function refreshDomRefs() {
             pageXSub = $('pageXSub');
             pageSearch = $('pageSearch');
@@ -2900,14 +2662,6 @@
             searchResultCount = $('searchResultCount');
             searchGallery = $('searchGallery');
             searchInputArea = $('searchInputArea');
-
-            userInfoCard = $('userInfoCard');
-            userAvatar = $('userAvatar');
-            userDisplayName = $('userDisplayName');
-            userHandle = $('userHandle');
-            userBio = $('userBio');
-            userFollowers = $('userFollowers');
-            userTweets = $('userTweets');
 
             libraryTitle = $('libraryTitle');
             libraryDesc = $('libraryDesc');
@@ -2942,50 +2696,30 @@
             confirmDelete = $('confirmDelete');
         }
 
-        // ---- 初始化函数（用于首次加载和 Turbo 切换） ----
+        // ---- 初始化 ----
         function initApp() {
-            // 刷新 DOM 引用
             refreshDomRefs();
 
-            // ---- 重新绑定事件 ----
-
-            // 搜索
             searchBtn.addEventListener('click', performSearch);
             searchSubmitBtn.addEventListener('click', performSearch);
             profileInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') performSearch();
             });
 
-            // 收藏
             bindFavoriteEvents();
-
-            // 选项按钮
             bindOptionButtons();
 
             libraryStartDate.addEventListener('change', function() {
-                if (range === 'custom' && isGalleryMode && galleryUsername) {
-                    performSearch();
-                }
-            });
-            libraryEndDate.addEventListener('change', function() {
-                if (range === 'custom' && isGalleryMode && galleryUsername) {
-                    performSearch();
-                }
-            });
-
-            libraryStartDate.addEventListener('change', function() {
                 if (libraryRange === 'custom') resetPaginationAndRender();
             });
             libraryEndDate.addEventListener('change', function() {
                 if (libraryRange === 'custom') resetPaginationAndRender();
             });
 
-            // 选择模式
             selectToggleBtn.addEventListener('click', function() {
                 enterSelectMode();
             });
 
-            // 刷新
             refreshLibraryBtn.addEventListener('click', function() {
                 cachedLibraryItems = [];
                 cachedLibrarySource = '';
@@ -2995,17 +2729,12 @@
                 }
             });
 
-            // 导航
             backToHome.addEventListener('click', function() {
                 window.location.href = '/';
             });
             backFromSearch.addEventListener('click', function() {
                 if (isGalleryMode) {
-                    var source = returnSource || 'likes';
                     exitGallery();
-                    setTimeout(function() {
-                        openLibrary(source);
-                    }, 50);
                 } else {
                     showPage('pageXSub');
                 }
@@ -3015,7 +2744,6 @@
                 if (isSelectMode) exitSelectMode();
             });
 
-            // 二级菜单
             subSearch.addEventListener('click', function() {
                 showPage('pageSearch');
             });
@@ -3026,7 +2754,6 @@
                 openLibrary('bookmarks');
             });
 
-            // ---- 读取用户模式 ----
             var savedMode = localStorage.getItem('userMode') || 'guest';
             currentMode = savedMode;
 
@@ -3061,7 +2788,6 @@
             console.log('当前模式：' + currentMode);
         }
 
-        // ---- Turbo 缓存前清理 ----
         document.addEventListener('turbo:before-cache', function() {
             if (scrollListenerAttached) {
                 window.removeEventListener('scroll', handleScroll);
@@ -3073,7 +2799,6 @@
             }
         });
 
-        // ---- 绑定事件：Turbo 切换 + 常规加载 ----
         document.addEventListener('turbo:load', initApp);
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
