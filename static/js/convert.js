@@ -12,6 +12,7 @@
  *   - 保留所有高级特性：并发下载、流式处理、AbortController 取消
  *   - [修复] convertWebCodecs fallback 时调用未定义函数 → 改为回退 convertRemux
  *   - [适配] fetchM3U8 中 baseUrl 处理兼容代理路径
+ *   - [调试] downloadSegments 中打印每个分片 URL，方便排查 CORS/路径问题
  */
 
 // ============================================================
@@ -319,6 +320,9 @@ export async function downloadSegments(segments, options = {}) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         if (signal && signal.aborted) throw new DOMException('下载已取消', 'AbortError');
+
+        // 【调试】打印分片 URL
+        console.log('[调试] 正在下载分片:', seg.url);
 
         const resp = await fetch(seg.url, { signal });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
