@@ -950,9 +950,15 @@ async def get_user_info(username: str = Query(...)):
     if not username:
         raise HTTPException(status_code=400, detail="用户名无效")
 
+    # 添加 User-Agent 头
+    headers = {
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+        "Accept": "application/json"
+    }
+
     try:
         url = f"https://api.fxtwitter.com/2/user/{username}"
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with httpx.AsyncClient(timeout=15, headers=headers) as client:
             response = await client.get(url)
             if response.status_code != 200:
                 return {
