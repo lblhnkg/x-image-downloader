@@ -579,7 +579,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
 <script type="module">
-    import * as Converter from './js/convert.js';
+    // 【修复】使用绝对路径 /static/js/convert.js
+    import * as Converter from '/static/js/convert.js';
 
     // ============================================================
     // DOM 引用
