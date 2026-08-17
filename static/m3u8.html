@@ -864,7 +864,7 @@
     }
 
     // ============================================================
-    // 下载 MP4（核心修复：强制走代理）
+    // 下载 MP4（核心修复：不强制代理 m3u8，只设置全局变量）
     // ============================================================
     $('btnDownload').addEventListener('click', async () => {
         if (!currentM3U8 || !parsedManifest) {
@@ -914,19 +914,36 @@
         currentAbortController = new AbortController();
         const signal = currentAbortController.signal;
 
-        // 【核心修复】下载强制使用代理，无论用户是否勾选，解决 CORS 问题
+        // 【核心修复】不再强制使用代理 m3u8，而是设置全局标志让 convert.js 内部代理 ts 分片
+        // 使用当前播放的 m3u8 URL（可能是原始 URL，也可能是代理 URL，但代理 URL 解析有问题，我们强制用原始 URL）
         const rawUrl = $('urlInput').value.trim();
         let source;
-        if (rawUrl.startsWith('http')) {
-            // 强制走代理
-            source = `/proxy/m3u8?url=${encodeURIComponent(rawUrl)}`;
-            log('下载强制使用代理（绕过 CORS）', 'info');
+        if (rawUrl.startsWith('http') && !rawUrl.includes('/proxy/m3u8')) {
+            // 直接使用原始 URL
+            source = rawUrl;
+            log('使用原始 M3U8 地址下载', 'info');
+        } else if (rawUrl.startsWith('http')) {
+            // 如果用户勾选了代理，但 rawUrl 是代理 URL，我们提取原始 URL（从 query 参数）
+            try {
+                const urlObj = new URL(rawUrl);
+                const orig = urlObj.searchParams.get('url');
+                if (orig) {
+                    source = orig;
+                    log('从代理参数中提取原始 URL', 'info');
+                } else {
+                    source = currentM3U8.url;
+                }
+            } catch {
+                source = currentM3U8.url;
+            }
         } else {
-            // 本地文件不走代理
+            // 本地文件
             source = currentM3U8.url;
-            if (selectedStreamUrl) source = selectedStreamUrl;
-            log('本地文件，直连下载', 'info');
         }
+
+        // 【设置全局标志】告诉 convert.js 在请求 ts 分片时走代理
+        window.__useProxy = true;
+        log('已启用 ts 分片代理（绕过 CORS）', 'info');
 
         try {
             const blob = await Converter.convert(
@@ -969,6 +986,7 @@
             }
         } finally {
             currentAbortController = null;
+            window.__useProxy = false;
         }
     });
 
