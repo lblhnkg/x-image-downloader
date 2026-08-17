@@ -641,7 +641,7 @@
             line-height: 1.5;
             display: -webkit-box;
             -webkit-line-clamp: 2;
-            -webkit-box-orient: hidden;
+            -webkit-box-orient: vertical;
             overflow: hidden;
         }
 
@@ -1424,6 +1424,7 @@
         //   4. 媒体类型顺序：全部 → 图片 → 视频
         //   5. 按钮文案：开始收集媒体
         //   6. 视频预览加速：MP4 直链直接播放
+        //   7. 跳转逻辑修正：直接跳转，返回直接回到来源列表
         // ============================================================
 
         // ---- 状态 ----
@@ -1949,6 +1950,17 @@
             var sourceLabel = source === 'likes' ? '我的喜欢' : '我的书签';
             backFromSearchText.textContent = '返回 ' + sourceLabel;
 
+            // 将用户名填入输入框
+            profileInput.value = username;
+
+            // 直接切换到搜索页（如果当前在二级菜单或库页）
+            showPage('pageSearch');
+
+            // 清空之前的搜索结果
+            searchGallery.innerHTML = '';
+            searchResultHeader.classList.add('hidden');
+            hideSearchStatus();
+
             // 显示加载状态
             showUserInfoLoading();
 
@@ -1958,7 +1970,6 @@
                     galleryUserInfo = info;
                     renderUserInfo(info);
                 } else {
-                    // 获取失败，显示用户名占位
                     userInfoCard.classList.remove('hidden');
                     userAvatar.innerHTML = '<span class="avatar-placeholder">👤</span>';
                     userDisplayName.textContent = username;
@@ -1969,14 +1980,6 @@
                 }
             });
 
-            // 将用户名填入输入框（搜索时使用）
-            profileInput.value = username;
-
-            // 清空之前的搜索结果
-            searchGallery.innerHTML = '';
-            searchResultHeader.classList.add('hidden');
-            hideSearchStatus();
-
             // 自动触发搜索
             performSearch();
         }
@@ -1985,22 +1988,19 @@
             isGalleryMode = false;
             galleryUsername = '';
             galleryUserInfo = null;
-            returnSource = '';
+            // 注意：不在这里切换页面，让调用者决定跳转到哪里
+            // 只清理状态和 UI
 
-            // 恢复 UI
             searchPageTitle.textContent = '搜索博主';
             searchPageDesc.textContent = '输入 X 用户名，搜索该博主的所有媒体';
             searchInputArea.classList.remove('hidden');
             backFromSearchText.textContent = '返回';
             userInfoCard.classList.add('hidden');
 
-            // 清空输入框和搜索结果
             profileInput.value = '';
             searchGallery.innerHTML = '';
             searchResultHeader.classList.add('hidden');
             hideSearchStatus();
-
-            showPage('pageXSub');
         }
 
         // ---- 搜索博主 ----
@@ -2842,8 +2842,13 @@
 
         backFromSearch.addEventListener('click', function() {
             if (isGalleryMode) {
-                // 专属模式：回到来源列表
-                exitGallery();
+                // 专属模式：回到来源列表（我的喜欢 或 我的书签）
+                var source = returnSource || 'likes';
+                exitGallery();  // 清理状态
+                // 延迟一帧确保状态清理完成后再跳转
+                setTimeout(function() {
+                    openLibrary(source);
+                }, 50);
             } else {
                 showPage('pageXSub');
             }
@@ -2996,7 +3001,11 @@
             });
             backFromSearch.addEventListener('click', function() {
                 if (isGalleryMode) {
+                    var source = returnSource || 'likes';
                     exitGallery();
+                    setTimeout(function() {
+                        openLibrary(source);
+                    }, 50);
                 } else {
                     showPage('pageXSub');
                 }
