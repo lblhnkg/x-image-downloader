@@ -579,7 +579,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
 <script type="module">
-    // 【修复】使用绝对路径 /static/js/convert.js
+    // 使用绝对路径加载转换引擎
     import * as Converter from '/static/js/convert.js';
 
     // ============================================================
@@ -778,11 +778,9 @@
             // 处理 Master Playlist
             if (manifest.isMaster && manifest.streams.length > 0) {
                 log(`检测到 Master Playlist，共 ${manifest.streams.length} 条子流`, 'info');
-                // 自动选最高码率
                 const sorted = [...manifest.streams].sort((a, b) => b.bandwidth - a.bandwidth);
                 selectedStreamUrl = sorted[0].url;
                 log(`自动选择: ${sorted[0].resolution} (${Math.round(sorted[0].bandwidth/1000)} kbps)`, 'info');
-                // 重新获取子流
                 const subResp = await fetch(selectedStreamUrl);
                 if (!subResp.ok) throw new Error(`子流 HTTP ${subResp.status}`);
                 const subContent = await subResp.text();
@@ -866,7 +864,7 @@
     }
 
     // ============================================================
-    // 下载 MP4
+    // 下载 MP4（核心修复：强制走代理）
     // ============================================================
     $('btnDownload').addEventListener('click', async () => {
         if (!currentM3U8 || !parsedManifest) {
@@ -916,9 +914,19 @@
         currentAbortController = new AbortController();
         const signal = currentAbortController.signal;
 
-        // 确定源地址
-        let source = currentM3U8.url;
-        if (selectedStreamUrl) source = selectedStreamUrl;
+        // 【核心修复】下载强制使用代理，无论用户是否勾选，解决 CORS 问题
+        const rawUrl = $('urlInput').value.trim();
+        let source;
+        if (rawUrl.startsWith('http')) {
+            // 强制走代理
+            source = `/proxy/m3u8?url=${encodeURIComponent(rawUrl)}`;
+            log('下载强制使用代理（绕过 CORS）', 'info');
+        } else {
+            // 本地文件不走代理
+            source = currentM3U8.url;
+            if (selectedStreamUrl) source = selectedStreamUrl;
+            log('本地文件，直连下载', 'info');
+        }
 
         try {
             const blob = await Converter.convert(
