@@ -87,7 +87,8 @@ app.include_router(bilibili_router)   # Bilibili API（/bilibili/*）
 # 代理路由（为 M3U8 工具提供 CORS 绕过 + 解密支持）
 # ============================================================
 
-proxy_client = httpx.AsyncClient(proxies="http://127.0.0.1:1081", timeout=30.0)
+# 【修复】将 proxies 改为 proxy（httpx 新版参数名）
+proxy_client = httpx.AsyncClient(proxy="http://127.0.0.1:1081", timeout=30.0)
 
 @app.get("/proxy/m3u8")
 async def proxy_m3u8(url: str):
