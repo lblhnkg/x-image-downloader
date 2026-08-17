@@ -1,25 +1,12 @@
 /**
- * convert.js — M3U8 → MP4 转换引擎 v3.1 (生产修复版)
- *
- * 修复记录：
- *   - 导出所有关键函数 (parseM3U8, fetchDecryptionKey, convert 等)
- *   - 修复 convertWithMediabunny 中 combined 未定义错误
- *   - 修复数据清空后复用导致丢失的问题
- *   - parseM3U8 现在返回 baseUrl 字段
- *   - 队列索引使用原子递增避免竞态
- *   - 密钥 URI 正则支持无引号格式
- *   - 增加 signal 参数传递
- *   - 保留所有高级特性：并发下载、流式处理、AbortController 取消
- *   - [修复] convertWebCodecs fallback 时调用未定义函数 → 改为回退 convertRemux
- *   - [适配] fetchM3U8 中 baseUrl 处理兼容代理路径
- *   - [调试] downloadSegments 中打印每个分片 URL，方便排查 CORS/路径问题
+ * convert.js — M3U8 → MP4 转换引擎 v3.3 (支持 ts 代理)
+ * 新增：下载 ts 分片时，若 window.__useProxy === true，则自动通过 /proxy/ts 代理请求
  */
 
 // ============================================================
 //  工具函数
 // ============================================================
 
-/** 动态加载外部脚本，带超时和校验 */
 export function loadScript(src, globalKey, timeoutMs = 30000) {
   return new Promise((resolve, reject) => {
     if (globalKey && window[globalKey]) { resolve(window[globalKey]); return; }
@@ -51,7 +38,6 @@ export function loadScript(src, globalKey, timeoutMs = 30000) {
   });
 }
 
-/** 安全解析 JSON，失败返回默认值 */
 function safeJsonParse(text, fallback) {
   try { return JSON.parse(text); } catch { return fallback; }
 }
@@ -72,7 +58,6 @@ export async function fetchM3U8(source, signal) {
         `  3. 部分链接有时效性，重新获取最新地址`
       );
       const content = await resp.text();
-      // 【关键修复】如果 source 是代理地址，不截取 baseUrl，让 ts/key 走绝对代理路径
       let baseUrl = '';
       if (!source.includes('/proxy/m3u8')) {
         baseUrl = source.substring(0, source.lastIndexOf('/') + 1);
@@ -88,9 +73,6 @@ export async function fetchM3U8(source, signal) {
   throw new Error('无效的 M3U8 来源类型（需 URL 字符串 / File 对象 / M3U8 文本）');
 }
 
-/**
- * 解析 M3U8 文本，返回结构化清单
- */
 export function parseM3U8(content, baseUrl = '') {
   const lines = content.split('\n').map(l => l.trim());
   const manifest = {
@@ -183,7 +165,9 @@ export function parseM3U8(content, baseUrl = '') {
       manifest.encrypted = true;
     } else if (!line.startsWith('#')) {
       let segUrl = line;
-      if (!segUrl.startsWith('http') && baseUrl) segUrl = baseUrl + segUrl;
+      if (!segUrl.startsWith('http') && baseUrl) {
+        segUrl = baseUrl + segUrl;
+      }
       manifest.segments.push({ url: segUrl, duration: currentDuration });
       manifest.duration += currentDuration;
       currentDuration = 0;
@@ -301,6 +285,9 @@ export async function downloadSegments(segments, options = {}) {
 
   if (signal && signal.aborted) throw new DOMException('下载已取消', 'AbortError');
 
+  // 【关键】检测是否启用代理（由 m3u8.html 设置）
+  const useProxy = window.__useProxy === true;
+
   const results = new Array(segments.length);
   let done = 0;
   let failed = 0;
@@ -317,14 +304,20 @@ export async function downloadSegments(segments, options = {}) {
     const maxRetries = 3;
     let lastError = null;
 
+    // 如果启用代理，将分片 URL 转为代理路径
+    let targetUrl = seg.url;
+    if (useProxy && targetUrl.startsWith('http')) {
+      targetUrl = `/proxy/ts?url=${encodeURIComponent(targetUrl)}`;
+      console.log('[调试] 代理分片:', targetUrl);
+    } else {
+      console.log('[调试] 直连分片:', targetUrl);
+    }
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         if (signal && signal.aborted) throw new DOMException('下载已取消', 'AbortError');
 
-        // 【调试】打印分片 URL
-        console.log('[调试] 正在下载分片:', seg.url);
-
-        const resp = await fetch(seg.url, { signal });
+        const resp = await fetch(targetUrl, { signal });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
         let data = new Uint8Array(await resp.arrayBuffer());
@@ -346,9 +339,9 @@ export async function downloadSegments(segments, options = {}) {
         if (isCors && !corsSeen) {
           corsSeen = true;
           log('CORS 跨域错误！浏览器阻止了分片请求。', 'error');
-          log('解决方案 1：用 Safari 打开（原生 HLS 不受 CORS 限制）', 'info');
-          log('解决方案 2：将分片下载到本地后上传', 'info');
-          log('解决方案 3：自建 Nginx 反代添加 CORS 头', 'info');
+          log('解决方案 1：启用代理（勾选"使用后端代理"）', 'info');
+          log('解决方案 2：用 Safari 打开（原生 HLS 不受 CORS 限制）', 'info');
+          log('解决方案 3：将分片下载到本地后上传', 'info');
         }
 
         if (attempt < maxRetries - 1) {
@@ -385,7 +378,7 @@ export async function downloadSegments(segments, options = {}) {
     throw new Error(
       `所有分片下载失败。\n` +
       `常见原因：\n` +
-      `  1. CORS 跨域限制（最常见）—— 用 Safari 打开或配置代理\n` +
+      `  1. CORS 跨域限制（最常见）—— 启用代理或使用 Safari\n` +
       `  2. URL 已过期 —— 重新获取 M3U8 链接\n` +
       `  3. 需要 Referer/Cookie 鉴权 —— 在浏览器中先登录再试`
     );
@@ -496,7 +489,6 @@ export async function convertWebCodecs(segments, manifest, options = {}) {
   log(`源编码: ${manifest.videoCodec}`, 'info');
   if (decryptInfo?.key) log('AES-128 解密已启用', 'info');
 
-  // 尝试加载 Mediabunny
   let useMediabunny = false;
   try {
     await loadScript('https://cdn.jsdelivr.net/npm/@mediabunny/core@1/dist/mediabunny.min.js', 'Mediabunny', 15000);
@@ -508,7 +500,6 @@ export async function convertWebCodecs(segments, manifest, options = {}) {
     }
   } catch (e) {
     log(`Mediabunny 不可用 (${e.message})，回退到 remux 模式`, 'warn');
-    // Mediabunny 不可用时直接回退到 remux（更稳定）
     return convertRemux(segments, { onProgress, onLog, decrypt: decryptInfo, signal });
   }
 
@@ -517,15 +508,12 @@ export async function convertWebCodecs(segments, manifest, options = {}) {
   }
 }
 
-// ---- 路径 A: Mediabunny 完整管线 ----
-
 async function convertWithMediabunny(Mediabunny, segments, manifest, options) {
   const { onProgress, onLog, decrypt, signal } = options;
   const log = (msg, level) => onLog?.(msg, level);
 
   const { HLSParser, Mp4Muxer } = Mediabunny;
 
-  // 1. 并发下载所有分片
   const total = segments.length;
   log(`开始下载 ${total} 个分片（并发 3）...`, 'info');
 
@@ -544,14 +532,12 @@ async function convertWithMediabunny(Mediabunny, segments, manifest, options) {
     throw new Error('所有分片下载失败，无法继续转码。请检查 CORS 或网络连接。');
   }
 
-  // 2. 合并为单一 buffer
   const totalLen = validBuffers.reduce((s, b) => s + b.length, 0);
   const combined = new Uint8Array(totalLen);
   let off = 0;
   validBuffers.forEach(b => { combined.set(b, off); off += b.length; });
   validBuffers.length = 0;
 
-  // 3. 配置解码器
   onProgress?.(0.45, '初始化 GPU 解码器...');
 
   const isH265 = /H\.265|HEVC|hev1|hvc1/i.test(manifest.videoCodec);
@@ -581,7 +567,6 @@ async function convertWithMediabunny(Mediabunny, segments, manifest, options) {
     throw new Error(`解码器配置失败: ${e.message}\n可能原因：浏览器不支持 ${isH265 ? 'H.265' : 'H.264'} 的 WebCodecs 解码`);
   }
 
-  // 4. 用 Mediabunny 解析 HLS 数据
   onProgress?.(0.5, 'Mediabunny 解析 HLS...');
 
   let encodedChunks = [];
@@ -624,7 +609,6 @@ async function convertWithMediabunny(Mediabunny, segments, manifest, options) {
 
   combined.fill(0);
 
-  // 5. 送入解码器
   onProgress?.(0.55, 'GPU 解码中...');
 
   for (let i = 0; i < encodedChunks.length; i++) {
@@ -666,7 +650,6 @@ async function convertWithMediabunny(Mediabunny, segments, manifest, options) {
     );
   }
 
-  // 6. 编码为 H.264
   onProgress?.(0.8, 'GPU 编码 H.264 中...');
 
   const muxer = new Mp4Muxer({
@@ -719,7 +702,6 @@ async function convertWithMediabunny(Mediabunny, segments, manifest, options) {
     throw new Error(`编码过程中发生错误: ${encoderError.message}`);
   }
 
-  // 7. 完成 MP4
   onProgress?.(0.97, '封装 MP4...');
   const mp4Data = muxer.finalize();
   onProgress?.(1.0, '完成');
@@ -779,7 +761,6 @@ export async function convert(m3u8Source, mode = 'auto', callbacks = {}, decrypt
 
   if (signal && signal.aborted) throw new DOMException('已取消', 'AbortError');
 
-  // 1. 获取并解析 M3U8
   const { content, baseUrl } = await fetchM3U8(m3u8Source, signal);
   const manifest = parseM3U8(content, baseUrl);
 
@@ -789,7 +770,6 @@ export async function convert(m3u8Source, mode = 'auto', callbacks = {}, decrypt
     'success'
   );
 
-  // 2. 处理 Master Playlist
   if (manifest.isMaster) {
     log(`检测到 Master Playlist，共 ${manifest.streams.length} 条子流`, 'info');
     const sorted = [...manifest.streams].sort((a, b) => b.bandwidth - a.bandwidth);
@@ -804,7 +784,6 @@ export async function convert(m3u8Source, mode = 'auto', callbacks = {}, decrypt
     log(`子流解析: ${manifest.segments.length} 分片, ${manifest.videoCodec}`, 'info');
   }
 
-  // 3. 加密流密钥处理
   let decryptInfo = null;
   if (manifest.encrypted) {
     if (decryptOpts?.key) {
@@ -850,23 +829,20 @@ export async function convert(m3u8Source, mode = 'auto', callbacks = {}, decrypt
     }
   }
 
-  // 4. 直播流检查
   if (manifest.isLive) {
     log('检测到直播流（LIVE）。直播流可以播放但下载可能不完整。', 'warn');
   }
 
-  // 5. 分发到对应模式
   const opts = { ...callbacks, decrypt: decryptInfo, signal };
 
   switch (mode) {
     case 'remux':    return convertRemux(manifest.segments, opts);
-    case 'transcode': return convertWebCodecs(manifest.segments, manifest, opts);
+    case 'transcode': return convertWebCodecs(segments, manifest, opts);
     case 'auto':
     default:          return convertAuto(manifest.segments, manifest, opts);
   }
 }
 
-// 导出 detectBrowser
 export function detectBrowser() {
   const ua = navigator.userAgent || '';
   const vendor = navigator.vendor || '';
