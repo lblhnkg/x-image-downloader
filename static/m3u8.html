@@ -963,10 +963,13 @@
                 signal
             );
 
-            // 触发下载
+            // 【核心】自动适配文件后缀：如果返回的是 TS，改后缀为 .ts
+            const isTs = blob.type === 'video/MP2T';
+            const downloadName = isTs ? finalName.replace(/\.mp4$/, '.ts') : finalName;
+
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = finalName;
+            a.download = downloadName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -974,7 +977,7 @@
 
             setProgress(100, '完成');
             setStatus('下载完成!', 'success');
-            log(`文件已下载: ${finalName} (${(blob.size/1024/1024).toFixed(2)} MB)`, 'success');
+            log(`文件已下载: ${downloadName} (${(blob.size/1024/1024).toFixed(2)} MB)`, 'success');
         } catch (err) {
             if (err.name === 'AbortError' || signal.aborted) {
                 log('转换已取消', 'warn');
