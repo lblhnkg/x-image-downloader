@@ -1,6 +1,6 @@
 /**
- * convert.js — M3U8 → MP4 转换引擎 v3.4 (修复 mux.js 数据传递)
- * 修复：onSegment 中传入 data 而非 data.buffer，避免 subarray 错误
+ * convert.js — M3U8 → MP4 转换引擎 v3.5 (含 TS 降级合并)
+ * 新增：当 mux.js 转封装失败时，自动合并 TS 分片为 .ts 文件
  */
 
 // ============================================================
@@ -387,7 +387,7 @@ export async function downloadSegments(segments, options = {}) {
 }
 
 // ============================================================
-//  模式 1: Remux（mux.js 流式封装）
+//  模式 1: Remux（mux.js 流式封装，失败时降级为合并 TS）
 // ============================================================
 
 export async function convertRemux(segments, options = {}) {
@@ -417,6 +417,9 @@ export async function convertRemux(segments, options = {}) {
     log('mux.js 内部管线完成', 'debug');
   });
 
+  // 用于保存分片数据，以备降级时使用
+  const allData = [];
+
   await downloadSegments(segments, {
     concurrency: 3,
     decrypt: decryptInfo,
@@ -427,8 +430,8 @@ export async function convertRemux(segments, options = {}) {
     },
     onLog: log,
     onSegment: (idx, data) => {
+      allData.push(data);
       try {
-        // 【修复】直接传入 data（Uint8Array），而非 data.buffer（ArrayBuffer）
         muxer.push(data);
       } catch (e) {
         log(`分片 ${idx} mux 失败: ${e.message}`, 'warn');
@@ -440,26 +443,43 @@ export async function convertRemux(segments, options = {}) {
   onProgress?.(0.9, 'Finalizing MP4...');
   muxer.flush();
 
-  if (outputSegments.length === 0) {
-    throw new Error(
-      'mux.js 未输出任何 MP4 数据。\n' +
-      '可能原因：\n' +
-      '  1. 分片全部下载失败（检查 CORS）\n' +
-      '  2. 源编码不受支持（仅 H.264 + AAC 可纯 remux）\n' +
-      '  3. 加密流密钥错误'
-    );
+  // 如果 mux.js 成功输出了数据
+  if (outputSegments.length > 0) {
+    const totalLen = outputSegments.reduce((s, b) => s + b.byteLength, 0);
+    const result = new Uint8Array(totalLen);
+    let off = 0;
+    for (const seg of outputSegments) { result.set(seg, off); off += seg.byteLength; }
+    outputSegments.length = 0;
+    onProgress?.(1.0, '完成');
+    log(`MP4 封装完成: ${(totalLen / 1024 / 1024).toFixed(2)} MB`, 'success');
+    return new Blob([result], { type: 'video/mp4' });
   }
 
-  const totalLen = outputSegments.reduce((s, b) => s + b.byteLength, 0);
-  const result = new Uint8Array(totalLen);
+  // ===== mux.js 没有输出任何数据，降级为合并 TS =====
+  log('mux.js 未能生成 MP4，将直接合并 TS 分片（降级方案）', 'warn');
+  if (allData.length === 0) {
+    throw new Error('没有可用的分片数据，无法合并');
+  }
+
+  // 检查分片是否以 TS 同步字节 0x47 开头，如果不是则报错
+  const firstByte = allData[0][0];
+  if (firstByte !== 0x47) {
+    log('警告：分片不是标准 TS 格式，合并可能无法播放', 'warn');
+  }
+
+  const totalLen = allData.reduce((s, b) => s + b.length, 0);
+  const merged = new Uint8Array(totalLen);
   let off = 0;
-  for (const seg of outputSegments) { result.set(seg, off); off += seg.byteLength; }
-  outputSegments.length = 0;
+  for (const data of allData) {
+    merged.set(data, off);
+    off += data.length;
+  }
+  allData.length = 0;
 
   onProgress?.(1.0, '完成');
-  log(`MP4 封装完成: ${(totalLen / 1024 / 1024).toFixed(2)} MB`, 'success');
-
-  return new Blob([result], { type: 'video/mp4' });
+  log(`TS 合并完成: ${(totalLen / 1024 / 1024).toFixed(2)} MB`, 'success');
+  // 返回 TS 格式的 Blob
+  return new Blob([merged], { type: 'video/MP2T' });
 }
 
 // ============================================================
