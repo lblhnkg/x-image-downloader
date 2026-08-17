@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+    <title>M3U8 视频转换下载器</title>
+    <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.3.0/dist/turbo.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.css" onerror="this.remove()">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 20px;
+            padding-bottom: 80px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #141414 0%, #1a1a1a 100%);
+            border-radius: 32px;
+            padding: 40px 28px 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            min-height: 560px;
+            transition: all 0.3s ease;
+        }
+
+        @media (min-width: 700px) {
+            .app-container {
+                max-width: 900px;
+                padding: 50px 40px 40px;
+                border-radius: 36px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .app-container {
+                max-width: 1100px;
+                padding: 60px 50px 50px;
+                border-radius: 40px;
+            }
+        }
+
+        .back-link {
+            display: inline-block;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+            text-decoration: none;
+            margin-bottom: 18px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .back-link:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .app-title {
+            font-size: 26px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            text-align: center;
+            margin-bottom: 4px;
+            color: #fff;
+        }
+
+        .app-subtitle {
+            text-align: center;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.3);
+            font-weight: 300;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px 18px;
+            margin-bottom: 18px;
+            transition: border-color 0.25s;
+        }
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-title .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #007aff;
+        }
+
+        .input-group {
+            margin-bottom: 14px;
+        }
+        .input-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 6px;
+        }
+        .input-field {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 15px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus {
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0 12px;
+        }
+        .checkbox-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #007aff;
+            cursor: pointer;
+        }
+        .checkbox-row label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .btn {
+            flex: 1;
+            padding: 12px 0;
+            border: 0;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            text-align: center;
+            min-width: 80px;
+        }
+        .btn-primary {
+            background: #fff;
+            color: #0a0a0a;
+        }
+        .btn-primary:hover:not(:disabled) {
+            opacity: 0.85;
+            transform: scale(0.98);
+        }
+        .btn-primary:disabled {
+            opacity: 0.3;
+            cursor: default;
+            transform: none;
+        }
+        .btn-accent {
+            background: #007aff;
+            color: #fff;
+        }
+        .btn-accent:hover:not(:disabled) {
+            background: #0a8aff;
+            transform: scale(0.98);
+        }
+        .btn-accent:disabled {
+            opacity: 0.3;
+            cursor: default;
+            transform: none;
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .player-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .player-wrapper video {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .player-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 14px;
+            border: 2px dashed rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            margin: 6px;
+            width: calc(100% - 12px);
+            height: calc(100% - 12px);
+        }
+        .player-placeholder .icon {
+            font-size: 40px;
+            opacity: 0.4;
+        }
+        .player-placeholder span {
+            font-weight: 300;
+        }
+
+        .status-text {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 10px;
+            padding: 6px 0;
+            min-height: 24px;
+        }
+        .status-text.error {
+            color: #ff6b6b;
+        }
+        .status-text.success {
+            color: #4caf50;
+        }
+        .status-text.warn {
+            color: #ffd93d;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 16px;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 13px;
+        }
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: rgba(255, 255, 255, 0.3);
+        }
+        .info-value {
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 400;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .info-value.accent {
+            color: #007aff;
+        }
+        .info-value.encrypted {
+            color: #ffd93d;
+        }
+
+        .mode-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        @media (max-width: 500px) {
+            .mode-options {
+                grid-template-columns: 1fr;
+            }
+        }
+        .mode-option {
+            padding: 10px 8px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.02);
+            text-align: center;
+        }
+        .mode-option:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .mode-option.selected {
+            border-color: #007aff;
+            background: rgba(0, 122, 255, 0.08);
+        }
+        .mode-option .mode-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #fff;
+        }
+        .mode-option .mode-desc {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 2px;
+        }
+        .mode-option .mode-badge {
+            display: inline-block;
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-left: 4px;
+            vertical-align: middle;
+        }
+        .mode-badge.fast {
+            background: rgba(76, 175, 80, 0.15);
+            color: #4caf50;
+        }
+        .mode-badge.gpu {
+            background: rgba(0, 122, 255, 0.15);
+            color: #007aff;
+        }
+        .mode-badge.auto {
+            background: rgba(255, 215, 0, 0.12);
+            color: #ffd93d;
+        }
+
+        .progress-section {
+            margin-top: 14px;
+        }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .progress-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .progress-percent {
+            font-size: 14px;
+            color: #007aff;
+            font-weight: 500;
+            font-family: monospace;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #007aff, #0a8aff);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .log-panel {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 10px 12px;
+            max-height: 120px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            margin-top: 12px;
+        }
+        .log-panel .log-line {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .log-panel .log-line.info {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .log-panel .log-line.success {
+            color: #4caf50;
+        }
+        .log-panel .log-line.warn {
+            color: #ffd93d;
+        }
+        .log-panel .log-line.error {
+            color: #ff6b6b;
+        }
+        .log-panel .log-line.debug {
+            color: rgba(0, 200, 255, 0.6);
+        }
+        .log-time {
+            color: rgba(255, 255, 255, 0.2);
+            margin-right: 8px;
+        }
+
+        .dev-signature {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.15);
+            margin-top: 32px;
+            letter-spacing: 0.5px;
+            font-weight: 300;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .error-detail {
+            background: rgba(255, 107, 107, 0.04);
+            border: 1px solid rgba(255, 107, 107, 0.15);
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            font-family: monospace;
+            line-height: 1.6;
+        }
+        .error-detail .error-title {
+            color: #ff6b6b;
+            font-weight: 500;
+        }
+        .error-detail .error-solution {
+            color: #4caf50;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 420px) {
+            .app-container {
+                padding: 28px 18px 22px;
+                border-radius: 24px;
+            }
+            .app-title {
+                font-size: 22px;
+            }
+            .card {
+                padding: 16px 14px;
+            }
+            .btn {
+                font-size: 14px;
+                padding: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <span class="back-link" id="backToHome">‹ 返回首页</span>
+
+    <div class="app-title">🎬 M3U8 转换下载器</div>
+    <div class="app-subtitle">在线播放 · 一键下载为 MP4</div>
+
+    <!-- ========== 播放器卡片 ========== -->
+    <div class="card">
+        <div class="card-title"><span class="dot"></span>播放器</div>
+        <div class="player-wrapper">
+            <div class="player-placeholder" id="playerPlaceholder">
+                <div class="icon">▶</div>
+                <span>加载视频后自动播放</span>
+            </div>
+            <video id="videoPlayer" controls class="hidden"></video>
+        </div>
+        <div class="status-text" id="playerStatus">等待输入...</div>
+    </div>
+
+    <!-- ========== 控制卡片 ========== -->
+    <div class="card">
+        <div class="card-title"><span class="dot"></span>控制</div>
+
+        <div class="input-group">
+            <label class="input-label">M3U8 地址</label>
+            <input type="url" class="input-field" id="urlInput" placeholder="https://example.com/playlist.m3u8">
+        </div>
+
+        <div class="checkbox-row">
+            <input type="checkbox" id="useProxy" checked>
+            <label for="useProxy">使用后端代理（绕过 CORS / 解密）</label>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-primary" id="btnLoad" disabled>加载并播放</button>
+            <button class="btn btn-accent" id="btnDownload" disabled>下载 MP4</button>
+            <button class="btn btn-secondary" id="btnReset">重置</button>
+        </div>
+    </div>
+
+    <!-- ========== 流信息卡片 ========== -->
+    <div class="card">
+        <div class="card-title"><span class="dot"></span>流信息</div>
+        <div class="info-grid" id="infoGrid">
+            <div class="info-item"><span class="info-label">时长</span><span class="info-value" id="infoDuration">-</span></div>
+            <div class="info-item"><span class="info-label">分片数</span><span class="info-value" id="infoSegments">-</span></div>
+            <div class="info-item"><span class="info-label">视频编码</span><span class="info-value" id="infoVideoCodec">-</span></div>
+            <div class="info-item"><span class="info-label">音频编码</span><span class="info-value" id="infoAudioCodec">-</span></div>
+            <div class="info-item"><span class="info-label">分辨率</span><span class="info-value" id="infoResolution">-</span></div>
+            <div class="info-item"><span class="info-label">带宽</span><span class="info-value" id="infoBandwidth">-</span></div>
+            <div class="info-item"><span class="info-label">加密</span><span class="info-value" id="infoEncryption">-</span></div>
+            <div class="info-item"><span class="info-label">类型</span><span class="info-value accent" id="infoType">-</span></div>
+        </div>
+    </div>
+
+    <!-- ========== 转换设置卡片 ========== -->
+    <div class="card">
+        <div class="card-title"><span class="dot"></span>转换设置</div>
+
+        <div class="input-group">
+            <label class="input-label">输出文件名</label>
+            <input type="text" class="input-field" id="outputName" value="output.mp4">
+        </div>
+
+        <label class="input-label" style="margin-bottom:6px;display:block;">转换模式</label>
+        <div class="mode-options" id="modeOptions">
+            <div class="mode-option selected" data-mode="auto">
+                <div class="mode-name">自动 <span class="mode-badge auto">推荐</span></div>
+                <div class="mode-desc">智能选择最佳方案</div>
+            </div>
+            <div class="mode-option" data-mode="remux">
+                <div class="mode-name">纯封装 <span class="mode-badge fast">最快</span></div>
+                <div class="mode-desc">零质量损失，仅 H.264</div>
+            </div>
+            <div class="mode-option" data-mode="transcode">
+                <div class="mode-name">GPU 转码 <span class="mode-badge gpu">硬件加速</span></div>
+                <div class="mode-desc">支持 H.265 → H.264</div>
+            </div>
+        </div>
+
+        <div class="progress-section hidden" id="progressSection">
+            <div class="progress-header">
+                <span class="progress-label" id="progressLabel">准备中...</span>
+                <span class="progress-percent" id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+
+        <div id="errorDetail" class="hidden"></div>
+
+        <div class="log-panel" id="logPanel"></div>
+    </div>
+
+    <div class="dev-signature">开发者：浮生若夢</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+<script type="module">
+    import * as Converter from './js/convert.js';
+
+    // ============================================================
+    // DOM 引用
+    // ============================================================
+    const $ = (id) => document.getElementById(id);
+    const logPanel = $('logPanel');
+    const video = $('videoPlayer');
+    const placeholder = $('playerPlaceholder');
+
+    // ============================================================
+    // 日志系统
+    // ============================================================
+    function log(msg, level = 'info') {
+        const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+        const line = document.createElement('div');
+        line.className = `log-line ${level}`;
+        line.innerHTML = `<span class="log-time">[${time}]</span>${escapeHtml(msg)}`;
+        logPanel.appendChild(line);
+        logPanel.scrollTop = logPanel.scrollHeight;
+        if (logPanel.children.length > 200) {
+            logPanel.removeChild(logPanel.firstChild);
+        }
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = String(str);
+        return div.innerHTML;
+    }
+
+    function setStatus(msg, type = '') {
+        const el = $('playerStatus');
+        el.textContent = msg;
+        el.className = 'status-text' + (type ? ' ' + type : '');
+    }
+
+    function setProgress(percent, label) {
+        $('progressSection').classList.remove('hidden');
+        $('progressFill').style.width = percent + '%';
+        $('progressPercent').textContent = Math.round(percent) + '%';
+        if (label) $('progressLabel').textContent = label;
+    }
+
+    function resetProgress() {
+        $('progressSection').classList.add('hidden');
+        $('progressFill').style.width = '0%';
+        $('progressPercent').textContent = '0%';
+    }
+
+    function showError(msg, solutions = []) {
+        const el = $('errorDetail');
+        el.classList.remove('hidden');
+        const lines = msg.split('\n');
+        const title = lines[0] || '未知错误';
+        let html = `<div class="error-title">[错误] ${escapeHtml(title)}</div>`;
+        if (lines.length > 1) {
+            html += `<div>${lines.slice(1).map(l => escapeHtml(l)).join('<br>')}</div>`;
+        }
+        if (solutions.length) {
+            html += `<div class="error-solution">解决方案：<br>${solutions.map((s, i) => `${i+1}) ${escapeHtml(s)}`).join('<br>')}</div>`;
+        }
+        el.innerHTML = html;
+    }
+
+    function clearError() {
+        $('errorDetail').classList.add('hidden');
+        $('errorDetail').innerHTML = '';
+    }
+
+    // ============================================================
+    // 状态变量
+    // ============================================================
+    let currentM3U8 = null;
+    let parsedManifest = null;
+    let selectedStreamUrl = null;
+    let currentAbortController = null;
+    let currentHlsInstance = null;
+    let selectedMode = 'auto';
+
+    // ============================================================
+    // 浏览器检测
+    // ============================================================
+    function detectBrowser() {
+        const ua = navigator.userAgent || '';
+        const vendor = navigator.vendor || '';
+        const videoEl = document.createElement('video');
+        const canPlayHLS = videoEl.canPlayType('application/vnd.apple.mpegurl');
+        const supportsNativeHLS = canPlayHLS === 'probably' || canPlayHLS === 'maybe';
+        const looksLikeSafari = /safari/i.test(ua) && !/chrome|chromium|edge|edg/i.test(ua);
+        const isSafari = looksLikeSafari && /apple/i.test(vendor) && supportsNativeHLS;
+        const hasVideoDecoder = typeof window.VideoDecoder === 'function';
+        const hasVideoEncoder = typeof window.VideoEncoder === 'function';
+        const hasAudioDecoder = typeof window.AudioDecoder === 'function';
+        const hasWebCodecsFull = hasVideoDecoder && hasVideoEncoder && hasAudioDecoder;
+        const hasWebCodecsPartial = hasVideoDecoder && hasVideoEncoder;
+        return { isSafari, supportsNativeHLS, hasWebCodecsFull, hasWebCodecsPartial };
+    }
+    const browser = detectBrowser();
+
+    // ============================================================
+    // 模式选择
+    // ============================================================
+    document.querySelectorAll('.mode-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            selectedMode = opt.dataset.mode;
+            log(`转换模式: ${selectedMode}`, 'debug');
+        });
+    });
+
+    // ============================================================
+    // 加载按钮状态
+    // ============================================================
+    function updateLoadButton() {
+        const url = $('urlInput').value.trim();
+        $('btnLoad').disabled = !url;
+    }
+    $('urlInput').addEventListener('input', updateLoadButton);
+
+    // ============================================================
+    // 重置
+    // ============================================================
+    $('btnReset').addEventListener('click', () => {
+        if (currentAbortController) {
+            try { currentAbortController.abort(); } catch {}
+            currentAbortController = null;
+            log('已取消进行中的任务', 'warn');
+        }
+        if (currentHlsInstance) {
+            try { currentHlsInstance.destroy(); } catch {}
+            currentHlsInstance = null;
+        }
+        $('urlInput').value = '';
+        $('btnLoad').disabled = true;
+        $('btnDownload').disabled = true;
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+        video.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+        logPanel.innerHTML = '';
+        resetProgress();
+        clearError();
+        ['infoDuration','infoSegments','infoVideoCodec','infoAudioCodec','infoResolution','infoBandwidth','infoEncryption','infoType'].forEach(id => $(id).textContent = '-');
+        setStatus('已重置');
+        log('已重置所有状态', 'info');
+        currentM3U8 = null;
+        parsedManifest = null;
+        selectedStreamUrl = null;
+    });
+
+    // ============================================================
+    // 加载并播放
+    // ============================================================
+    $('btnLoad').addEventListener('click', async () => {
+        clearError();
+        const rawUrl = $('urlInput').value.trim();
+        if (!rawUrl) return;
+
+        let finalUrl = rawUrl;
+        if ($('useProxy').checked && rawUrl.startsWith('http')) {
+            finalUrl = `/proxy/m3u8?url=${encodeURIComponent(rawUrl)}`;
+            log('已启用后端代理', 'info');
+        }
+
+        setStatus('正在获取 M3U8...', '');
+        log(`请求: ${finalUrl}`, 'debug');
+
+        try {
+            const resp = await fetch(finalUrl);
+            if (!resp.ok) {
+                throw new Error(`HTTP ${resp.status} — ${resp.statusText}`);
+            }
+            const content = await resp.text();
+            log(`M3U8 获取成功 (${content.length} bytes)`, 'success');
+
+            // 解析
+            let baseUrl = '';
+            if (!finalUrl.includes('/proxy/m3u8')) {
+                baseUrl = finalUrl.substring(0, finalUrl.lastIndexOf('/') + 1);
+            }
+            const manifest = Converter.parseM3U8(content, baseUrl);
+            parsedManifest = manifest;
+            currentM3U8 = { type: 'url', content, baseUrl, url: finalUrl };
+
+            // 显示信息
+            displayInfo(manifest);
+
+            // 检查加密
+            if (manifest.encrypted) {
+                log(`检测到加密流: ${manifest.keyMethod || 'AES-128'}`, 'warn');
+            }
+
+            // 处理 Master Playlist
+            if (manifest.isMaster && manifest.streams.length > 0) {
+                log(`检测到 Master Playlist，共 ${manifest.streams.length} 条子流`, 'info');
+                // 自动选最高码率
+                const sorted = [...manifest.streams].sort((a, b) => b.bandwidth - a.bandwidth);
+                selectedStreamUrl = sorted[0].url;
+                log(`自动选择: ${sorted[0].resolution} (${Math.round(sorted[0].bandwidth/1000)} kbps)`, 'info');
+                // 重新获取子流
+                const subResp = await fetch(selectedStreamUrl);
+                if (!subResp.ok) throw new Error(`子流 HTTP ${subResp.status}`);
+                const subContent = await subResp.text();
+                const subBaseUrl = selectedStreamUrl.substring(0, selectedStreamUrl.lastIndexOf('/') + 1);
+                const subManifest = Converter.parseM3U8(subContent, subBaseUrl);
+                Object.assign(manifest, subManifest);
+                displayInfo(manifest);
+            }
+
+            // 开始播放
+            await startPlayback(manifest, finalUrl);
+
+            $('btnDownload').disabled = false;
+            setStatus('就绪，可播放或下载', 'success');
+            log('加载完成', 'success');
+        } catch (err) {
+            log(`加载失败: ${err.message}`, 'error');
+            setStatus(`错误: ${err.message.split('\n')[0]}`, 'error');
+            showError(err.message, []);
+            if (err.message.includes('CORS') || err.message.includes('cross-origin')) {
+                log('提示：勾选"使用后端代理"可绕过 CORS', 'warn');
+            }
+        }
+    });
+
+    function displayInfo(manifest) {
+        $('infoDuration').textContent = manifest.isLive ? '直播' : manifest.duration.toFixed(1) + 's';
+        $('infoSegments').textContent = manifest.segments.length || '0';
+        $('infoVideoCodec').textContent = manifest.videoCodec || '-';
+        $('infoAudioCodec').textContent = manifest.audioCodec || '-';
+        $('infoResolution').textContent = manifest.resolution || '-';
+        $('infoBandwidth').textContent = manifest.bandwidth ? Math.round(manifest.bandwidth/1000) + ' kbps' : '-';
+        const encEl = $('infoEncryption');
+        if (manifest.encrypted) {
+            encEl.textContent = manifest.keyMethod || 'AES-128';
+            encEl.className = 'info-value encrypted';
+        } else {
+            encEl.textContent = '无';
+            encEl.className = 'info-value';
+        }
+        $('infoType').textContent = manifest.isLive ? 'LIVE' : 'VOD';
+    }
+
+    async function startPlayback(manifest, sourceUrl) {
+        const isSafari = browser.isSafari && browser.supportsNativeHLS;
+
+        if (isSafari) {
+            log('使用 Safari 原生 HLS 播放', 'success');
+            video.src = sourceUrl;
+            placeholder.classList.add('hidden');
+            video.classList.remove('hidden');
+            try { await video.play(); } catch (e) { /* 自动播放可能被阻止 */ }
+            return;
+        }
+
+        if (window.Hls && window.Hls.isSupported()) {
+            log('使用 hls.js 播放', 'success');
+            if (currentHlsInstance) {
+                currentHlsInstance.destroy();
+                currentHlsInstance = null;
+            }
+            const hls = new Hls({ enableWorker: true });
+            currentHlsInstance = hls;
+            hls.loadSource(sourceUrl);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                placeholder.classList.add('hidden');
+                video.classList.remove('hidden');
+                try { video.play(); } catch (e) { /* 自动播放可能被阻止 */ }
+            });
+            hls.on(Hls.Events.ERROR, (e, data) => {
+                if (data.fatal) {
+                    log(`hls.js 致命错误: ${data.details}`, 'error');
+                    setStatus(`播放错误: ${data.details}`, 'error');
+                }
+            });
+        } else {
+            log('当前浏览器不支持 HLS 播放，仅可下载', 'warn');
+            setStatus('浏览器无法播放，但可下载', 'warn');
+        }
+    }
+
+    // ============================================================
+    // 下载 MP4
+    // ============================================================
+    $('btnDownload').addEventListener('click', async () => {
+        if (!currentM3U8 || !parsedManifest) {
+            setStatus('请先加载 M3U8', 'error');
+            return;
+        }
+
+        clearError();
+        const filename = $('outputName').value.trim() || 'output.mp4';
+        const finalName = filename.endsWith('.mp4') ? filename : filename + '.mp4';
+
+        // 确定模式
+        let mode = selectedMode;
+        if (mode === 'auto') {
+            const codec = String(parsedManifest.videoCodec || '');
+            if (codec.includes('H.265') || codec.includes('HEVC')) {
+                mode = 'transcode';
+            } else {
+                mode = 'remux';
+            }
+        }
+
+        // 加密处理
+        let decryptOpts = null;
+        if (parsedManifest.encrypted) {
+            if (parsedManifest.keyUri) {
+                try {
+                    log('正在获取解密密钥...', 'info');
+                    const key = await Converter.fetchDecryptionKey(parsedManifest.keyUri, parsedManifest.baseUrl || '');
+                    decryptOpts = { key, ivHex: parsedManifest.iv || null };
+                    log('密钥获取成功', 'success');
+                } catch (e) {
+                    log(`密钥获取失败: ${e.message}`, 'error');
+                    showError(`密钥获取失败: ${e.message}`, ['请在控制台手动输入密钥（暂不支持UI手动输入）']);
+                    return;
+                }
+            } else {
+                log('未找到密钥 URI，无法解密', 'error');
+                showError('加密流缺少密钥 URI', ['请检查 M3U8 是否包含 #EXT-X-KEY 字段']);
+                return;
+            }
+        }
+
+        log(`开始转换: 模式=${mode}, 输出=${finalName}`, 'info');
+        setStatus(`转换中 (${mode})...`, '');
+
+        currentAbortController = new AbortController();
+        const signal = currentAbortController.signal;
+
+        // 确定源地址
+        let source = currentM3U8.url;
+        if (selectedStreamUrl) source = selectedStreamUrl;
+
+        try {
+            const blob = await Converter.convert(
+                source,
+                mode,
+                {
+                    onProgress: (pct, label) => {
+                        if (signal.aborted) return;
+                        setProgress(pct * 100, label || '');
+                    },
+                    onLog: (msg, level) => {
+                        if (signal.aborted) return;
+                        log(msg, level);
+                    },
+                },
+                decryptOpts,
+                signal
+            );
+
+            // 触发下载
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = finalName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+
+            setProgress(100, '完成');
+            setStatus('下载完成!', 'success');
+            log(`文件已下载: ${finalName} (${(blob.size/1024/1024).toFixed(2)} MB)`, 'success');
+        } catch (err) {
+            if (err.name === 'AbortError' || signal.aborted) {
+                log('转换已取消', 'warn');
+                setStatus('已取消', 'warn');
+            } else {
+                log(`转换失败: ${err.message}`, 'error');
+                setStatus(`错误: ${err.message.split('\n')[0]}`, 'error');
+                showError(err.message, []);
+            }
+        } finally {
+            currentAbortController = null;
+        }
+    });
+
+    // ============================================================
+    // 返回首页
+    // ============================================================
+    $('backToHome').addEventListener('click', () => {
+        window.location.href = '/';
+    });
+
+    // ============================================================
+    // 键盘快捷键
+    // ============================================================
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (video.classList.contains('hidden')) return;
+        switch(e.key) {
+            case ' ': e.preventDefault(); video.paused ? video.play() : video.pause(); break;
+            case 'ArrowLeft': video.currentTime -= 10; break;
+            case 'ArrowRight': video.currentTime += 10; break;
+            case 'f': case 'F': video.requestFullscreen?.(); break;
+        }
+    });
+
+    // ============================================================
+    // 初始化
+    // ============================================================
+    log('M3U8 转换下载器已就绪', 'success');
+    log(`浏览器: ${browser.isSafari ? 'Safari (原生HLS)' : '其他'} | WebCodecs: ${browser.hasWebCodecsPartial ? '可用' : '不可用'}`, 'info');
+    setStatus('等待输入...');
+    updateLoadButton();
+</script>
+</body>
+</html>
