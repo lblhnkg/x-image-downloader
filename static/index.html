@@ -402,6 +402,11 @@
                     <div class="menu-card-title">下载 Missav 上的电影</div>
                     <div class="menu-card-desc">番号 · 演员 · 高清</div>
                 </div>
+                <div class="menu-card" id="menuM3u8">
+                    <span class="menu-arrow">›</span>
+                    <div class="menu-card-title">M3U8 视频转换下载器</div>
+                    <div class="menu-card-desc">在线播放 · 下载视频流</div>
+                </div>
                 <div class="menu-card" id="menuBilibili">
                     <span class="menu-arrow">›</span>
                     <div class="menu-card-title">下载 Bilibili 视频</div>
@@ -543,6 +548,10 @@
             window.location.href = '/missav';
         });
 
+        document.getElementById('menuM3u8').addEventListener('click', function() {
+            window.location.href = '/m3u8';
+        });
+
         document.getElementById('menuBilibili').addEventListener('click', function() {
             window.location.href = '/bilibili';
         });
@@ -553,7 +562,7 @@
 
         function initApp() {
             var referrer = document.referrer || '';
-            var isFromSubPage = referrer.includes('/x') || referrer.includes('/missav') || referrer.includes('/bilibili');
+            var isFromSubPage = referrer.includes('/x') || referrer.includes('/missav') || referrer.includes('/bilibili') || referrer.includes('/m3u8');
             var savedMode = localStorage.getItem('userMode');
 
             if (isFromSubPage && savedMode) {
