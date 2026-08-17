@@ -10,6 +10,7 @@ import requests
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles  # 【新增】挂载静态文件
 
 from shared import database, init_db, missav_db
 
@@ -20,6 +21,9 @@ from bilibili_routes import router as bilibili_router
 
 # 创建主应用
 app = FastAPI(title="万能媒体下载器")
+
+# 【新增】挂载静态文件目录（必须放在路由注册之前）
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # CORS
 app.add_middleware(
@@ -87,7 +91,6 @@ app.include_router(bilibili_router)   # Bilibili API（/bilibili/*）
 # 代理路由（为 M3U8 工具提供 CORS 绕过 + 解密支持）
 # ============================================================
 
-# 【修复】将 proxies 改为 proxy（httpx 新版参数名）
 proxy_client = httpx.AsyncClient(proxy="http://127.0.0.1:1081", timeout=30.0)
 
 @app.get("/proxy/m3u8")
