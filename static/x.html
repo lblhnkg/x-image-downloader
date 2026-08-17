@@ -8,21 +8,1064 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js">
     </script>
     <style>
-        /* 样式同之前，省略……（保持与之前一致） */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        /* ... 完整样式请参考上一版，此处为节省篇幅，实际回复会包含完整样式 */
-        /* 由于样式很长，为节省篇幅，此处省略，但实际会提供完整样式 */
+
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 80px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #141414 0%, #1a1a1a 100%);
+            border-radius: 32px;
+            padding: 40px 28px 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            min-height: 560px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        @media (min-width: 700px) {
+            .app-container {
+                max-width: 900px;
+                padding: 50px 40px 40px;
+                border-radius: 36px;
+            }
+            .gallery {
+                grid-template-columns: repeat(4, 1fr) !important;
+                gap: 14px;
+            }
+            .search-row input {
+                font-size: 18px;
+            }
+            .option-btn {
+                padding: 8px 18px;
+                font-size: 13px;
+            }
+            .submenu-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 14px;
+            }
+            .submenu-card {
+                padding: 24px 20px;
+                min-height: 100px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .app-container {
+                max-width: 1100px;
+                padding: 60px 50px 50px;
+                border-radius: 40px;
+            }
+            .gallery {
+                grid-template-columns: repeat(4, 1fr) !important;
+                gap: 18px;
+            }
+            .submenu-card {
+                padding: 28px 24px;
+                min-height: 110px;
+            }
+            .submenu-card-title {
+                font-size: 18px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .app-container {
+                padding: 28px 18px 22px;
+                border-radius: 24px;
+            }
+            .gallery {
+                gap: 6px;
+            }
+            .item-actions button {
+                font-size: 9px;
+                padding: 4px 0;
+            }
+            .submenu-card {
+                padding: 14px 16px;
+            }
+            .submenu-card-title {
+                font-size: 15px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .app-container {
+                padding: 20px 12px 16px;
+                border-radius: 20px;
+            }
+            .item-actions button {
+                font-size: 8px;
+                padding: 3px 0;
+            }
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .back-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 22px;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 15px;
+            transition: color 0.2s ease;
+            font-weight: 400;
+            letter-spacing: 0.2px;
+            padding: 4px 0;
+        }
+
+        .back-row:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .back-row .back-icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .back-home {
+            display: inline-block;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+            text-decoration: none;
+            margin-bottom: 18px;
+            transition: color 0.2s ease;
+            cursor: pointer;
+        }
+
+        .back-home:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .submenu-title {
+            font-size: 20px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 6px;
+            letter-spacing: -0.3px;
+        }
+
+        .submenu-desc {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-bottom: 18px;
+            font-weight: 300;
+        }
+
+        .submenu-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .submenu-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 18px 20px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .submenu-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .submenu-card:active {
+            transform: scale(0.98);
+        }
+
+        .submenu-card-title {
+            font-size: 16px;
+            font-weight: 450;
+            color: #fff;
+        }
+
+        .submenu-card-desc {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 2px;
+            font-weight: 300;
+        }
+
+        .mode-banner {
+            background: rgba(255, 215, 0, 0.08);
+            border: 1px solid rgba(255, 215, 0, 0.15);
+            border-radius: 8px;
+            padding: 8px 14px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: rgba(255, 215, 0, 0.6);
+            text-align: center;
+            font-weight: 300;
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        .mode-banner.developer {
+            background: rgba(0, 200, 255, 0.06);
+            border-color: rgba(0, 200, 255, 0.1);
+            color: rgba(0, 200, 255, 0.5);
+        }
+
+        .search-section {
+            margin-top: 6px;
+        }
+
+        .search-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 300;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-row input {
+            flex: 1;
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 10px 0 8px;
+            font-size: 16px;
+            color: #fff;
+            outline: none;
+            transition: border-color 0.25s ease;
+            font-family: inherit;
+        }
+
+        .search-row input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+            font-weight: 300;
+            font-size: 14px;
+        }
+
+        .search-row input:focus {
+            border-bottom-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .search-row .search-btn-icon {
+            background: transparent;
+            border: 0;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 6px 4px 6px 10px;
+            transition: color 0.2s ease;
+        }
+
+        .search-row .search-btn-icon:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .search-favorite-btn {
+            background: transparent;
+            border: 0;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 6px 4px 6px 6px;
+            transition: color 0.2s ease;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+
+        .search-favorite-btn:hover {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-favorite-btn.favorited {
+            color: #ffd700;
+        }
+
+        .favorites-panel {
+            margin-top: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .favorite-empty {
+            padding: 16px 14px;
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 13px;
+            font-weight: 300;
+            text-align: center;
+        }
+
+        .favorite-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .favorite-item:last-child {
+            border-bottom: 0;
+        }
+
+        .favorite-item .fav-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .favorite-item .fav-name {
+            font-size: 14px;
+            color: #fff;
+            font-weight: 400;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .favorite-item .fav-handle {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 1px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .favorite-item .fav-handle:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .favorite-item .fav-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .favorite-item .fav-actions button {
+            background: transparent;
+            border: 0;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .favorite-item .fav-actions .fav-use {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .favorite-item .fav-actions .fav-use:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .favorite-item .fav-actions .fav-delete:hover {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.08);
+        }
+
+        .favorite-toggle-btn {
+            width: 100%;
+            background: transparent;
+            border: 0;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 13px;
+            font-weight: 300;
+            padding: 10px 0 6px;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            transition: color 0.2s ease;
+        }
+
+        .favorite-toggle-btn:hover {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .option-section {
+            margin-top: 18px;
+        }
+
+        .option-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            font-weight: 300;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .option-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .option-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.4);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            font-weight: 300;
+        }
+
+        .option-btn:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .option-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .date-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .date-row input[type="date"] {
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 0 6px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            outline: none;
+            font-family: inherit;
+            transition: border-color 0.25s ease;
+        }
+
+        .date-row input[type="date"]:focus {
+            border-bottom-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .date-row input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.6);
+        }
+
+        .primary-btn {
+            width: 100%;
+            padding: 14px 0;
+            background: #fff;
+            color: #0a0a0a;
+            border: 0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            margin-top: 18px;
+        }
+
+        .primary-btn:hover {
+            opacity: 0.85;
+            transform: scale(0.98);
+        }
+
+        .primary-btn:active {
+            transform: scale(0.96);
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.3;
+            cursor: default;
+            transform: none;
+        }
+
+        .status-box {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 300;
+            line-height: 1.6;
+            min-height: 20px;
+        }
+
+        .status-box.error {
+            color: #ff6b6b;
+            border-color: rgba(255, 107, 107, 0.15);
+            background: rgba(255, 107, 107, 0.04);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+            margin-bottom: 12px;
+        }
+
+        .result-title {
+            font-size: 15px;
+            font-weight: 450;
+            color: #fff;
+        }
+
+        .result-count {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.25);
+            font-weight: 300;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .gallery.fade-in {
+            animation: fadeIn 0.35s ease;
+        }
+
+        .item {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .item.selected {
+            border-color: #007aff;
+            background: rgba(0, 122, 255, 0.08);
+        }
+
+        .select-check {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 10;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #fff;
+            transition: all 0.2s ease;
+            pointer-events: none;
+        }
+
+        .item.in-select-mode .select-check {
+            display: flex;
+        }
+
+        .item.selected .select-check {
+            background: #007aff;
+            border-color: #007aff;
+        }
+
+        .item.selected .select-check::after {
+            content: "✓";
+            font-weight: 600;
+        }
+
+        .media-wrap {
+            position: relative;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            overflow: hidden;
+        }
+
+        .media-wrap img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        .item.in-select-mode .media-wrap img {
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .media-error {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 12px;
+            text-align: center;
+            padding: 12px;
+            font-weight: 300;
+        }
+
+        .video-badge {
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 10px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .source-badge {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 10px;
+            font-weight: 300;
+            letter-spacing: 0.3px;
+        }
+
+        .library-badge {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 10px;
+            font-weight: 300;
+            letter-spacing: 0.3px;
+        }
+
+        .item-info {
+            padding: 8px 10px;
+        }
+
+        .item-author {
+            font-size: 11px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.5);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .item-author:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .item-date {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.2);
+            margin-top: 2px;
+            font-weight: 300;
+        }
+
+        .item-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .item-actions button {
+            padding: 5px 0;
+            border-radius: 6px;
+            font-size: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            border: 0;
+            transition: all 0.2s ease;
+            pointer-events: auto;
+        }
+
+        .item.in-select-mode .item-actions button {
+            pointer-events: none;
+            opacity: 0.25;
+        }
+
+        .item-actions .btn-view {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .item-actions .btn-view:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .item-actions .btn-download {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .item-actions .btn-download:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .item-actions .btn-original {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .item-actions .btn-original:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .selection-toolbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(20, 20, 22, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 12px 20px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .selection-toolbar.active {
+            display: flex;
+        }
+
+        .selection-toolbar .toolbar-left {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .selection-toolbar .toolbar-btn {
+            background: transparent;
+            border: 0;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 15px;
+            font-weight: 450;
+            padding: 8px 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: color 0.2s ease;
+        }
+
+        .selection-toolbar .toolbar-btn:hover {
+            color: #fff;
+        }
+
+        .selection-toolbar .toolbar-btn.danger {
+            background: #fff;
+            color: #ff3b30;
+            padding: 8px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .selection-toolbar .toolbar-btn.danger:hover {
+            opacity: 0.85;
+        }
+
+        .selection-toolbar .toolbar-btn.danger:active {
+            transform: scale(0.96);
+        }
+
+        .selection-toolbar .selected-count {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 13px;
+            font-weight: 300;
+        }
+
+        .delete-confirm-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .delete-confirm-overlay.active {
+            display: flex;
+        }
+
+        .delete-confirm-box {
+            background: #1c1c1e;
+            border-radius: 14px;
+            padding: 28px 24px 20px;
+            max-width: 340px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .delete-confirm-box .confirm-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            display: block;
+            color: #ff3b30;
+        }
+
+        .delete-confirm-box .confirm-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .delete-confirm-box .confirm-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        .delete-confirm-box .confirm-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .delete-confirm-box .confirm-actions button {
+            flex: 1;
+            padding: 12px 0;
+            border: 0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-cancel {
+            background: transparent;
+            color: #007aff;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-cancel:hover {
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-delete {
+            background: #fff;
+            color: #ff3b30;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-delete:hover {
+            opacity: 0.85;
+        }
+
+        .delete-confirm-box .confirm-actions .confirm-delete:active {
+            transform: scale(0.96);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+        }
+
+        .modal-overlay.hidden {
+            display: none !important;
+        }
+
+        .modal-top {
+            min-height: 54px;
+            padding: 10px 16px 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .modal-close {
+            background: rgba(255, 255, 255, 0.08);
+            border: 0;
+            color: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+            padding: 6px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            font-weight: 300;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        .modal-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 16px;
+            overflow: auto;
+        }
+
+        .modal-content img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .modal-content video {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .modal-bottom {
+            padding: 10px 16px 16px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-bottom button {
+            flex: 1;
+            padding: 12px 0;
+            border: 0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 450;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .modal-bottom .modal-download {
+            background: #fff;
+            color: #0a0a0a;
+        }
+
+        .modal-bottom .modal-download:hover {
+            opacity: 0.85;
+        }
+
+        .modal-bottom .modal-original {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .modal-bottom .modal-original:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        .dev-signature {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.15);
+            margin-top: 32px;
+            letter-spacing: 0.5px;
+            font-weight: 300;
+        }
+
+        .library-placeholder {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.3);
+            padding: 40px 20px;
+            font-size: 14px;
+            font-weight: 300;
+            line-height: 1.8;
+        }
+
+        .library-placeholder .icon {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .loader {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.2);
+            padding: 30px 0;
+            font-size: 13px;
+            font-weight: 300;
+        }
     </style>
 </head>
 <body>
 
     <div class="app-container">
 
-        <!-- ========== 二级菜单 ========== -->
+        <!-- =====================================================
+        X 二级菜单
+        ===================================================== -->
         <div class="page active" id="pageXSub">
             <span class="back-home" id="backToHome">‹ 返回首页</span>
             <div id="xModeBanner" class="mode-banner" style="display:none;"></div>
@@ -45,7 +1088,9 @@
             <div class="dev-signature">开发者：浮生若夢</div>
         </div>
 
-        <!-- ========== 搜索博主页 ========== -->
+        <!-- =====================================================
+        搜索博主页
+        ===================================================== -->
         <div class="page" id="pageSearch">
             <div class="back-row" id="backFromSearch">
                 <span class="back-icon">‹</span> <span id="backFromSearchText">返回</span>
@@ -53,7 +1098,7 @@
             <div class="submenu-title" id="searchPageTitle">搜索博主</div>
             <div class="submenu-desc" id="searchPageDesc">输入 X 用户名，搜索该博主的所有媒体</div>
 
-            <!-- 搜索输入区域 -->
+            <!-- ===== 搜索输入区域 ===== -->
             <div class="search-section" id="searchInputArea">
                 <label class="search-label">博主</label>
                 <div class="search-row">
@@ -67,7 +1112,7 @@
                 </div>
             </div>
 
-            <!-- 筛选条件 -->
+            <!-- ===== 筛选条件 ===== -->
             <div class="option-section">
                 <span class="option-label">时间范围</span>
                 <div class="option-row" data-group="range">
@@ -80,8 +1125,14 @@
             </div>
             <div class="hidden" id="customDates" style="margin-top:10px;">
                 <div class="date-row">
-                    <div><label class="search-label" style="font-size:11px;">开始日期</label><input type="date" id="startDate"></div>
-                    <div><label class="search-label" style="font-size:11px;">结束日期</label><input type="date" id="endDate"></div>
+                    <div>
+                        <label class="search-label" style="font-size:11px;">开始日期</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    <div>
+                        <label class="search-label" style="font-size:11px;">结束日期</label>
+                        <input type="date" id="endDate">
+                    </div>
                 </div>
             </div>
 
@@ -103,9 +1154,11 @@
                 </div>
             </div>
 
+            <!-- ===== 搜索按钮 ===== -->
             <button class="primary-btn" id="searchSubmitBtn">开始收集媒体</button>
             <div class="status-box hidden" id="searchStatus"></div>
 
+            <!-- ===== 搜索结果 ===== -->
             <div class="result-header hidden" id="searchResultHeader">
                 <span class="result-title" id="searchResultTitle">搜索结果</span>
                 <span class="result-count" id="searchResultCount"></span>
@@ -115,9 +1168,13 @@
             <div class="dev-signature">开发者：浮生若夢</div>
         </div>
 
-        <!-- ========== 我的喜欢 / 我的书签 ========== -->
+        <!-- =====================================================
+        我的喜欢 / 我的书签
+        ===================================================== -->
         <div class="page" id="pageLibrary">
-            <div class="back-row" id="backFromLibrary"><span class="back-icon">‹</span> 返回</div>
+            <div class="back-row" id="backFromLibrary">
+                <span class="back-icon">‹</span> 返回
+            </div>
             <div id="libraryModeBanner"></div>
             <div class="submenu-title" id="libraryTitle">我的喜欢</div>
             <div class="submenu-desc" id="libraryDesc">查看采集器上传的喜欢列表</div>
@@ -126,7 +1183,9 @@
                     <span style="font-size:12px;color:rgba(255,255,255,0.25);font-weight:300;" id="libraryCount">正在读取…</span>
                     <button style="background:transparent;border:0;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;" id="refreshLibraryBtn">刷新</button>
                 </div>
-                <div><button id="selectToggleBtn" style="background:transparent;border:0;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;">选择</button></div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button id="selectToggleBtn" style="background:transparent;border:0;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;">选择</button>
+                </div>
             </div>
 
             <div class="option-section" style="margin-top:0;">
@@ -141,8 +1200,14 @@
             </div>
             <div class="hidden" id="libraryCustomDates" style="margin-top:8px;">
                 <div class="date-row">
-                    <div><label class="search-label" style="font-size:11px;">开始日期</label><input type="date" id="libraryStartDate"></div>
-                    <div><label class="search-label" style="font-size:11px;">结束日期</label><input type="date" id="libraryEndDate"></div>
+                    <div>
+                        <label class="search-label" style="font-size:11px;">开始日期</label>
+                        <input type="date" id="libraryStartDate">
+                    </div>
+                    <div>
+                        <label class="search-label" style="font-size:11px;">结束日期</label>
+                        <input type="date" id="libraryEndDate">
+                    </div>
                 </div>
             </div>
 
@@ -166,9 +1231,13 @@
 
     </div>
 
-    <!-- Modal -->
+    <!-- =====================================================
+    Modal
+    ===================================================== -->
     <div class="modal-overlay hidden" id="modal">
-        <div class="modal-top"><button class="modal-close" id="modalCloseBtn">关闭</button></div>
+        <div class="modal-top">
+            <button class="modal-close" id="modalCloseBtn">关闭</button>
+        </div>
         <div class="modal-content" id="modalContent"></div>
         <div class="modal-bottom">
             <button class="modal-download" id="modalDownloadBtn">下载</button>
@@ -176,7 +1245,9 @@
         </div>
     </div>
 
-    <!-- 选择工具栏 -->
+    <!-- =====================================================
+    选择工具栏
+    ===================================================== -->
     <div class="selection-toolbar" id="selectionToolbar">
         <div class="toolbar-left">
             <button class="toolbar-btn" id="toolbarCancel">取消</button>
@@ -188,7 +1259,9 @@
         </div>
     </div>
 
-    <!-- 删除确认 -->
+    <!-- =====================================================
+    删除确认弹窗
+    ===================================================== -->
     <div class="delete-confirm-overlay" id="deleteConfirm">
         <div class="delete-confirm-box">
             <span class="confirm-icon">🗑️</span>
@@ -203,7 +1276,7 @@
 
     <script>
         // ============================================================
-        // X 下载器 - 修复返回逻辑和收藏状态刷新
+        // X 下载器 - 完整版（Turbo Drive 兼容）
         // ============================================================
 
         // ---- 状态 ----
@@ -227,7 +1300,7 @@
         // ---- 博主专属模式状态 ----
         let isGalleryMode = false;
         let galleryUsername = '';
-        let returnSource = ''; // 空表示从搜索页进入
+        let returnSource = '';
 
         const API_KEY = 'fushengruomeng';
         const FAVORITE_KEY = 'universal_downloader_favorites';
@@ -400,12 +1473,12 @@
                 favoritesPanel.appendChild(div);
             });
 
-            // 点击 @用户名 进入博主专属页（从搜索页进入，source 传 null）
+            // 点击 @用户名 进入博主专属页
             favoritesPanel.querySelectorAll('.fav-handle').forEach(function(el) {
                 el.addEventListener('click', function() {
                     var username = el.dataset.username;
                     if (username) {
-                        openGallery(username, null); // null 表示来自搜索页
+                        openGallery(username, null);
                     }
                 });
             });
@@ -439,7 +1512,7 @@
         }
 
         function bindFavoriteEvents() {
-            // 收藏按钮（搜索页及专属页通用）
+            // 收藏按钮
             var oldBtn = favoriteAddBtn;
             var newBtn = oldBtn.cloneNode(true);
             oldBtn.parentNode.replaceChild(newBtn, oldBtn);
@@ -546,7 +1619,6 @@
         function openGallery(username, source) {
             isGalleryMode = true;
             galleryUsername = username;
-            // source 为 null 表示从搜索页进入，否则为 'likes' 或 'bookmarks'
             returnSource = source || '';
 
             // 更新 UI
@@ -572,7 +1644,7 @@
 
             // 将用户名填入输入框并刷新收藏按钮状态
             profileInput.value = username;
-            updateFavoriteButton(); // 关键修复：刷新收藏按钮状态
+            updateFavoriteButton();
 
             // 切换到搜索页
             showPage('pageSearch');
@@ -610,7 +1682,7 @@
             backFromSearchText.textContent = '返回';
 
             profileInput.value = '';
-            updateFavoriteButton(); // 清理后刷新
+            updateFavoriteButton();
             searchGallery.innerHTML = '';
             searchResultHeader.classList.add('hidden');
             hideSearchStatus();
@@ -620,7 +1692,6 @@
                 if (source === 'likes' || source === 'bookmarks') {
                     openLibrary(source);
                 } else {
-                    // 从搜索页进入，回到搜索页
                     showPage('pageSearch');
                 }
             }, 50);
@@ -1317,7 +2388,7 @@
                         e.stopPropagation();
                         var username = item.author;
                         if (username) {
-                            openGallery(username, currentSubPage); // 从我的喜欢/书签进入
+                            openGallery(username, currentSubPage);
                         }
                     });
                 }
