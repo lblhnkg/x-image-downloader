@@ -10,7 +10,7 @@ import requests
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles  # 【新增】挂载静态文件
+from fastapi.staticfiles import StaticFiles
 
 from shared import database, init_db, missav_db
 
@@ -22,7 +22,7 @@ from bilibili_routes import router as bilibili_router
 # 创建主应用
 app = FastAPI(title="万能媒体下载器")
 
-# 【新增】挂载静态文件目录（必须放在路由注册之前）
+# 挂载静态文件目录
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # CORS
@@ -91,12 +91,19 @@ app.include_router(bilibili_router)   # Bilibili API（/bilibili/*）
 # 代理路由（为 M3U8 工具提供 CORS 绕过 + 解密支持）
 # ============================================================
 
+# 创建两个客户端：一个走代理，一个不走代理
 proxy_client = httpx.AsyncClient(proxy="http://127.0.0.1:1081", timeout=30.0)
+direct_client = httpx.AsyncClient(timeout=30.0)
 
 @app.get("/proxy/m3u8")
 async def proxy_m3u8(url: str):
-    resp = await proxy_client.get(url)
-    content = resp.text
+    try:
+        resp = await proxy_client.get(url)
+        content = resp.text
+    except Exception as e:
+        print(f"[代理] 获取 m3u8 失败 (代理): {e}, 尝试直连")
+        resp = await direct_client.get(url)
+        content = resp.text
     
     def repl_ts(m):
         ts_url = m.group(0)
@@ -118,13 +125,25 @@ async def proxy_m3u8(url: str):
 
 @app.get("/proxy/ts")
 async def proxy_ts(url: str):
-    resp = await proxy_client.get(url)
-    return Response(content=resp.content, media_type="video/MP2T")
+    """获取 ts 分片：优先走代理，失败则降级到直连"""
+    try:
+        resp = await proxy_client.get(url)
+        return Response(content=resp.content, media_type="video/MP2T")
+    except Exception as e:
+        print(f"[代理] 代理请求 ts 失败: {e}, 降级到直连")
+        resp = await direct_client.get(url)
+        return Response(content=resp.content, media_type="video/MP2T")
 
 @app.get("/proxy/key")
 async def proxy_key(url: str):
-    resp = await proxy_client.get(url)
-    return Response(content=resp.content, media_type="application/octet-stream")
+    """获取密钥：优先走代理，失败则降级到直连"""
+    try:
+        resp = await proxy_client.get(url)
+        return Response(content=resp.content, media_type="application/octet-stream")
+    except Exception as e:
+        print(f"[代理] 代理请求 key 失败: {e}, 降级到直连")
+        resp = await direct_client.get(url)
+        return Response(content=resp.content, media_type="application/octet-stream")
 
 # ============================================================
 # 静态页面
