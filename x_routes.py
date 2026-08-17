@@ -934,3 +934,50 @@ async def video_stream(url: str = Query(...)):
         headers={"Content-Disposition": "inline"},
         background=BackgroundTask(cleanup_video_directory, temp_dir)
     )
+
+# ============================================================
+# 用户信息接口（用于博主专属页面）
+# ============================================================
+
+@router.get("/api/user-info")
+async def get_user_info(username: str = Query(...)):
+    """
+    获取博主基本信息（头像、昵称、简介等）
+    用于博主专属页面展示
+    """
+    # 清洗用户名
+    username = re.sub(r"[^A-Za-z0-9_]", "", username)
+    if not username:
+        raise HTTPException(status_code=400, detail="用户名无效")
+
+    try:
+        url = f"https://api.fxtwitter.com/2/user/{username}"
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.get(url)
+            if response.status_code != 200:
+                return {
+                    "ok": False,
+                    "detail": f"API 返回 {response.status_code}",
+                    "username": username,
+                }
+            data = response.json()
+            if data.get("code") != 200:
+                return {
+                    "ok": False,
+                    "detail": data.get("message", "API 返回错误"),
+                    "username": username,
+                }
+            user = data.get("user") or {}
+            return {
+                "ok": True,
+                "username": user.get("username") or username,
+                "display_name": user.get("display_name") or username,
+                "avatar": user.get("avatar") or "",
+                "bio": user.get("bio") or "",
+                "follower_count": user.get("follower_count"),
+                "tweet_count": user.get("tweet_count"),
+            }
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="获取用户信息超时")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"获取用户信息失败：{str(e)}")
