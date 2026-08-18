@@ -6,619 +6,118 @@
     <title>Jable 下载器</title>
     <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.3.0/dist/turbo.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin:0; padding:0; box-sizing:border-box; }
         body {
-            background: #0a0a0a;
-            color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            padding: 20px;
-            padding-bottom: 80px;
+            background:#0a0a0a; color:#fff;
+            font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            min-height:100vh; display:flex; align-items:flex-start; justify-content:center;
+            padding:20px; padding-bottom:80px;
         }
-
-        .hidden {
-            display: none !important;
-        }
-
+        .hidden { display:none !important; }
         .app-container {
-            width: 100%;
-            max-width: 480px;
-            margin: 0 auto;
-            background: linear-gradient(145deg, #141414 0%, #1a1a1a 100%);
-            border-radius: 32px;
-            padding: 40px 28px 30px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-            min-height: 560px;
-            transition: all 0.3s ease;
+            width:100%; max-width:480px; margin:0 auto;
+            background:linear-gradient(145deg, #141414 0%, #1a1a1a 100%);
+            border-radius:32px; padding:40px 28px 30px;
+            box-shadow:0 20px 60px rgba(0,0,0,0.8); min-height:560px;
+            transition:all 0.3s ease;
         }
-
-        @media (min-width: 700px) {
-            .app-container {
-                max-width: 900px;
-                padding: 50px 40px 40px;
-                border-radius: 36px;
-            }
-            .gallery {
-                grid-template-columns: repeat(4, 1fr) !important;
-                gap: 14px;
-            }
+        @media (min-width:700px) {
+            .app-container { max-width:900px; padding:50px 40px 40px; border-radius:36px; }
+            .gallery { grid-template-columns:repeat(4,1fr) !important; gap:14px; }
         }
-
-        @media (min-width: 1024px) {
-            .app-container {
-                max-width: 1100px;
-                padding: 60px 50px 50px;
-                border-radius: 40px;
-            }
-            .gallery {
-                grid-template-columns: repeat(4, 1fr) !important;
-                gap: 18px;
-            }
+        @media (min-width:1024px) {
+            .app-container { max-width:1100px; padding:60px 50px 50px; border-radius:40px; }
+            .gallery { grid-template-columns:repeat(4,1fr) !important; gap:18px; }
         }
-
-        .back-link {
-            display: inline-block;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 14px;
-            text-decoration: none;
-            margin-bottom: 18px;
-            cursor: pointer;
-            transition: color 0.2s ease;
+        @media (max-width:420px) {
+            .app-container { padding:28px 18px 22px; border-radius:24px; }
+            .gallery { gap:6px; }
+            .item-actions button { font-size:9px; padding:4px 0; }
         }
-
-        .back-link:hover {
-            color: rgba(255, 255, 255, 0.7);
+        @media (max-width:360px) {
+            .app-container { padding:20px 12px 16px; border-radius:20px; }
+            .item-actions button { font-size:8px; padding:3px 0; }
         }
-
-        .app-title {
-            font-size: 26px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-            text-align: center;
-            margin-bottom: 4px;
-            color: #fff;
-        }
-
-        .app-subtitle {
-            text-align: center;
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.3);
-            font-weight: 300;
-            margin-bottom: 20px;
-        }
-
+        .back-link { display:inline-block; color:rgba(255,255,255,0.4); font-size:14px; text-decoration:none; margin-bottom:18px; cursor:pointer; transition:color 0.2s; }
+        .back-link:hover { color:rgba(255,255,255,0.7); }
+        .app-title { font-size:26px; font-weight:600; letter-spacing:-0.5px; text-align:center; margin-bottom:4px; color:#fff; }
+        .app-subtitle { text-align:center; font-size:13px; color:rgba(255,255,255,0.3); font-weight:300; margin-bottom:20px; }
         .mode-banner {
-            background: rgba(255, 215, 0, 0.08);
-            border: 1px solid rgba(255, 215, 0, 0.15);
-            border-radius: 8px;
-            padding: 10px 14px;
-            margin-bottom: 16px;
-            font-size: 12px;
-            color: rgba(255, 215, 0, 0.6);
-            text-align: center;
-            font-weight: 300;
+            background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.15);
+            border-radius:8px; padding:10px 14px; margin-bottom:16px;
+            font-size:12px; color:rgba(255,215,0,0.6); text-align:center; font-weight:300;
         }
-
         .mode-banner.developer {
-            background: rgba(0, 200, 255, 0.06);
-            border-color: rgba(0, 200, 255, 0.1);
-            color: rgba(0, 200, 255, 0.5);
-        }
-
-        .tab-bar {
-            display: flex;
-            gap: 4px;
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 10px;
-            padding: 4px;
-            margin-bottom: 20px;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 10px 0;
-            border: 0;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 450;
-            cursor: pointer;
-            font-family: inherit;
-            transition: all 0.25s ease;
-            background: transparent;
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .tab-btn.active {
-            background: rgba(255, 255, 255, 0.08);
-            color: #fff;
-        }
-
-        .tab-btn:hover {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .tab-content {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(6px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .search-label {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.4);
-            font-weight: 300;
-            margin-bottom: 6px;
-            display: block;
-        }
-
-        .search-row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .search-row input {
-            flex: 1;
-            background: transparent;
-            border: 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-            padding: 10px 0 8px;
-            font-size: 16px;
-            color: #fff;
-            outline: none;
-            transition: border-color 0.25s ease;
-            font-family: inherit;
-        }
-
-        .search-row input::placeholder {
-            color: rgba(255, 255, 255, 0.2);
-            font-weight: 300;
-        }
-
-        .search-row input:focus {
-            border-bottom-color: rgba(255, 255, 255, 0.5);
-        }
-
-        .search-row .search-btn-icon {
-            background: transparent;
-            border: 0;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 20px;
-            cursor: pointer;
-            padding: 6px 4px 6px 10px;
-            transition: color 0.2s ease;
-        }
-
-        .search-row .search-btn-icon:hover {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .primary-btn {
-            width: 100%;
-            padding: 14px 0;
-            background: #fff;
-            color: #0a0a0a;
-            border: 0;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
-            margin-top: 18px;
-        }
-
-        .primary-btn:hover {
-            opacity: 0.85;
-            transform: scale(0.98);
-        }
-
-        .primary-btn:disabled {
-            opacity: 0.3;
-            cursor: default;
-            transform: none;
-        }
-
-        .status-box {
-            margin-top: 14px;
-            padding: 12px 14px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.5);
-            font-weight: 300;
-            line-height: 1.6;
-            min-height: 20px;
-        }
-
-        .status-box.error {
-            color: #ff6b6b;
-            border-color: rgba(255, 107, 107, 0.15);
-            background: rgba(255, 107, 107, 0.04);
-        }
-
-        .status-box.loading {
-            color: #ffd93d;
-            border-color: rgba(255, 217, 61, 0.15);
-            background: rgba(255, 217, 61, 0.04);
-        }
-
-        .status-box.success {
-            color: #4caf50;
-            border-color: rgba(76, 175, 80, 0.15);
-            background: rgba(76, 175, 80, 0.04);
-        }
-
-        .result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 18px;
-            margin-bottom: 12px;
-        }
-
-        .result-title {
-            font-size: 15px;
-            font-weight: 450;
-            color: #fff;
-        }
-
-        .result-count {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.25);
-            font-weight: 300;
-        }
-
-        .gallery {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-
-        .item {
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            transition: all 0.2s ease;
-        }
-
-        .media-wrap {
-            position: relative;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.03);
-            overflow: hidden;
-        }
-
-        .media-wrap img {
-            display: block;
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            object-fit: cover;
-            cursor: pointer;
-        }
-
-        .media-error {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.03);
-            color: rgba(255, 255, 255, 0.2);
-            font-size: 12px;
-            text-align: center;
-            padding: 12px;
-            font-weight: 300;
-        }
-
-        .item-info {
-            padding: 8px 10px;
-        }
-
-        .item-title {
-            font-size: 12px;
-            font-weight: 400;
-            color: rgba(255, 255, 255, 0.7);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .item-code {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.3);
-            margin-top: 2px;
-            font-weight: 300;
-        }
-
-        .item-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 4px;
-            margin-top: 6px;
-        }
-
-        .item-actions button {
-            padding: 5px 0;
-            border-radius: 6px;
-            font-size: 10px;
-            cursor: pointer;
-            font-family: inherit;
-            border: 0;
-            transition: all 0.2s ease;
-        }
-
-        .item-actions .btn-view {
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .item-actions .btn-view:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .item-actions .btn-collect {
-            background: rgba(255, 215, 0, 0.08);
-            color: rgba(255, 215, 0, 0.5);
-        }
-
-        .item-actions .btn-collect:hover {
-            background: rgba(255, 215, 0, 0.15);
-            color: rgba(255, 215, 0, 0.8);
-        }
-
-        .item-actions .btn-collect.collected {
-            background: rgba(76, 175, 80, 0.08);
-            color: rgba(76, 175, 80, 0.5);
-        }
-
-        .item-actions .btn-original {
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .item-actions .btn-original:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex;
-            flex-direction: column;
-            padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
-        }
-
-        .modal-overlay.hidden {
-            display: none !important;
-        }
-
-        .modal-top {
-            min-height: 54px;
-            padding: 10px 16px 0;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-        }
-
-        .modal-close {
-            background: rgba(255, 255, 255, 0.08);
-            border: 0;
-            color: rgba(255, 255, 255, 0.5);
-            border-radius: 16px;
-            padding: 6px 14px;
-            font-size: 13px;
-            cursor: pointer;
-            font-family: inherit;
-            transition: all 0.2s ease;
-            font-weight: 300;
-        }
-
-        .modal-close:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: #fff;
-        }
-
-        .modal-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 12px 16px;
-            overflow-y: auto;
-            gap: 16px;
-        }
-
-        .modal-content .modal-cover {
-            width: 100%;
-            max-width: 400px;
-            border-radius: 10px;
-            overflow: hidden;
-            background: rgba(255, 255, 255, 0.03);
-            flex-shrink: 0;
-        }
-
-        .modal-content .modal-cover img {
-            display: block;
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            object-fit: cover;
-        }
-
-        .modal-content .modal-cover .cover-fallback {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: rgba(255, 255, 255, 0.15);
-            font-size: 48px;
-            background: rgba(255, 255, 255, 0.03);
-        }
-
-        .modal-content .modal-info {
-            width: 100%;
-            max-width: 400px;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 14px;
-            font-weight: 300;
-            line-height: 1.8;
-        }
-
-        .modal-content .modal-info .mi-title {
-            font-size: 18px;
-            font-weight: 500;
-            color: #fff;
-            margin-bottom: 6px;
-            line-height: 1.4;
-        }
-
-        .modal-content .modal-info .mi-code {
-            font-size: 16px;
-            color: rgba(255, 255, 255, 0.8);
-            font-weight: 500;
-        }
-
-        .modal-content .modal-info .mi-actress {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .modal-content .modal-info .mi-duration {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .modal-content .modal-info .mi-desc {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.3);
-            margin-top: 4px;
-            line-height: 1.6;
-        }
-
-        .modal-bottom {
-            padding: 10px 16px 16px;
-            display: flex;
-            gap: 10px;
-            max-width: 400px;
-            width: 100%;
-            margin: 0 auto;
-        }
-
-        .modal-bottom button {
-            flex: 1;
-            padding: 12px 0;
-            border: 0;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 450;
-            cursor: pointer;
-            font-family: inherit;
-            transition: all 0.2s ease;
-        }
-
-        .modal-bottom .modal-download {
-            background: #fff;
-            color: #0a0a0a;
-        }
-
-        .modal-bottom .modal-download:hover {
-            opacity: 0.85;
-        }
-
-        .modal-bottom .modal-preview {
-            background: rgba(255, 255, 255, 0.08);
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .modal-bottom .modal-preview:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: #fff;
-        }
-
-        .dev-signature {
-            text-align: center;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.15);
-            margin-top: 32px;
-            letter-spacing: 0.5px;
-            font-weight: 300;
-        }
-
-        .empty-state {
-            grid-column: 1 / -1;
-            text-align: center;
-            color: rgba(255, 255, 255, 0.2);
-            padding: 40px 20px;
-            font-size: 14px;
-            font-weight: 300;
-            line-height: 2;
-        }
-
-        .empty-state .empty-icon {
-            font-size: 36px;
-            display: block;
-            margin-bottom: 10px;
-        }
-
-        @media (max-width: 420px) {
-            .app-container {
-                padding: 28px 18px 22px;
-                border-radius: 24px;
-            }
-            .app-title {
-                font-size: 22px;
-            }
-            .gallery {
-                gap: 6px;
-            }
-            .item-actions button {
-                font-size: 9px;
-                padding: 4px 0;
-            }
-            .modal-content .modal-info .mi-title {
-                font-size: 16px;
-            }
-        }
-
-        @media (max-width: 360px) {
-            .app-container {
-                padding: 20px 12px 16px;
-                border-radius: 20px;
-            }
-            .item-actions button {
-                font-size: 8px;
-                padding: 3px 0;
-            }
-        }
+            background:rgba(0,200,255,0.06); border-color:rgba(0,200,255,0.1);
+            color:rgba(0,200,255,0.5);
+        }
+        .tab-bar { display:flex; gap:4px; background:rgba(255,255,255,0.04); border-radius:10px; padding:4px; margin-bottom:20px; }
+        .tab-btn { flex:1; padding:10px 0; border:0; border-radius:8px; font-size:14px; font-weight:450; cursor:pointer; font-family:inherit; transition:all 0.25s; background:transparent; color:rgba(255,255,255,0.4); }
+        .tab-btn.active { background:rgba(255,255,255,0.08); color:#fff; }
+        .tab-btn:hover { color:rgba(255,255,255,0.7); }
+        .tab-content { display:none; animation:fadeIn 0.3s ease; }
+        .tab-content.active { display:block; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);} }
+        .search-label { font-size:13px; color:rgba(255,255,255,0.4); font-weight:300; margin-bottom:6px; display:block; }
+        .search-row { display:flex; gap:10px; align-items:center; }
+        .search-row input { flex:1; background:transparent; border:0; border-bottom:1px solid rgba(255,255,255,0.12); padding:10px 0 8px; font-size:16px; color:#fff; outline:none; transition:border-color 0.25s; font-family:inherit; }
+        .search-row input::placeholder { color:rgba(255,255,255,0.2); font-weight:300; }
+        .search-row input:focus { border-bottom-color:rgba(255,255,255,0.5); }
+        .search-row .search-btn-icon { background:transparent; border:0; color:rgba(255,255,255,0.4); font-size:20px; cursor:pointer; padding:6px 4px 6px 10px; transition:color 0.2s; }
+        .search-row .search-btn-icon:hover { color:rgba(255,255,255,0.7); }
+        .primary-btn { width:100%; padding:14px 0; background:#fff; color:#0a0a0a; border:0; border-radius:12px; font-size:16px; font-weight:500; cursor:pointer; transition:all 0.2s; font-family:inherit; margin-top:18px; }
+        .primary-btn:hover { opacity:0.85; transform:scale(0.98); }
+        .primary-btn:disabled { opacity:0.3; cursor:default; transform:none; }
+        .status-box { margin-top:14px; padding:12px 14px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.04); font-size:13px; color:rgba(255,255,255,0.5); font-weight:300; line-height:1.6; min-height:20px; }
+        .status-box.error { color:#ff6b6b; border-color:rgba(255,107,107,0.15); background:rgba(255,107,107,0.04); }
+        .status-box.loading { color:#ffd93d; border-color:rgba(255,217,61,0.15); background:rgba(255,217,61,0.04); }
+        .status-box.success { color:#4caf50; border-color:rgba(76,175,80,0.15); background:rgba(76,175,80,0.04); }
+        .result-header { display:flex; justify-content:space-between; align-items:center; margin-top:18px; margin-bottom:12px; }
+        .result-title { font-size:15px; font-weight:450; color:#fff; }
+        .result-count { font-size:12px; color:rgba(255,255,255,0.25); font-weight:300; }
+        .gallery { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+        .item { background:rgba(255,255,255,0.04); border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,0.04); transition:all 0.2s; }
+        .media-wrap { position:relative; width:100%; background:rgba(255,255,255,0.03); overflow:hidden; }
+        .media-wrap img { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; cursor:pointer; }
+        .media-error { width:100%; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.03); color:rgba(255,255,255,0.2); font-size:12px; text-align:center; padding:12px; font-weight:300; }
+        .item-info { padding:8px 10px; }
+        .item-title { font-size:12px; font-weight:400; color:rgba(255,255,255,0.7); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .item-code { font-size:11px; color:rgba(255,255,255,0.3); margin-top:2px; font-weight:300; }
+        .item-actions { display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; margin-top:6px; }
+        .item-actions button { padding:5px 0; border-radius:6px; font-size:10px; cursor:pointer; font-family:inherit; border:0; transition:all 0.2s; }
+        .item-actions .btn-view { background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.4); }
+        .item-actions .btn-view:hover { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); }
+        .item-actions .btn-collect { background:rgba(255,215,0,0.08); color:rgba(255,215,0,0.5); }
+        .item-actions .btn-collect:hover { background:rgba(255,215,0,0.15); color:rgba(255,215,0,0.8); }
+        .item-actions .btn-collect.collected { background:rgba(76,175,80,0.08); color:rgba(76,175,80,0.5); }
+        .item-actions .btn-original { background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.4); }
+        .item-actions .btn-original:hover { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); }
+        .modal-overlay { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0; }
+        .modal-overlay.hidden { display:none !important; }
+        .modal-top { min-height:54px; padding:10px 16px 0; display:flex; align-items:center; justify-content:flex-end; }
+        .modal-close { background:rgba(255,255,255,0.08); border:0; color:rgba(255,255,255,0.5); border-radius:16px; padding:6px 14px; font-size:13px; cursor:pointer; font-family:inherit; transition:all 0.2s; font-weight:300; }
+        .modal-close:hover { background:rgba(255,255,255,0.15); color:#fff; }
+        .modal-content { flex:1; display:flex; flex-direction:column; align-items:center; padding:12px 16px; overflow-y:auto; gap:16px; }
+        .modal-content .modal-cover { width:100%; max-width:400px; border-radius:10px; overflow:hidden; background:rgba(255,255,255,0.03); flex-shrink:0; }
+        .modal-content .modal-cover img { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; }
+        .modal-content .modal-cover .cover-fallback { width:100%; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.15); font-size:48px; background:rgba(255,255,255,0.03); }
+        .modal-content .modal-info { width:100%; max-width:400px; color:rgba(255,255,255,0.7); font-size:14px; font-weight:300; line-height:1.8; }
+        .modal-content .modal-info .mi-title { font-size:18px; font-weight:500; color:#fff; margin-bottom:6px; line-height:1.4; }
+        .modal-content .modal-info .mi-code { font-size:16px; color:rgba(255,255,255,0.8); font-weight:500; }
+        .modal-content .modal-info .mi-actress { font-size:14px; color:rgba(255,255,255,0.6); }
+        .modal-content .modal-info .mi-duration { font-size:14px; color:rgba(255,255,255,0.4); }
+        .modal-content .modal-info .mi-desc { font-size:13px; color:rgba(255,255,255,0.3); margin-top:4px; line-height:1.6; }
+        .modal-bottom { padding:10px 16px 16px; display:flex; gap:10px; max-width:400px; width:100%; margin:0 auto; }
+        .modal-bottom button { flex:1; padding:12px 0; border:0; border-radius:10px; font-size:14px; font-weight:450; cursor:pointer; font-family:inherit; transition:all 0.2s; }
+        .modal-bottom .modal-download { background:#fff; color:#0a0a0a; opacity:0.5; cursor:not-allowed; }
+        .modal-bottom .modal-download:not(:disabled) { opacity:1; cursor:pointer; }
+        .modal-bottom .modal-download:hover:not(:disabled) { opacity:0.85; }
+        .modal-bottom .modal-preview { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.6); }
+        .modal-bottom .modal-preview:hover { background:rgba(255,255,255,0.15); color:#fff; }
+        .dev-signature { text-align:center; font-size:12px; color:rgba(255,255,255,0.15); margin-top:32px; letter-spacing:0.5px; font-weight:300; }
+        .empty-state { grid-column:1/-1; text-align:center; color:rgba(255,255,255,0.2); padding:40px 20px; font-size:14px; font-weight:300; line-height:2; }
+        .empty-state .empty-icon { font-size:36px; display:block; margin-bottom:10px; }
+        .loader { text-align:center; color:rgba(255,255,255,0.3); padding:40px 20px; font-size:14px; font-weight:300; }
     </style>
 </head>
 <body>
@@ -627,7 +126,7 @@
     <span class="back-link" id="backToHome">‹ 返回首页</span>
 
     <div class="app-title">🎬 Jable 下载器</div>
-    <div class="app-subtitle">搜索 · 收藏 · 下载</div>
+    <div class="app-subtitle">搜索 · 收藏 · 预览</div>
 
     <div id="modeBanner"></div>
 
@@ -657,7 +156,7 @@
     <div class="tab-content" id="tabCollection">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
             <span style="font-size:12px;color:rgba(255,255,255,0.25);font-weight:300;" id="collectionCount">共 0 个</span>
-            <button style="background:transparent;border:0;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;" id="refreshCollectionBtn">刷新</button>
+            <button style="background:transparent;border:0;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s;" id="refreshCollectionBtn">刷新</button>
         </div>
         <div class="gallery" id="collectionGallery"></div>
     </div>
@@ -672,12 +171,17 @@
     </div>
     <div class="modal-content" id="modalContent"></div>
     <div class="modal-bottom">
-        <button class="modal-download" id="modalDownloadBtn">⬇️ 下载视频</button>
-        <button class="modal-preview" id="modalPreviewBtn">🔗 预览视频</button>
+        <button class="modal-download" id="modalDownloadBtn" disabled style="opacity:0.5;cursor:not-allowed;">下载视频（暂不可用）</button>
+        <button class="modal-preview" id="modalPreviewBtn">▶ 预览视频</button>
     </div>
 </div>
 
 <script>
+    // ============================================================
+    // Jable 下载器（临时版：预览用 Safari 原生 HLS，下载关闭）
+    // 收藏预览实时抓取最新 m3u8 地址
+    // ============================================================
+
     const API_BASE = '/api/jable';
     const STORAGE_KEY = 'jable_items';
     let currentItem = null;
@@ -692,20 +196,13 @@
         const mode = getMode();
         const banner = $('modeBanner');
         if (mode === 'developer') {
-            banner.innerHTML = `
-                <div class="mode-banner developer">
-                    🔒 开发者模式 · 数据存储在云端
-                </div>
-            `;
+            banner.innerHTML = `<div class="mode-banner developer">🔒 开发者模式 · 数据存储在云端</div>`;
         } else {
-            banner.innerHTML = `
-                <div class="mode-banner">
-                    📌 访客模式 · 数据仅保存在本地浏览器
-                </div>
-            `;
+            banner.innerHTML = `<div class="mode-banner">📌 访客模式 · 数据仅保存在本地浏览器</div>`;
         }
     }
 
+    // ---- Tab 切换 ----
     document.querySelectorAll('.tab-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
@@ -734,6 +231,7 @@
         el.className = 'status-box';
     }
 
+    // ---- 搜索 ----
     function performSearch() {
         const input = $('searchInput');
         const keyword = input.value.trim();
@@ -741,7 +239,6 @@
             showStatus($('searchStatus'), '请输入番号或演员名', 'error');
             return;
         }
-
         const submitBtn = $('searchSubmitBtn');
         submitBtn.disabled = true;
         submitBtn.textContent = '搜索中…';
@@ -775,17 +272,16 @@
         $('resultTitle').textContent = '搜索结果';
         $('resultCount').textContent = '找到 ' + data.count + ' 部影片';
         gallery.innerHTML = '';
-
         if (!data.items || data.items.length === 0) {
             gallery.innerHTML = '<div class="empty-state"><span class="empty-icon">📭</span>没有找到相关影片</div>';
             return;
         }
-
         data.items.forEach(function(item) {
             gallery.appendChild(createCard(item, 'search'));
         });
     }
 
+    // ---- 卡片生成 ----
     function createCard(item, mode) {
         const wrapper = document.createElement('div');
         wrapper.className = 'item';
@@ -803,13 +299,10 @@
             errDiv.textContent = '封面加载失败';
             img.replaceWith(errDiv);
         };
+
+        // 点击图片 → 无论搜索还是收藏，都重新抓取详情（获取最新 m3u8）
         img.addEventListener('click', function() {
-            if (mode === 'collection') {
-                // 收藏模式：直接使用已有数据打开详情
-                openModal(item);
-            } else {
-                fetchDetail(item.id);
-            }
+            fetchDetail(item.id);
         });
 
         mediaWrap.appendChild(img);
@@ -831,19 +324,18 @@
         const actions = document.createElement('div');
         actions.className = 'item-actions';
 
+        // ---- 查看详情按钮 ----
         const viewBtn = document.createElement('button');
         viewBtn.className = 'btn-view';
         viewBtn.textContent = '📺 详情';
+        // 统一：点击详情都重新抓取最新数据
         viewBtn.addEventListener('click', function(e) {
             e.stopPropagation();
-            if (mode === 'collection') {
-                openModal(item);
-            } else {
-                fetchDetail(item.id);
-            }
+            fetchDetail(item.id);
         });
         actions.appendChild(viewBtn);
 
+        // ---- 收藏按钮 ----
         const collectBtn = document.createElement('button');
         collectBtn.className = 'btn-collect';
         collectBtn.textContent = '⭐ 收藏';
@@ -853,6 +345,7 @@
         });
         actions.appendChild(collectBtn);
 
+        // ---- 原页按钮 ----
         const originBtn = document.createElement('button');
         originBtn.className = 'btn-original';
         originBtn.textContent = '🔗 原页';
@@ -865,6 +358,7 @@
         info.appendChild(actions);
         wrapper.appendChild(info);
 
+        // 检查是否已收藏
         checkIfCollected(item.id).then(function(isCollected) {
             if (isCollected) {
                 collectBtn.textContent = '✅ 已收藏';
@@ -875,6 +369,7 @@
         return wrapper;
     }
 
+    // ---- 收藏相关 ----
     function checkIfCollected(videoId) {
         const mode = getMode();
         if (mode === 'developer') {
@@ -899,7 +394,7 @@
 
     function collectItem(item, btn) {
         const mode = getMode();
-        // 先获取详情以获取完整信息
+        // 先获取详情以获取完整信息（但收藏时不保存 video_url，因为会过期）
         fetch(API_BASE + '/info?video_id=' + encodeURIComponent(item.id))
             .then(res => res.json())
             .then(data => {
@@ -913,7 +408,7 @@
                         source_url: item.url || '',
                         publish_date: detail.publish_date || '',
                         description: detail.description || '',
-                        // m3u8_url 不传，因为有时效性
+                        // 不保存 m3u8_url
                     };
                     return saveCollectItem(collectData);
                 } else {
@@ -973,7 +468,7 @@
     function loadCollection() {
         const gallery = $('collectionGallery');
         const count = $('collectionCount');
-        gallery.innerHTML = '<div class="empty-state"><span class="empty-icon">⏳</span>加载中...</div>';
+        gallery.innerHTML = '<div class="loader">加载中...</div>';
 
         const mode = getMode();
         if (mode === 'developer') {
@@ -1026,6 +521,7 @@
         });
     }
 
+    // ---- 获取详情并预览 ----
     function fetchDetail(videoId) {
         const status = $('searchStatus');
         showStatus(status, '正在获取影片信息…', 'loading');
@@ -1034,6 +530,7 @@
             .then(data => {
                 if (data.ok && data.item) {
                     hideStatus(status);
+                    // 用最新数据打开 modal
                     openModal(data.item);
                 } else {
                     throw new Error(data.detail || '获取详情失败');
@@ -1044,6 +541,7 @@
             });
     }
 
+    // ---- Modal 预览（Safari 原生 HLS 播放） ----
     function openModal(item) {
         currentItem = item;
         const modal = $('modal');
@@ -1052,9 +550,9 @@
         title.textContent = item.code || item.id || '影片详情';
         content.innerHTML = '';
 
+        // 封面
         const coverDiv = document.createElement('div');
         coverDiv.className = 'modal-cover';
-
         const img = document.createElement('img');
         img.src = item.cover || '';
         img.alt = item.title || '封面';
@@ -1068,13 +566,12 @@
         coverDiv.appendChild(img);
         content.appendChild(coverDiv);
 
+        // 信息
         const infoDiv = document.createElement('div');
         infoDiv.className = 'modal-info';
-
         let infoHTML = '';
         infoHTML += `<div class="mi-title">${item.title || '未知标题'}</div>`;
         if (item.code) infoHTML += `<div class="mi-code">番号：${item.code}</div>`;
-        // 清洗女优名
         let actressDisplay = item.actress || '';
         actressDisplay = actressDisplay.replace(/^按女優\s*/, '').trim();
         if (actressDisplay) infoHTML += `<div class="mi-actress">出演：${actressDisplay}</div>`;
@@ -1083,65 +580,78 @@
         if (item.description && !item.description.includes("免費高清AV在線看")) {
             infoHTML += `<div class="mi-desc">${item.description}</div>`;
         }
-
         infoDiv.innerHTML = infoHTML;
         content.appendChild(infoDiv);
+
+        // 下载按钮禁用
+        const downloadBtn = $('modalDownloadBtn');
+        downloadBtn.disabled = true;
+        downloadBtn.textContent = '下载视频（暂不可用）';
+        downloadBtn.style.opacity = '0.5';
+        downloadBtn.style.cursor = 'not-allowed';
+
+        // 预览按钮事件
+        const previewBtn = $('modalPreviewBtn');
+        // 移除旧监听，避免重复绑定
+        previewBtn.replaceWith(previewBtn.cloneNode(true));
+        const newPreviewBtn = $('modalPreviewBtn');
+        newPreviewBtn.addEventListener('click', function() {
+            previewCurrent();
+        });
 
         modal.classList.remove('hidden');
     }
 
+    // ---- 预览：Safari 原生 HLS 播放 ----
+    function previewCurrent() {
+        if (!currentItem) return;
+        const url = currentItem.video_url || '';
+        if (!url) {
+            alert('没有可播放的视频地址');
+            return;
+        }
+
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        if (!isSafari) {
+            alert('当前浏览器不支持直接播放 HLS 流，请使用 Safari 浏览器。');
+            return;
+        }
+
+        const modalContent = $('modalContent');
+        // 移除之前可能添加的 video 元素
+        const oldVideo = modalContent.querySelector('video');
+        if (oldVideo) oldVideo.remove();
+
+        const video = document.createElement('video');
+        video.controls = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.preload = 'metadata';
+        video.style.cssText = 'width:100%;max-height:60vh;background:#000;border-radius:8px;';
+        video.src = url;
+
+        // 插入到封面和信息之间（在信息后面）
+        const infoDiv = modalContent.querySelector('.modal-info');
+        if (infoDiv) {
+            modalContent.insertBefore(video, infoDiv.nextSibling);
+        } else {
+            modalContent.appendChild(video);
+        }
+
+        // 自动播放
+        video.play().catch(function(e) {
+            console.log('自动播放被阻止，请手动点击播放');
+        });
+    }
+
+    // ---- 关闭 Modal ----
     function closeModal() {
         $('modal').classList.add('hidden');
         $('modalContent').innerHTML = '';
         currentItem = null;
     }
 
-    // ===== 修改后的 downloadCurrent：复制 m3u8 链接到剪贴板 =====
-    function downloadCurrent() {
-        if (!currentItem) return;
-        const url = currentItem.video_url || '';
-        if (!url) {
-            alert('没有可用的 m3u8 地址');
-            return;
-        }
-        // 复制到剪贴板
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url).then(() => {
-                alert('✅ m3u8 地址已复制到剪贴板！\n请粘贴到第三方下载工具中。');
-            }).catch(() => {
-                fallbackCopy(url);
-            });
-        } else {
-            fallbackCopy(url);
-        }
-    }
-
-    function fallbackCopy(text) {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        try {
-            document.execCommand('copy');
-            alert('✅ m3u8 地址已复制到剪贴板！\n请粘贴到第三方下载工具中。');
-        } catch (e) {
-            alert('复制失败，请手动复制以下地址：\n' + text);
-        }
-        document.body.removeChild(textarea);
-    }
-
-    function previewCurrent() {
-        if (!currentItem) return;
-        const url = currentItem.url || '';
-        if (!url) {
-            alert('没有原页地址');
-            return;
-        }
-        window.open(url, '_blank');
-    }
-
+    // ---- 事件绑定 ----
     $('searchBtn').addEventListener('click', performSearch);
     $('searchSubmitBtn').addEventListener('click', performSearch);
     $('searchInput').addEventListener('keydown', function(e) {
@@ -1155,8 +665,9 @@
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeModal();
     });
-    $('modalDownloadBtn').addEventListener('click', downloadCurrent);
-    $('modalPreviewBtn').addEventListener('click', previewCurrent);
+
+    // 注意：预览按钮已在 openModal 中绑定，无需再绑定全局
+    // 下载按钮已禁用，不绑定事件
 
     $('backToHome').addEventListener('click', function() {
         window.location.href = '/';
@@ -1164,6 +675,7 @@
 
     $('refreshCollectionBtn').addEventListener('click', loadCollection);
 
+    // ---- 初始化 ----
     function initApp() {
         updateModeBanner();
         $('tabSearch').classList.add('active');
@@ -1172,12 +684,13 @@
             btn.classList.remove('active');
             if (btn.dataset.tab === 'search') btn.classList.add('active');
         });
-        console.log('🎬 Jable 下载器已加载');
+        console.log('🎬 Jable 下载器已加载（临时预览版）');
     }
 
     document.addEventListener('turbo:load', initApp);
     document.addEventListener('DOMContentLoaded', initApp);
 
+    // ---- 暴露收藏函数供外部调用 ----
     window.saveMissavItem = function(data) {
         const item = {
             video_id: data.video_id || data.id || '',
