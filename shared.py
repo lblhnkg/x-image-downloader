@@ -248,7 +248,7 @@ def normalize_x_media_url(url):
         return ""
     parsed = urlparse(url)
     host = (parsed.hostname or "").lower()
-    if host not in {"pbs.twimg.com", "pbs.twimg.com."}:
+    if host not in {"pbs.twimg.com", "pbs.twimg.com.", "video.twimg.com", "video.twimg.com."}:
         return url
     query = parse_qs(parsed.query)
     if query:
@@ -286,7 +286,8 @@ def validate_media_url(url):
     if parsed.scheme != "https":
         raise HTTPException(status_code=400, detail="媒体地址必须使用 HTTPS")
     hostname = (parsed.hostname or "").lower()
-    if hostname not in {"pbs.twimg.com", "pbs.twimg.com.", "video.twimg.com", "video.twimg.com."}:
+    allowed_hosts = {"pbs.twimg.com", "pbs.twimg.com.", "video.twimg.com", "video.twimg.com."}
+    if hostname not in allowed_hosts:
         raise HTTPException(status_code=400, detail="不是有效的 X 媒体地址")
     return url
 
