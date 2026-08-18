@@ -1246,7 +1246,7 @@
 
     <script>
         // ============================================================
-        // X 下载器 - 完整版（修复 HLS 预览 error 处理）
+        // X 下载器 - 完整版（修复 HLS 预览：crossOrigin + 重试代理）
         // ============================================================
 
         // ---- 状态 ----
@@ -2431,7 +2431,7 @@
         }
 
         // ============================================================
-        // 核心修复：预览 - 先判断 HLS，再判断 MP4，并增加 error 处理
+        // 核心修复：预览 HLS - crossOrigin + 重试代理
         // ============================================================
         function openModal(item) {
             currentItem = item;
@@ -2470,7 +2470,8 @@
 
                 // ---- 预览核心逻辑 ----
                 if (isHlsUrl) {
-                    // HLS 流：Safari 原生直接播放（不走代理）
+                    // HLS 流：先尝试直接播放，带上 crossOrigin
+                    video.crossOrigin = 'anonymous';
                     video.src = rawVideoUrl;
                     modalDownloadBtn.textContent = '下载视频';
                     modalDownloadBtn.disabled = false;
@@ -2482,11 +2483,20 @@
                     video.onloadedmetadata = function() {
                         video.play().catch(function() {});
                     };
-                    // 增加错误处理，避免无限转圈
+                    // 如果直接播放失败，自动重试走代理
                     video.onerror = function() {
-                        video.style.display = 'none';
-                        errorMsg.style.display = 'block';
-                        console.error('HLS 视频加载失败，可能是 CORS 或 Content-Type 问题');
+                        console.warn('HLS 直接播放失败，尝试走代理...');
+                        var proxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
+                        video.src = proxyUrl;
+                        video.crossOrigin = 'anonymous';
+                        video.onerror = function() {
+                            video.style.display = 'none';
+                            errorMsg.style.display = 'block';
+                            console.error('HLS 代理播放也失败');
+                        };
+                        video.onloadedmetadata = function() {
+                            video.play().catch(function() {});
+                        };
                     };
                 } else if (isMp4Url) {
                     // MP4 直链：走 /api/media-proxy 代理，绕过 CORS
@@ -2514,13 +2524,13 @@
                     };
                 }
 
-                video.onerror = function() {
-                    // 通用错误处理，如果尚未被覆盖
-                    if (!isHlsUrl) {
+                // 通用 onerror（仅当未被 HLS 的 onerror 覆盖时触发）
+                if (!isHlsUrl) {
+                    video.onerror = function() {
                         video.style.display = 'none';
                         errorMsg.style.display = 'block';
-                    }
-                };
+                    };
+                }
 
                 modal.classList.remove('hidden');
             } else {
