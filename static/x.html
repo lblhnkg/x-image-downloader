@@ -1108,7 +1108,7 @@
 
     <script>
         // ============================================================
-        // X 下载器 - 完整版（修复预览、下载、访客模式、博主专属）
+        // X 下载器 - 完整版（修复 HLS/MP4 预览顺序）
         // ============================================================
 
         // ---- 状态 ----
@@ -2293,7 +2293,7 @@
         }
 
         // ============================================================
-        // 核心修复：预览 - MP4 直链走 /api/media-proxy 代理
+        // 核心修复：预览 - 先判断 HLS，再判断 MP4
         // ============================================================
         function openModal(item) {
             currentItem = item;
@@ -2330,9 +2330,9 @@
                 container.appendChild(errorMsg);
                 modalContent.appendChild(container);
 
-                // ---- 预览核心逻辑 ----
+                // ---- 预览核心逻辑：先判断 HLS，再判断 MP4 ----
                 if (isHlsUrl) {
-                    // HLS 流：Safari 原生直接播放（Jable 可用）
+                    // HLS 流：Safari 原生直接播放（不走代理，避免 CORS）
                     video.src = rawVideoUrl;
                     modalDownloadBtn.textContent = '下载视频';
                     modalDownloadBtn.disabled = false;
