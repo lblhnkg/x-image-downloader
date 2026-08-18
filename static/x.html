@@ -13,6 +13,7 @@
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             background: #0a0a0a;
             color: #fff;
@@ -21,9 +22,11 @@
             padding: 20px;
             padding-bottom: 80px;
         }
+
         .hidden {
             display: none !important;
         }
+
         .app-container {
             width: 100%;
             max-width: 480px;
@@ -36,6 +39,7 @@
             position: relative;
             transition: all 0.3s ease;
         }
+
         @media (min-width: 700px) {
             .app-container {
                 max-width: 900px;
@@ -66,6 +70,7 @@
                 justify-content: center;
             }
         }
+
         @media (min-width: 1024px) {
             .app-container {
                 max-width: 1100px;
@@ -84,6 +89,7 @@
                 font-size: 18px;
             }
         }
+
         @media (max-width: 420px) {
             .app-container {
                 padding: 28px 18px 22px;
@@ -103,6 +109,7 @@
                 font-size: 15px;
             }
         }
+
         @media (max-width: 360px) {
             .app-container {
                 padding: 20px 12px 16px;
@@ -113,13 +120,16 @@
                 padding: 3px 0;
             }
         }
+
         .page {
             display: none;
             animation: fadeIn 0.4s ease;
         }
+
         .page.active {
             display: block;
         }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -130,6 +140,7 @@
                 transform: translateY(0);
             }
         }
+
         .back-row {
             display: flex;
             align-items: center;
@@ -143,13 +154,16 @@
             letter-spacing: 0.2px;
             padding: 4px 0;
         }
+
         .back-row:hover {
             color: rgba(255, 255, 255, 0.8);
         }
+
         .back-row .back-icon {
             font-size: 18px;
             line-height: 1;
         }
+
         .back-home {
             display: inline-block;
             color: rgba(255, 255, 255, 0.4);
@@ -159,9 +173,11 @@
             transition: color 0.2s ease;
             cursor: pointer;
         }
+
         .back-home:hover {
             color: rgba(255, 255, 255, 0.7);
         }
+
         .submenu-title {
             font-size: 20px;
             font-weight: 500;
@@ -169,17 +185,20 @@
             margin-bottom: 6px;
             letter-spacing: -0.3px;
         }
+
         .submenu-desc {
             font-size: 13px;
             color: rgba(255, 255, 255, 0.3);
             margin-bottom: 18px;
             font-weight: 300;
         }
+
         .submenu-grid {
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
+
         .submenu-card {
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.06);
@@ -188,24 +207,29 @@
             cursor: pointer;
             transition: all 0.25s ease;
         }
+
         .submenu-card:hover {
             background: rgba(255, 255, 255, 0.07);
             border-color: rgba(255, 255, 255, 0.12);
         }
+
         .submenu-card:active {
             transform: scale(0.98);
         }
+
         .submenu-card-title {
             font-size: 16px;
             font-weight: 450;
             color: #fff;
         }
+
         .submenu-card-desc {
             font-size: 12px;
             color: rgba(255, 255, 255, 0.3);
             margin-top: 2px;
             font-weight: 300;
         }
+
         .mode-banner {
             background: rgba(255, 215, 0, 0.08);
             border: 1px solid rgba(255, 215, 0, 0.15);
@@ -218,14 +242,17 @@
             font-weight: 300;
             transition: background 0.3s, color 0.3s, border-color 0.3s;
         }
+
         .mode-banner.developer {
             background: rgba(0, 200, 255, 0.06);
             border-color: rgba(0, 200, 255, 0.1);
             color: rgba(0, 200, 255, 0.5);
         }
+
         .search-section {
             margin-top: 6px;
         }
+
         .search-label {
             font-size: 13px;
             color: rgba(255, 255, 255, 0.4);
@@ -233,11 +260,13 @@
             margin-bottom: 6px;
             display: block;
         }
+
         .search-row {
             display: flex;
             gap: 10px;
             align-items: center;
         }
+
         .search-row input {
             flex: 1;
             background: transparent;
@@ -250,14 +279,17 @@
             transition: border-color 0.25s ease;
             font-family: inherit;
         }
+
         .search-row input::placeholder {
             color: rgba(255, 255, 255, 0.25);
             font-weight: 300;
             font-size: 14px;
         }
+
         .search-row input:focus {
             border-bottom-color: rgba(255, 255, 255, 0.5);
         }
+
         .search-row .search-btn-icon {
             background: transparent;
             border: 0;
@@ -267,9 +299,11 @@
             padding: 6px 4px 6px 10px;
             transition: color 0.2s ease;
         }
+
         .search-row .search-btn-icon:hover {
             color: rgba(255, 255, 255, 0.7);
         }
+
         .search-favorite-btn {
             background: transparent;
             border: 0;
@@ -281,12 +315,15 @@
             white-space: nowrap;
             font-family: inherit;
         }
+
         .search-favorite-btn:hover {
             color: rgba(255, 255, 255, 0.6);
         }
+
         .search-favorite-btn.favorited {
             color: #ffd700;
         }
+
         .favorites-panel {
             margin-top: 12px;
             border: 1px solid rgba(255, 255, 255, 0.06);
@@ -294,6 +331,7 @@
             overflow: hidden;
             background: rgba(255, 255, 255, 0.02);
         }
+
         .favorite-empty {
             padding: 16px 14px;
             color: rgba(255, 255, 255, 0.25);
@@ -301,6 +339,7 @@
             font-weight: 300;
             text-align: center;
         }
+
         .favorite-item {
             display: flex;
             align-items: center;
@@ -308,13 +347,16 @@
             padding: 10px 14px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.04);
         }
+
         .favorite-item:last-child {
             border-bottom: 0;
         }
+
         .favorite-item .fav-info {
             flex: 1;
             min-width: 0;
         }
+
         .favorite-item .fav-name {
             font-size: 14px;
             color: #fff;
@@ -323,6 +365,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         .favorite-item .fav-handle {
             font-size: 11px;
             color: rgba(255, 255, 255, 0.3);
@@ -330,13 +373,16 @@
             cursor: pointer;
             transition: color 0.2s ease;
         }
+
         .favorite-item .fav-handle:hover {
             color: rgba(255, 255, 255, 0.7);
         }
+
         .favorite-item .fav-actions {
             display: flex;
             gap: 6px;
         }
+
         .favorite-item .fav-actions button {
             background: transparent;
             border: 0;
@@ -348,17 +394,21 @@
             transition: all 0.2s ease;
             font-family: inherit;
         }
+
         .favorite-item .fav-actions .fav-use {
             color: rgba(255, 255, 255, 0.6);
         }
+
         .favorite-item .fav-actions .fav-use:hover {
             color: #fff;
             background: rgba(255, 255, 255, 0.08);
         }
+
         .favorite-item .fav-actions .fav-delete:hover {
             color: #ff6b6b;
             background: rgba(255, 107, 107, 0.08);
         }
+
         .favorite-toggle-btn {
             width: 100%;
             background: transparent;
@@ -372,12 +422,15 @@
             font-family: inherit;
             transition: color 0.2s ease;
         }
+
         .favorite-toggle-btn:hover {
             color: rgba(255, 255, 255, 0.5);
         }
+
         .option-section {
             margin-top: 18px;
         }
+
         .option-label {
             font-size: 12px;
             color: rgba(255, 255, 255, 0.3);
@@ -385,11 +438,13 @@
             margin-bottom: 8px;
             display: block;
         }
+
         .option-row {
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
         }
+
         .option-btn {
             background: transparent;
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -402,21 +457,25 @@
             font-family: inherit;
             font-weight: 300;
         }
+
         .option-btn:hover {
             border-color: rgba(255, 255, 255, 0.2);
             color: rgba(255, 255, 255, 0.6);
         }
+
         .option-btn.active {
             background: rgba(255, 255, 255, 0.1);
             border-color: rgba(255, 255, 255, 0.2);
             color: #fff;
         }
+
         .date-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
             margin-top: 8px;
         }
+
         .date-row input[type="date"] {
             background: transparent;
             border: 0;
@@ -428,12 +487,15 @@
             font-family: inherit;
             transition: border-color 0.25s ease;
         }
+
         .date-row input[type="date"]:focus {
             border-bottom-color: rgba(255, 255, 255, 0.4);
         }
+
         .date-row input[type="date"]::-webkit-calendar-picker-indicator {
             filter: invert(0.6);
         }
+
         .primary-btn {
             width: 100%;
             padding: 14px 0;
@@ -448,18 +510,22 @@
             font-family: inherit;
             margin-top: 18px;
         }
+
         .primary-btn:hover {
             opacity: 0.85;
             transform: scale(0.98);
         }
+
         .primary-btn:active {
             transform: scale(0.96);
         }
+
         .primary-btn:disabled {
             opacity: 0.3;
             cursor: default;
             transform: none;
         }
+
         .status-box {
             margin-top: 14px;
             padding: 12px 14px;
@@ -472,11 +538,13 @@
             line-height: 1.6;
             min-height: 20px;
         }
+
         .status-box.error {
             color: #ff6b6b;
             border-color: rgba(255, 107, 107, 0.15);
             background: rgba(255, 107, 107, 0.04);
         }
+
         .result-header {
             display: flex;
             justify-content: space-between;
@@ -484,24 +552,29 @@
             margin-top: 18px;
             margin-bottom: 12px;
         }
+
         .result-title {
             font-size: 15px;
             font-weight: 450;
             color: #fff;
         }
+
         .result-count {
             font-size: 12px;
             color: rgba(255, 255, 255, 0.25);
             font-weight: 300;
         }
+
         .gallery {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
         }
+
         .gallery.fade-in {
             animation: fadeIn 0.35s ease;
         }
+
         .item {
             background: rgba(255, 255, 255, 0.04);
             border-radius: 10px;
@@ -510,10 +583,12 @@
             position: relative;
             transition: all 0.2s ease;
         }
+
         .item.selected {
             border-color: #007aff;
             background: rgba(0, 122, 255, 0.08);
         }
+
         .select-check {
             position: absolute;
             top: 8px;
@@ -532,23 +607,28 @@
             transition: all 0.2s ease;
             pointer-events: none;
         }
+
         .item.in-select-mode .select-check {
             display: flex;
         }
+
         .item.selected .select-check {
             background: #007aff;
             border-color: #007aff;
         }
+
         .item.selected .select-check::after {
             content: "✓";
             font-weight: 600;
         }
+
         .media-wrap {
             position: relative;
             width: 100%;
             background: rgba(255, 255, 255, 0.03);
             overflow: hidden;
         }
+
         .media-wrap img {
             display: block;
             width: 100%;
@@ -556,10 +636,12 @@
             object-fit: cover;
             cursor: pointer;
         }
+
         .item.in-select-mode .media-wrap img {
             cursor: default;
             pointer-events: none;
         }
+
         .media-error {
             width: 100%;
             aspect-ratio: 1 / 1;
@@ -573,6 +655,7 @@
             padding: 12px;
             font-weight: 300;
         }
+
         .video-badge {
             position: absolute;
             left: 8px;
@@ -585,6 +668,7 @@
             font-weight: 400;
             letter-spacing: 0.3px;
         }
+
         .source-badge {
             position: absolute;
             right: 8px;
@@ -597,6 +681,7 @@
             font-weight: 300;
             letter-spacing: 0.3px;
         }
+
         .library-badge {
             position: absolute;
             right: 8px;
@@ -609,9 +694,11 @@
             font-weight: 300;
             letter-spacing: 0.3px;
         }
+
         .item-info {
             padding: 8px 10px;
         }
+
         .item-author {
             font-size: 11px;
             font-weight: 400;
@@ -622,21 +709,25 @@
             cursor: pointer;
             transition: color 0.2s ease;
         }
+
         .item-author:hover {
             color: rgba(255, 255, 255, 0.8);
         }
+
         .item-date {
             font-size: 10px;
             color: rgba(255, 255, 255, 0.2);
             margin-top: 2px;
             font-weight: 300;
         }
+
         .item-actions {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 4px;
             margin-top: 6px;
         }
+
         .item-actions button {
             padding: 5px 0;
             border-radius: 6px;
@@ -647,34 +738,42 @@
             transition: all 0.2s ease;
             pointer-events: auto;
         }
+
         .item.in-select-mode .item-actions button {
             pointer-events: none;
             opacity: 0.25;
         }
+
         .item-actions .btn-view {
             background: rgba(255, 255, 255, 0.05);
             color: rgba(255, 255, 255, 0.4);
         }
+
         .item-actions .btn-view:hover {
             background: rgba(255, 255, 255, 0.1);
             color: rgba(255, 255, 255, 0.7);
         }
+
         .item-actions .btn-download {
             background: rgba(255, 255, 255, 0.05);
             color: rgba(255, 255, 255, 0.4);
         }
+
         .item-actions .btn-download:hover {
             background: rgba(255, 255, 255, 0.1);
             color: rgba(255, 255, 255, 0.7);
         }
+
         .item-actions .btn-original {
             background: rgba(255, 255, 255, 0.05);
             color: rgba(255, 255, 255, 0.4);
         }
+
         .item-actions .btn-original:hover {
             background: rgba(255, 255, 255, 0.1);
             color: rgba(255, 255, 255, 0.7);
         }
+
         .selection-toolbar {
             position: fixed;
             bottom: 0;
@@ -692,14 +791,17 @@
             align-items: center;
             gap: 10px;
         }
+
         .selection-toolbar.active {
             display: flex;
         }
+
         .selection-toolbar .toolbar-left {
             display: flex;
             gap: 16px;
             align-items: center;
         }
+
         .selection-toolbar .toolbar-btn {
             background: transparent;
             border: 0;
@@ -711,9 +813,11 @@
             font-family: inherit;
             transition: color 0.2s ease;
         }
+
         .selection-toolbar .toolbar-btn:hover {
             color: #fff;
         }
+
         .selection-toolbar .toolbar-btn.danger {
             background: #fff;
             color: #ff3b30;
@@ -722,17 +826,21 @@
             font-weight: 600;
             font-size: 15px;
         }
+
         .selection-toolbar .toolbar-btn.danger:hover {
             opacity: 0.85;
         }
+
         .selection-toolbar .toolbar-btn.danger:active {
             transform: scale(0.96);
         }
+
         .selection-toolbar .selected-count {
             color: rgba(255, 255, 255, 0.4);
             font-size: 13px;
             font-weight: 300;
         }
+
         .delete-confirm-overlay {
             position: fixed;
             inset: 0;
@@ -745,9 +853,11 @@
             justify-content: center;
             padding: 20px;
         }
+
         .delete-confirm-overlay.active {
             display: flex;
         }
+
         .delete-confirm-box {
             background: #1c1c1e;
             border-radius: 14px;
@@ -757,18 +867,21 @@
             text-align: center;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
         }
+
         .delete-confirm-box .confirm-icon {
             font-size: 48px;
             margin-bottom: 12px;
             display: block;
             color: #ff3b30;
         }
+
         .delete-confirm-box .confirm-title {
             font-size: 18px;
             font-weight: 600;
             color: #fff;
             margin-bottom: 6px;
         }
+
         .delete-confirm-box .confirm-desc {
             font-size: 14px;
             color: rgba(255, 255, 255, 0.4);
@@ -776,10 +889,12 @@
             margin-bottom: 20px;
             font-weight: 300;
         }
+
         .delete-confirm-box .confirm-actions {
             display: flex;
             gap: 8px;
         }
+
         .delete-confirm-box .confirm-actions button {
             flex: 1;
             padding: 12px 0;
@@ -791,23 +906,29 @@
             font-family: inherit;
             transition: all 0.2s ease;
         }
+
         .delete-confirm-box .confirm-actions .confirm-cancel {
             background: transparent;
             color: #007aff;
         }
+
         .delete-confirm-box .confirm-actions .confirm-cancel:hover {
             background: rgba(0, 122, 255, 0.1);
         }
+
         .delete-confirm-box .confirm-actions .confirm-delete {
             background: #fff;
             color: #ff3b30;
         }
+
         .delete-confirm-box .confirm-actions .confirm-delete:hover {
             opacity: 0.85;
         }
+
         .delete-confirm-box .confirm-actions .confirm-delete:active {
             transform: scale(0.96);
         }
+
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -817,9 +938,11 @@
             flex-direction: column;
             padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
         }
+
         .modal-overlay.hidden {
             display: none !important;
         }
+
         .modal-top {
             min-height: 54px;
             padding: 10px 16px 0;
@@ -827,6 +950,7 @@
             align-items: center;
             justify-content: flex-end;
         }
+
         .modal-close {
             background: rgba(255, 255, 255, 0.08);
             border: 0;
@@ -839,10 +963,12 @@
             transition: all 0.2s ease;
             font-weight: 300;
         }
+
         .modal-close:hover {
             background: rgba(255, 255, 255, 0.15);
             color: #fff;
         }
+
         .modal-content {
             flex: 1;
             display: flex;
@@ -851,20 +977,24 @@
             padding: 12px 16px;
             overflow: auto;
         }
+
         .modal-content img {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
         }
+
         .modal-content video {
             max-width: 100%;
             max-height: 100%;
         }
+
         .modal-bottom {
             padding: 10px 16px 16px;
             display: flex;
             gap: 10px;
         }
+
         .modal-bottom button {
             flex: 1;
             padding: 12px 0;
@@ -876,21 +1006,26 @@
             font-family: inherit;
             transition: all 0.2s ease;
         }
+
         .modal-bottom .modal-download {
             background: #fff;
             color: #0a0a0a;
         }
+
         .modal-bottom .modal-download:hover {
             opacity: 0.85;
         }
+
         .modal-bottom .modal-original {
             background: rgba(255, 255, 255, 0.08);
             color: rgba(255, 255, 255, 0.6);
         }
+
         .modal-bottom .modal-original:hover {
             background: rgba(255, 255, 255, 0.15);
             color: #fff;
         }
+
         .dev-signature {
             text-align: center;
             font-size: 12px;
@@ -899,6 +1034,7 @@
             letter-spacing: 0.5px;
             font-weight: 300;
         }
+
         .library-placeholder {
             text-align: center;
             color: rgba(255, 255, 255, 0.3);
@@ -907,11 +1043,13 @@
             font-weight: 300;
             line-height: 1.8;
         }
+
         .library-placeholder .icon {
             font-size: 48px;
             display: block;
             margin-bottom: 12px;
         }
+
         .loader {
             text-align: center;
             color: rgba(255, 255, 255, 0.2);
@@ -1108,7 +1246,7 @@
 
     <script>
         // ============================================================
-        // X 下载器 - 完整版（修复 HLS/MP4 预览顺序）
+        // X 下载器 - 完整版（修复 HLS 预览 error 处理）
         // ============================================================
 
         // ---- 状态 ----
@@ -2293,7 +2431,7 @@
         }
 
         // ============================================================
-        // 核心修复：预览 - 先判断 HLS，再判断 MP4
+        // 核心修复：预览 - 先判断 HLS，再判断 MP4，并增加 error 处理
         // ============================================================
         function openModal(item) {
             currentItem = item;
@@ -2330,9 +2468,9 @@
                 container.appendChild(errorMsg);
                 modalContent.appendChild(container);
 
-                // ---- 预览核心逻辑：先判断 HLS，再判断 MP4 ----
+                // ---- 预览核心逻辑 ----
                 if (isHlsUrl) {
-                    // HLS 流：Safari 原生直接播放（不走代理，避免 CORS）
+                    // HLS 流：Safari 原生直接播放（不走代理）
                     video.src = rawVideoUrl;
                     modalDownloadBtn.textContent = '下载视频';
                     modalDownloadBtn.disabled = false;
@@ -2343,6 +2481,12 @@
                     };
                     video.onloadedmetadata = function() {
                         video.play().catch(function() {});
+                    };
+                    // 增加错误处理，避免无限转圈
+                    video.onerror = function() {
+                        video.style.display = 'none';
+                        errorMsg.style.display = 'block';
+                        console.error('HLS 视频加载失败，可能是 CORS 或 Content-Type 问题');
                     };
                 } else if (isMp4Url) {
                     // MP4 直链：走 /api/media-proxy 代理，绕过 CORS
@@ -2371,8 +2515,11 @@
                 }
 
                 video.onerror = function() {
-                    video.style.display = 'none';
-                    errorMsg.style.display = 'block';
+                    // 通用错误处理，如果尚未被覆盖
+                    if (!isHlsUrl) {
+                        video.style.display = 'none';
+                        errorMsg.style.display = 'block';
+                    }
                 };
 
                 modal.classList.remove('hidden');
