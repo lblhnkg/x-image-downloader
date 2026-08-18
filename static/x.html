@@ -1246,7 +1246,7 @@
 
     <script>
         // ============================================================
-        // X 下载器 - 完整版（修复 HLS 预览：crossOrigin + 重试代理）
+        // X 下载器 - 完整版（简化预览，统一走代理）
         // ============================================================
 
         // ---- 状态 ----
@@ -2431,16 +2431,14 @@
         }
 
         // ============================================================
-        // 核心修复：预览 HLS - crossOrigin + 重试代理
+        // 核心修复：预览 - 统一走 /api/media-proxy，简化逻辑
         // ============================================================
         function openModal(item) {
             currentItem = item;
             modalContent.innerHTML = '';
 
             var rawVideoUrl = item.video_url || item.media_url || item.url || '';
-            var isHlsUrl = rawVideoUrl.includes('.m3u8') || rawVideoUrl.includes('m3u8') || item.streamType === 'hls';
-            var isMp4Url = rawVideoUrl.includes('.mp4') || rawVideoUrl.includes('video.twimg.com');
-            var isVideo = item.media_type === 'video' || item.type === 'video' || isHlsUrl || isMp4Url;
+            var isVideo = item.media_type === 'video' || item.type === 'video';
 
             if (isVideo) {
                 if (!rawVideoUrl) {
@@ -2460,78 +2458,35 @@
                 video.preload = 'metadata';
                 video.style.cssText = 'max-width:100%;max-height:100%;';
 
-                var errorMsg = document.createElement('div');
-                errorMsg.style.cssText = 'display:none;color:rgba(255,255,255,0.5);text-align:center;padding:20px;font-size:14px;font-weight:300;';
-                errorMsg.textContent = '视频在线预览失败，请点击下方“下载”保存到本地观看';
+                // 统一走代理
+                var proxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
+                video.src = proxyUrl;
+
+                // 显式加载
+                video.load();
+
+                // 等待元数据加载完成后自动播放
+                video.addEventListener('loadedmetadata', function() {
+                    video.play().catch(function() {});
+                });
+
+                // 错误处理
+                video.addEventListener('error', function(e) {
+                    console.error('视频播放错误:', video.error);
+                    video.style.display = 'none';
+                    var errorMsg = document.createElement('div');
+                    errorMsg.style.cssText = 'color:rgba(255,255,255,0.5);text-align:center;padding:20px;font-size:14px;font-weight:300;';
+                    errorMsg.textContent = '视频加载失败，请尝试下载后播放';
+                    container.appendChild(errorMsg);
+                });
 
                 container.appendChild(video);
-                container.appendChild(errorMsg);
                 modalContent.appendChild(container);
 
-                // ---- 预览核心逻辑 ----
-                if (isHlsUrl) {
-                    // HLS 流：先尝试直接播放，带上 crossOrigin
-                    video.crossOrigin = 'anonymous';
-                    video.src = rawVideoUrl;
-                    modalDownloadBtn.textContent = '下载视频';
-                    modalDownloadBtn.disabled = false;
-                    modalDownloadBtn.style.opacity = '1';
-                    modalDownloadBtn.style.cursor = 'pointer';
-                    modalDownloadBtn.onclick = function() {
-                        downloadItem(item);
-                    };
-                    video.onloadedmetadata = function() {
-                        video.play().catch(function() {});
-                    };
-                    // 如果直接播放失败，自动重试走代理
-                    video.onerror = function() {
-                        console.warn('HLS 直接播放失败，尝试走代理...');
-                        var proxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
-                        video.src = proxyUrl;
-                        video.crossOrigin = 'anonymous';
-                        video.onerror = function() {
-                            video.style.display = 'none';
-                            errorMsg.style.display = 'block';
-                            console.error('HLS 代理播放也失败');
-                        };
-                        video.onloadedmetadata = function() {
-                            video.play().catch(function() {});
-                        };
-                    };
-                } else if (isMp4Url) {
-                    // MP4 直链：走 /api/media-proxy 代理，绕过 CORS
-                    var proxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
-                    video.src = proxyUrl;
-                    modalDownloadBtn.textContent = '下载视频';
-                    modalDownloadBtn.disabled = false;
-                    modalDownloadBtn.style.opacity = '1';
-                    modalDownloadBtn.style.cursor = 'pointer';
-                    modalDownloadBtn.onclick = function() {
-                        downloadItem(item);
-                    };
-                    video.onloadedmetadata = function() {
-                        video.play().catch(function() {});
-                    };
-                } else {
-                    // 兜底：尝试直接播放
-                    video.src = rawVideoUrl;
-                    modalDownloadBtn.textContent = '下载视频';
-                    modalDownloadBtn.disabled = false;
-                    modalDownloadBtn.style.opacity = '1';
-                    modalDownloadBtn.style.cursor = 'pointer';
-                    modalDownloadBtn.onclick = function() {
-                        downloadItem(item);
-                    };
-                }
-
-                // 通用 onerror（仅当未被 HLS 的 onerror 覆盖时触发）
-                if (!isHlsUrl) {
-                    video.onerror = function() {
-                        video.style.display = 'none';
-                        errorMsg.style.display = 'block';
-                    };
-                }
-
+                modalDownloadBtn.textContent = '下载视频';
+                modalDownloadBtn.onclick = function() {
+                    downloadItem(item);
+                };
                 modal.classList.remove('hidden');
             } else {
                 // 图片
@@ -2549,9 +2504,6 @@
                 };
                 modalContent.appendChild(img);
                 modalDownloadBtn.textContent = '下载原图';
-                modalDownloadBtn.disabled = false;
-                modalDownloadBtn.style.opacity = '1';
-                modalDownloadBtn.style.cursor = 'pointer';
                 modalDownloadBtn.onclick = function() {
                     downloadItem(item);
                 };
