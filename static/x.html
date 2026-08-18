@@ -2460,17 +2460,28 @@
                 alert('这个媒体暂时没有可下载地址。');
                 return;
             }
-            var isVideo = item.media_type === 'video' || item.type === 'video' ||
-                url.includes('.m3u8') || url.includes('.mp4') || url.includes('.webm');
+
+            var isVideo = item.media_type === 'video' || item.type === 'video';
+            var isMp4Url = url.includes('.mp4') || url.includes('video.twimg.com');
+            var isHlsUrl = url.includes('.m3u8') || item.streamType === 'hls';
+
             var filename = getFilename(item);
 
-            if (isVideo) {
+            if (isVideo && isMp4Url) {
+                // X 视频：直接走 /api/download 代理下载 MP4
                 var videoFilename = filename.endsWith('.mp4') ? filename : filename + '.mp4';
-                window.location.href = '/api/video-download?url=' + encodeURIComponent(url) + '&filename=' +
-                    encodeURIComponent(videoFilename);
+                window.location.href = '/api/download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(videoFilename);
+            } else if (isVideo && isHlsUrl) {
+                // HLS 视频（如 Jable）：走 FFmpeg 转码
+                var videoFilename = filename.endsWith('.mp4') ? filename : filename + '.mp4';
+                window.location.href = '/api/video-download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(videoFilename);
+            } else if (isVideo) {
+                // 兜底：未知视频格式，尝试直接下载
+                var videoFilename = filename.endsWith('.mp4') ? filename : filename + '.mp4';
+                window.location.href = '/api/download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(videoFilename);
             } else {
-                window.location.href = '/api/download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(
-                    filename);
+                // 图片
+                window.location.href = '/api/download?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(filename);
             }
         }
 
@@ -2480,7 +2491,7 @@
 
             var rawVideoUrl = item.video_url || item.media_url || item.url || '';
             var isHlsUrl = rawVideoUrl.includes('.m3u8') || item.streamType === 'hls';
-            var isMp4Url = rawVideoUrl.includes('.mp4');
+            var isMp4Url = rawVideoUrl.includes('.mp4') || rawVideoUrl.includes('video.twimg.com');
             var isVideo = item.media_type === 'video' || item.type === 'video' || isHlsUrl || isMp4Url;
 
             if (isVideo) {
@@ -2512,7 +2523,20 @@
                 container.appendChild(errorMsg);
                 modalContent.appendChild(container);
 
-                if (isHlsUrl) {
+                if (isMp4Url) {
+                    // MP4 直链：直接代理播放（Safari 原生支持）
+                    var proxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
+                    video.src = proxyUrl;
+                    video.onloadedmetadata = function() {
+                        video.play().catch(function() {});
+                    };
+                    modalDownloadBtn.textContent = '下载视频';
+                    // 恢复下载按钮（MP4 可以直接下载）
+                    modalDownloadBtn.disabled = false;
+                    modalDownloadBtn.style.opacity = '1';
+                    modalDownloadBtn.style.cursor = 'pointer';
+                } else if (isHlsUrl) {
+                    // HLS 流：走 FFmpeg 转码预览
                     var streamUrl = '/api/video-stream?url=' + encodeURIComponent(rawVideoUrl);
                     video.src = streamUrl;
                     var loadingMsg = document.createElement('div');
@@ -2524,14 +2548,18 @@
                         if (loadingMsg.parentNode) loadingMsg.remove();
                         if (errorMsg.parentNode) errorMsg.style.display = 'none';
                     };
-                } else if (isMp4Url) {
-                    var proxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
-                    video.src = proxyUrl;
-                    video.onloadedmetadata = function() {
-                        video.play().catch(function() {});
-                    };
+                    modalDownloadBtn.textContent = '下载视频';
+                    // HLS 下载按钮暂时禁用
+                    modalDownloadBtn.disabled = true;
+                    modalDownloadBtn.style.opacity = '0.5';
+                    modalDownloadBtn.style.cursor = 'not-allowed';
                 } else {
+                    // 兜底
                     video.src = rawVideoUrl;
+                    modalDownloadBtn.textContent = '下载视频';
+                    modalDownloadBtn.disabled = false;
+                    modalDownloadBtn.style.opacity = '1';
+                    modalDownloadBtn.style.cursor = 'pointer';
                 }
 
                 video.onerror = function() {
@@ -2543,7 +2571,7 @@
                     }
                 };
 
-                modalDownloadBtn.textContent = '下载视频';
+                modal.classList.remove('hidden');
             } else {
                 var img = document.createElement('img');
                 img.src = item.media_url || item.url || item.originalUrl || '';
@@ -2560,9 +2588,11 @@
                 };
                 modalContent.appendChild(img);
                 modalDownloadBtn.textContent = '下载原图';
+                modalDownloadBtn.disabled = false;
+                modalDownloadBtn.style.opacity = '1';
+                modalDownloadBtn.style.cursor = 'pointer';
+                modal.classList.remove('hidden');
             }
-
-            modal.classList.remove('hidden');
         }
 
         modalCloseBtn.addEventListener('click', closeModal);
