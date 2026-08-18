@@ -661,6 +661,9 @@ async def check_favorite(request: Request, username: str):
     exists = await is_favorite(username)
     return {"ok": True, "username": username, "favorited": exists}
 
+# ============================================================
+# 核心修复：media_proxy 流式代理（支持 Range，强制 video/mp4）
+# ============================================================
 @router.get("/api/media-proxy")
 async def media_proxy(request: Request, url: str = Query(...)):
     url = resolve_proxy_url(url)
@@ -669,59 +672,59 @@ async def media_proxy(request: Request, url: str = Query(...)):
 
     headers = {
         "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
-        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        "Accept": "*/*",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         "Referer": "https://x.com/",
         "Origin": "https://x.com",
         "Connection": "keep-alive",
     }
 
+    # 获取 Range 头（Safari 拖拽时会发送）
     range_header = request.headers.get("range")
     if range_header:
         headers["Range"] = range_header
 
     try:
+        # 使用流式请求
         async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=15.0), follow_redirects=True, headers=headers) as client:
             response = await client.get(url)
-            # 修正 Content-Type：如果 URL 是 .m3u8，强制设为 HLS 类型
-            content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
-            if url.lower().endswith('.m3u8') or '.m3u8?' in url.lower():
-                content_type = 'application/vnd.apple.mpegurl'
-            elif not content_type or content_type == "application/octet-stream":
-                path = urlparse(url).path.lower()
-                if path.endswith(".png"):
-                    content_type = "image/png"
-                elif path.endswith(".webp"):
-                    content_type = "image/webp"
-                elif path.endswith(".gif"):
-                    content_type = "image/gif"
-                elif ".mp4" in path or "video" in content_type:
-                    content_type = "video/mp4"
-                else:
-                    content_type = "image/jpeg"
 
-            if content_type and "video" in content_type:
-                return Response(
-                    content=response.content,
-                    media_type=content_type,
-                    headers={
-                        "Cache-Control": "public, max-age=86400",
-                        "Access-Control-Allow-Origin": "https://x-v1.onrender.com",
-                        "Cross-Origin-Resource-Policy": "cross-origin",
-                        "Accept-Ranges": "bytes",
-                        "Content-Length": str(len(response.content)),
-                    }
-                )
+            # 确定 Content-Type
+            content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
+            # 对于 MP4，强制设为 video/mp4
+            if ".mp4" in url or "video" in content_type:
+                content_type = "video/mp4"
+
+            # 构建响应头
+            response_headers = {
+                "Cache-Control": "public, max-age=86400",
+                "Access-Control-Allow-Origin": "*",
+                "Cross-Origin-Resource-Policy": "cross-origin",
+                "Content-Type": content_type,
+            }
+
+            # 如果原始响应有 Content-Length，透传
+            if "content-length" in response.headers:
+                response_headers["Content-Length"] = response.headers["content-length"]
+
+            # 如果原始响应有 Content-Range（206 响应），透传
+            if "content-range" in response.headers:
+                response_headers["Content-Range"] = response.headers["content-range"]
+
+            # 如果原始响应有 Accept-Ranges，透传
+            if "accept-ranges" in response.headers:
+                response_headers["Accept-Ranges"] = response.headers["accept-ranges"]
             else:
-                return Response(
-                    content=response.content,
-                    media_type=content_type,
-                    headers={
-                        "Cache-Control": "public, max-age=86400",
-                        "Access-Control-Allow-Origin": "https://x-v1.onrender.com",
-                        "Cross-Origin-Resource-Policy": "cross-origin",
-                    }
-                )
+                # 如果没有，手动添加（支持 Range 请求）
+                response_headers["Accept-Ranges"] = "bytes"
+
+            # 使用 StreamingResponse 流式返回
+            return StreamingResponse(
+                response.aiter_bytes(),
+                status_code=response.status_code,
+                media_type=content_type,
+                headers=response_headers
+            )
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=502, detail=f"X 服务器返回错误：{e.response.status_code}")
     except Exception as e:
