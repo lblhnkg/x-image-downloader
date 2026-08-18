@@ -8,7 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js">
     </script>
     <style>
-        /* 完整样式，未压缩 */
         * {
             margin: 0;
             padding: 0;
@@ -1109,7 +1108,7 @@
 
     <script>
         // ============================================================
-        // X 下载器 - 完整版（修复访客模式收藏、预览、下载）
+        // X 下载器 - 完整版（修复预览、下载、访客模式、博主专属）
         // ============================================================
 
         // ---- 状态 ----
@@ -2294,7 +2293,7 @@
         }
 
         // ============================================================
-        // 核心修复：预览用 Safari 原生 HLS 直接播放（不转码）
+        // 核心修复：预览 - MP4 直链走 /api/media-proxy 代理
         // ============================================================
         function openModal(item) {
             currentItem = item;
@@ -2331,8 +2330,9 @@
                 container.appendChild(errorMsg);
                 modalContent.appendChild(container);
 
+                // ---- 预览核心逻辑 ----
                 if (isHlsUrl) {
-                    // HLS 流：Safari 原生直接播放
+                    // HLS 流：Safari 原生直接播放（Jable 可用）
                     video.src = rawVideoUrl;
                     modalDownloadBtn.textContent = '下载视频';
                     modalDownloadBtn.disabled = false;
@@ -2345,8 +2345,9 @@
                         video.play().catch(function() {});
                     };
                 } else if (isMp4Url) {
-                    // MP4 直链
-                    video.src = rawVideoUrl;
+                    // MP4 直链：走 /api/media-proxy 代理，绕过 CORS
+                    var proxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
+                    video.src = proxyUrl;
                     modalDownloadBtn.textContent = '下载视频';
                     modalDownloadBtn.disabled = false;
                     modalDownloadBtn.style.opacity = '1';
@@ -2358,6 +2359,7 @@
                         video.play().catch(function() {});
                     };
                 } else {
+                    // 兜底：尝试直接播放
                     video.src = rawVideoUrl;
                     modalDownloadBtn.textContent = '下载视频';
                     modalDownloadBtn.disabled = false;
