@@ -684,7 +684,10 @@ async def media_proxy(request: Request, url: str = Query(...)):
         async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=15.0), follow_redirects=True, headers=headers) as client:
             response = await client.get(url)
             content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
-            if not content_type or content_type == "application/octet-stream":
+            # 关键修复：如果请求的是 .m3u8，强制设为 HLS 类型
+            if url.lower().endswith('.m3u8') or '.m3u8?' in url.lower():
+                content_type = 'application/vnd.apple.mpegurl'
+            elif not content_type or content_type == "application/octet-stream":
                 path = urlparse(url).path.lower()
                 if path.endswith(".png"):
                     content_type = "image/png"
@@ -844,7 +847,7 @@ async def video_download(
                 final_referer = ref
                 break
 
-    headers_str = f"User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1\r\nReferer: {final_referer}\r\nOrigin: {final_referer}\r\n"
+    headers_str = f"User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1\r\nReferer: {final_referer}[...]"
 
     command = [
         "ffmpeg",
@@ -893,7 +896,7 @@ async def video_stream(url: str = Query(...)):
     temp_dir = tempfile.mkdtemp(prefix="x-video-")
     output_path = os.path.join(temp_dir, f"{uuid.uuid4()}.mp4")
 
-    headers_str = "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1\r\nReferer: https://x.com/\r\nOrigin: https://x.com/\r\n"
+    headers_str = "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1\r\nReferer: https://x.com/\r[...]"
 
     command = [
         "ffmpeg",
