@@ -1246,7 +1246,10 @@
 
     <script>
         // ============================================================
-        // X 下载器 - 最终修复版（强制识别 .m3u8）
+        // X 下载器 - 最终修复版
+        // HLS 视频：新标签页打开（系统播放器）
+        // MP4 视频：在 Modal 中播放（走代理）
+        // 图片：在 Modal 中查看大图
         // ============================================================
 
         // ---- 状态 ----
@@ -2410,7 +2413,7 @@
         }
 
         // ============================================================
-        // 核心修复：下载回退到最初可用版本
+        // 核心修复：下载
         // ============================================================
         function downloadItem(item) {
             var url = item.originalUrl || item.media_url || item.url || '';
@@ -2431,13 +2434,15 @@
         }
 
         // ============================================================
-        // 核心修复：预览 - 强制识别 .m3u8 直接播放
+        // 核心修复：预览
+        // HLS 视频：新标签页打开（系统播放器）
+        // MP4 视频：在 Modal 中播放（走代理）
+        // 图片：在 Modal 中查看大图
         // ============================================================
         function openModal(item) {
             currentItem = item;
             modalContent.innerHTML = '';
 
-            // 优先使用 originalUrl，其次 video_url，再其次 media_url，最后 url
             var rawVideoUrl = item.originalUrl || item.video_url || item.media_url || item.url || '';
             var isVideo = item.media_type === 'video' || item.type === 'video';
 
@@ -2449,6 +2454,20 @@
                     return;
                 }
 
+                // 判断是否为 HLS（.m3u8）
+                var isM3u8 = rawVideoUrl.includes('.m3u8') || rawVideoUrl.includes('m3u8');
+
+                if (isM3u8) {
+                    // HLS 视频：直接在新标签页用系统播放器打开，不显示 Modal
+                    window.open(rawVideoUrl, '_blank');
+                    // 关闭 Modal
+                    modal.classList.add('hidden');
+                    modalContent.innerHTML = '';
+                    currentItem = null;
+                    return;
+                }
+
+                // MP4 或其他：走代理播放（保留原有 Modal 逻辑）
                 var container = document.createElement('div');
                 container.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;';
 
@@ -2459,34 +2478,14 @@
                 video.preload = 'metadata';
                 video.style.cssText = 'max-width:100%;max-height:100%;';
 
-                // 【最终修复】强制识别 .m3u8，直接播放，绝对不走代理
-                var isM3u8 = rawVideoUrl.includes('.m3u8') || rawVideoUrl.includes('m3u8');
-                var isAlreadyProxy = rawVideoUrl.includes('/api/media-proxy');
-                var proxyUrl;
-
-                if (isM3u8) {
-                    // HLS 直接播放，不走代理
-                    proxyUrl = rawVideoUrl;
-                    console.log('[预览] 检测到 HLS (.m3u8)，直接播放，不走代理:', proxyUrl);
-                } else if (isAlreadyProxy) {
-                    proxyUrl = rawVideoUrl;
-                    console.log('[预览] 已是代理地址，直接使用:', proxyUrl);
-                } else {
-                    proxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
-                    console.log('[预览] MP4 走代理:', proxyUrl);
-                }
-
+                var proxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
                 video.src = proxyUrl;
-
-                // 显式加载
                 video.load();
 
-                // 等待元数据加载完成后自动播放
                 video.addEventListener('loadedmetadata', function() {
                     video.play().catch(function() {});
                 });
 
-                // 错误处理
                 video.addEventListener('error', function(e) {
                     console.error('视频播放错误:', video.error);
                     video.style.display = 'none';
@@ -2505,7 +2504,7 @@
                 };
                 modal.classList.remove('hidden');
             } else {
-                // 图片
+                // 图片：保留完整预览功能
                 var img = document.createElement('img');
                 img.src = item.media_url || item.url || item.originalUrl || '';
                 img.alt = item.alt || '';
