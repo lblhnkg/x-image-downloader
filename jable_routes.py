@@ -2,6 +2,7 @@
 # jable_routes.py - Jable / HohoJ 双数据源模块
 # 修复：/collect 接口 m3u8_url 允许空值
 # 新增：HohoJ.tv 数据源支持
+# 修复：HohoJ 详情页标题、番号、女优名、发布日期提取
 # ============================================================
 
 import re
@@ -167,7 +168,7 @@ class JableFetcher:
         if code_match:
             code = code_match.group(1)
 
-        # 女优提取（彻底清洗）
+        # 女优提取
         actress = ""
         models = soup.select('a[href*="/models/"]')
         if models:
@@ -204,7 +205,7 @@ class JableFetcher:
         if cover and cover.startswith('//'):
             cover = 'https:' + cover
 
-        # 简介（过滤默认文案）
+        # 简介
         desc = ""
         meta_desc = soup.find('meta', attrs={'name': 'description'})
         if meta_desc:
@@ -255,7 +256,7 @@ class JableFetcher:
             else:
                 duration_str = f"{minutes:02d}:{seconds:02d}"
 
-        # video_url：优先从 hlsUrl 变量提取
+        # video_url
         video_url = ""
         for script in soup.find_all('script'):
             if script.string:
@@ -287,7 +288,7 @@ class JableFetcher:
         }
 
 # ============================================================
-# HohoJ 抓取器
+# HohoJ 抓取器（修复版）
 # ============================================================
 
 class HohoJFetcher:
@@ -358,7 +359,7 @@ class HohoJFetcher:
             if href.startswith('/'):
                 href = self.base_url + href
 
-            # 提取视频 ID（从 /video?id=xxx）
+            # 提取视频 ID
             video_id = None
             if '?id=' in href:
                 video_id = href.split('?id=')[-1].split('&')[0]
@@ -368,14 +369,13 @@ class HohoJFetcher:
                 continue
             seen.add(video_id)
 
-            # 封面图（优先 large，如果拿到 small 则替换）
+            # 封面图
             img = item.find('img')
             cover = ''
             if img:
                 cover = img.get('src') or img.get('data-src') or ''
                 if cover.startswith('//'):
                     cover = 'https:' + cover
-                # 如果拿到的是 small，替换为 large
                 if '/small_' in cover:
                     cover = cover.replace('/small_', '/large_')
 
@@ -383,9 +383,11 @@ class HohoJFetcher:
             title_div = item.select_one('.video-item-title')
             title = title_div.text.strip() if title_div else ''
 
-            # 番号从标题提取
+            # 番号
             code = ''
-            match = re.match(r'^([A-Z]{2,6}-\d{3,5})', title)
+            # 先去除 [無碼] 前缀再提取
+            title_clean = re.sub(r'^\[?無碼\]?\s*', '', title)
+            match = re.match(r'^([A-Z]{2,6}-\d{3,5})', title_clean)
             if match:
                 code = match.group(1)
 
@@ -407,33 +409,43 @@ class HohoJFetcher:
         return unique
 
     def detail(self, video_id: str) -> dict:
-        """获取 HohoJ 影片详情"""
+        """获取 HohoJ 影片详情（修复版）"""
         detail_url = f"{self.base_url}/video?id={video_id}"
         html = self._fetch(detail_url)
         soup = BeautifulSoup(html, 'lxml')
 
-        # 标题（从 <h5 class="mt-3"> 提取）
+        # ---------- 标题提取（使用 h5.mt-3） ----------
         title_tag = soup.find('h5', class_='mt-3')
         title = title_tag.text.strip() if title_tag else ''
 
-        # 番号
+        # ---------- 番号提取（去除 [無碼] 前缀） ----------
         code = ''
-        match = re.match(r'^([A-Z]{2,6}-\d{3,5})', title)
-        if match:
-            code = match.group(1)
+        if title:
+            title_clean = re.sub(r'^\[?無碼\]?\s*', '', title)
+            match = re.match(r'^([A-Z]{2,6}-\d{3,5})', title_clean)
+            if match:
+                code = match.group(1)
 
-        # ========== 修改点 1：女优名提取（只取最后一个连续的中日文字符） ==========
+        # ---------- 女优名提取（去重） ----------
         actress = ''
         if title:
-            # 去除开头的 [無碼] 和番号
+            # 先去除开头的 [無碼] 和番号
             cleaned = re.sub(r'^\[?無碼\]?\s*', '', title)
             cleaned = re.sub(r'^[A-Z]{2,6}-\d{3,5}\s*', '', cleaned)
-            # 匹配连续的中日文字符（不包含空格）
+            # 提取所有连续的中日文字符段
             names = re.findall(r'[\u4e00-\u9fff\u3040-\u30ff]+', cleaned)
-            if names:
-                actress = names[-1].strip()
+            # 去重（保持顺序）并合并
+            seen_names = set()
+            unique_names = []
+            for n in names:
+                if n not in seen_names:
+                    seen_names.add(n)
+                    unique_names.append(n)
+            if unique_names:
+                # 如果有多段，用空格连接；通常第一段就是中文名，第二段是日文名
+                actress = ' '.join(unique_names)
 
-        # 封面图（从页面中找 large 图片）
+        # ---------- 封面图 ----------
         cover = ''
         img_tag = soup.find('img', src=re.compile(r'large_'))
         if img_tag:
@@ -441,25 +453,31 @@ class HohoJFetcher:
             if cover.startswith('//'):
                 cover = 'https:' + cover
 
-        # 视频地址：从 embed 页面获取
+        # ---------- 视频地址 ----------
         video_url = ''
         embed_url = f"{self.base_url}/embed?id={video_id}"
         try:
             embed_html = self._fetch(embed_url)
-            # 查找 var videoSrc = "https://.../index.m3u8"
             match = re.search(r'var\s+videoSrc\s*=\s*"([^"]+\.m3u8)"', embed_html)
             if match:
                 video_url = match.group(1)
         except Exception as e:
             print(f"[HohoJ] 获取 embed 失败: {e}")
 
-        # 简介（HohoJ 可能没有，留空）
+        # ---------- 发布日期提取（新增） ----------
+        publish_date = None
+        date_div = soup.find('div', class_='ms-auto')
+        if date_div:
+            span = date_div.find('span')
+            if span:
+                date_text = span.text.strip()
+                try:
+                    publish_date = datetime.strptime(date_text, '%Y-%m-%d').date()
+                except:
+                    pass
+
+        # 其他字段（HohoJ 没有简介和时长，保持空）
         description = ""
-
-        # ========== 修改点 2：publish_date 改为 None（而不是空字符串） ==========
-        publish_date = None   # 避免传入空字符串导致数据库报错
-
-        # 时长（HohoJ 可能没有，留空）
         duration = ""
 
         return {
@@ -521,7 +539,7 @@ async def info_jable(
         raise HTTPException(status_code=502, detail=f"获取详情失败: {str(e)}")
 
 # ============================================================
-# 采集（m3u8_url 允许为空，增加 source 字段）
+# 采集
 # ============================================================
 
 @router.post("/collect")
@@ -532,7 +550,7 @@ async def collect_jable_item(request: Request, item: CollectItem):
         raise HTTPException(status_code=500, detail="数据库未配置")
 
     try:
-        # 确保表存在（增加 source 列）
+        # 确保表存在
         await missav_db.execute("""
             CREATE TABLE IF NOT EXISTS public.missav_items (
                 id SERIAL PRIMARY KEY,
@@ -549,7 +567,6 @@ async def collect_jable_item(request: Request, item: CollectItem):
             )
         """)
 
-        # 检查 source 列是否存在（兼容旧表）
         try:
             await missav_db.execute("ALTER TABLE public.missav_items ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'jable'")
         except Exception:
@@ -561,24 +578,22 @@ async def collect_jable_item(request: Request, item: CollectItem):
         )
 
         params = item.dict()
-        # 转换日期：仅当 publish_date 不为空且不为 None 时转换
+        # 日期转换
         if params.get("publish_date") and params["publish_date"] is not None:
             try:
-                params["publish_date"] = datetime.strptime(params["publish_date"], "%Y-%m-%d").date()
+                if isinstance(params["publish_date"], str):
+                    params["publish_date"] = datetime.strptime(params["publish_date"], "%Y-%m-%d").date()
             except:
                 params["publish_date"] = None
         else:
             params["publish_date"] = None
 
-        # m3u8_url 允许为空
         if not params.get("m3u8_url"):
             params["m3u8_url"] = None
-        # source 默认 jable
         if not params.get("source"):
             params["source"] = "jable"
 
         if existing:
-            # 更新时保留原有的 source（除非新数据有 source）
             old_source = existing.get("source") or "jable"
             if not params.get("source"):
                 params["source"] = old_source
