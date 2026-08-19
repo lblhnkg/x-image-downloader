@@ -1,7 +1,7 @@
 # ============================================================
-# jable_routes.py - Jable 模块（curl_cffi + Safari 指纹）
+# jable_routes.py - Jable / HohoJ 双数据源模块
 # 修复：/collect 接口 m3u8_url 允许空值
-# 女优名清洗、video_url 从 hlsUrl 提取
+# 新增：HohoJ.tv 数据源支持
 # ============================================================
 
 import re
@@ -30,6 +30,7 @@ class CollectItem(BaseModel):
     cover_url: str | None = None
     m3u8_url: str | None = None  # 允许为空
     source_url: str | None = None
+    source: str | None = "jable"  # 新增：数据源标识
 
 # ============================================================
 # 工具函数
@@ -285,18 +286,220 @@ class JableFetcher:
             "url": detail_url,
         }
 
+# ============================================================
+# HohoJ 抓取器
+# ============================================================
+
+class HohoJFetcher:
+    def __init__(self):
+        self.base_url = "https://hohoj.tv"
+        self.timeout = 30
+        self.headers = {
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+        }
+        self.proxies = {
+            "http": "http://127.0.0.1:1081",
+            "https": "http://127.0.0.1:1081"
+        }
+        self.session = requests.Session(
+            impersonate="safari15_5",
+            proxies=self.proxies,
+            timeout=self.timeout
+        )
+        self.session.headers.update(self.headers)
+
+    def _fetch(self, url: str, retry: bool = False) -> str:
+        """请求页面，失败时重试一次"""
+        if not retry:
+            delay = random.uniform(1, 3)
+            print(f"[HohoJ] 等待 {delay:.1f} 秒后请求...")
+            time.sleep(delay)
+        else:
+            delay = random.uniform(10, 20)
+            print(f"[HohoJ] 重试前等待 {delay:.1f} 秒...")
+            time.sleep(delay)
+
+        print(f"[HohoJ] 请求 {url}")
+        try:
+            resp = self.session.get(url, proxies=self.proxies, timeout=self.timeout)
+            print(f"[HohoJ] 状态码 {resp.status_code}")
+            if resp.status_code != 200:
+                if resp.status_code == 403 and not retry:
+                    print(f"[HohoJ] 收到 403，将重试一次...")
+                    return self._fetch(url, retry=True)
+                raise Exception(f"HTTP {resp.status_code}")
+            return resp.text
+        except Exception as e:
+            if not retry:
+                print(f"[HohoJ] 请求异常，将重试一次...")
+                return self._fetch(url, retry=True)
+            print(f"[HohoJ] 请求失败: {e}")
+            raise
+
+    def search(self, keyword: str) -> list[dict]:
+        """搜索 HohoJ"""
+        search_url = f"{self.base_url}/search?text={quote(keyword)}"
+        html = self._fetch(search_url)
+        soup = BeautifulSoup(html, 'lxml')
+        results = []
+        seen = set()
+
+        for item in soup.select('.video-item'):
+            a_tag = item.find('a')
+            if not a_tag:
+                continue
+            href = a_tag.get('href')
+            if not href:
+                continue
+            if href.startswith('/'):
+                href = self.base_url + href
+
+            # 提取视频 ID（从 /video?id=xxx）
+            video_id = None
+            if '?id=' in href:
+                video_id = href.split('?id=')[-1].split('&')[0]
+            if not video_id:
+                continue
+            if video_id in seen:
+                continue
+            seen.add(video_id)
+
+            # 封面图（优先 large，如果拿到 small 则替换）
+            img = item.find('img')
+            cover = ''
+            if img:
+                cover = img.get('src') or img.get('data-src') or ''
+                if cover.startswith('//'):
+                    cover = 'https:' + cover
+                # 如果拿到的是 small，替换为 large
+                if '/small_' in cover:
+                    cover = cover.replace('/small_', '/large_')
+
+            # 标题
+            title_div = item.select_one('.video-item-title')
+            title = title_div.text.strip() if title_div else ''
+
+            # 番号从标题提取
+            code = ''
+            match = re.match(r'^([A-Z]{2,6}-\d{3,5})', title)
+            if match:
+                code = match.group(1)
+
+            results.append({
+                "id": video_id,
+                "url": href,
+                "title": title,
+                "cover": cover,
+                "code": code,
+            })
+
+        # 去重
+        seen_ids = set()
+        unique = []
+        for r in results:
+            if r['id'] not in seen_ids:
+                seen_ids.add(r['id'])
+                unique.append(r)
+        return unique
+
+    def detail(self, video_id: str) -> dict:
+        """获取 HohoJ 影片详情"""
+        detail_url = f"{self.base_url}/video?id={video_id}"
+        html = self._fetch(detail_url)
+        soup = BeautifulSoup(html, 'lxml')
+
+        # 标题（从 <h5 class="mt-3"> 提取）
+        title_tag = soup.find('h5', class_='mt-3')
+        title = title_tag.text.strip() if title_tag else ''
+
+        # 番号
+        code = ''
+        match = re.match(r'^([A-Z]{2,6}-\d{3,5})', title)
+        if match:
+            code = match.group(1)
+
+        # 女优名（从标题末尾提取中文或日文名）
+        actress = ''
+        if title:
+            # 去除开头的 [無碼] 和番号
+            cleaned = re.sub(r'^\[?無碼\]?\s*', '', title)
+            cleaned = re.sub(r'^[A-Z]{2,6}-\d{3,5}\s*', '', cleaned)
+            # 提取末尾的中文或日文名
+            # 匹配连续的汉字或日文假名（包括空格）
+            names = re.findall(r'[\u4e00-\u9fff\u3040-\u30ff]+\s*[\u4e00-\u9fff\u3040-\u30ff]*', cleaned)
+            if names:
+                # 取最后一个作为女优名
+                actress = names[-1].strip()
+
+        # 封面图（从页面中找 large 图片）
+        cover = ''
+        img_tag = soup.find('img', src=re.compile(r'large_'))
+        if img_tag:
+            cover = img_tag.get('src')
+            if cover.startswith('//'):
+                cover = 'https:' + cover
+
+        # 视频地址：从 embed 页面获取
+        video_url = ''
+        embed_url = f"{self.base_url}/embed?id={video_id}"
+        try:
+            embed_html = self._fetch(embed_url)
+            # 查找 var videoSrc = "https://.../index.m3u8"
+            match = re.search(r'var\s+videoSrc\s*=\s*"([^"]+\.m3u8)"', embed_html)
+            if match:
+                video_url = match.group(1)
+        except Exception as e:
+            print(f"[HohoJ] 获取 embed 失败: {e}")
+
+        # 简介（HohoJ 可能没有，留空）
+        description = ""
+
+        # 发布日期（HohoJ 可能没有，留空）
+        publish_date = ""
+
+        # 时长（HohoJ 可能没有，留空）
+        duration = ""
+
+        return {
+            "id": video_id,
+            "code": code,
+            "title": title,
+            "actress": actress,
+            "cover": cover,
+            "description": description,
+            "publish_date": publish_date,
+            "duration": duration,
+            "video_url": video_url,
+            "url": detail_url,
+        }
+
+
+# ============================================================
+# 创建抓取器实例
+# ============================================================
+
 fetcher = JableFetcher()
+hohoj_fetcher = HohoJFetcher()
 
 # ============================================================
 # API 路由
 # ============================================================
 
 @router.get("/search")
-async def search_jable(q: str = Query(..., min_length=1)):
+async def search_jable(
+    q: str = Query(..., min_length=1),
+    source: str = Query("jable", regex="^(jable|hohoj)$")
+):
     try:
-        print(f"[Jable] 搜索: {q}")
-        items = fetcher.search(q)
-        print(f"[Jable] 找到 {len(items)} 个结果")
+        print(f"[搜索] 来源: {source}, 关键词: {q}")
+        if source == "hohoj":
+            items = hohoj_fetcher.search(q)
+        else:
+            items = fetcher.search(q)
         return {"ok": True, "count": len(items), "items": items}
     except Exception as e:
         import traceback
@@ -304,9 +507,15 @@ async def search_jable(q: str = Query(..., min_length=1)):
         raise HTTPException(status_code=502, detail=f"搜索失败: {str(e)}")
 
 @router.get("/info")
-async def info_jable(video_id: str = Query(...)):
+async def info_jable(
+    video_id: str = Query(...),
+    source: str = Query("jable", regex="^(jable|hohoj)$")
+):
     try:
-        data = fetcher.detail(video_id)
+        if source == "hohoj":
+            data = hohoj_fetcher.detail(video_id)
+        else:
+            data = fetcher.detail(video_id)
         return {"ok": True, "item": data}
     except Exception as e:
         import traceback
@@ -314,7 +523,7 @@ async def info_jable(video_id: str = Query(...)):
         raise HTTPException(status_code=502, detail=f"获取详情失败: {str(e)}")
 
 # ============================================================
-# 采集（m3u8_url 允许为空）
+# 采集（m3u8_url 允许为空，增加 source 字段）
 # ============================================================
 
 @router.post("/collect")
@@ -325,6 +534,7 @@ async def collect_jable_item(request: Request, item: CollectItem):
         raise HTTPException(status_code=500, detail="数据库未配置")
 
     try:
+        # 确保表存在（增加 source 列）
         await missav_db.execute("""
             CREATE TABLE IF NOT EXISTS public.missav_items (
                 id SERIAL PRIMARY KEY,
@@ -336,12 +546,19 @@ async def collect_jable_item(request: Request, item: CollectItem):
                 cover_url TEXT,
                 m3u8_url TEXT,
                 source_url TEXT,
+                source TEXT DEFAULT 'jable',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
 
+        # 检查 source 列是否存在（兼容旧表）
+        try:
+            await missav_db.execute("ALTER TABLE public.missav_items ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'jable'")
+        except Exception:
+            pass
+
         existing = await missav_db.fetch_one(
-            "SELECT id FROM public.missav_items WHERE video_id = :video_id",
+            "SELECT id, source FROM public.missav_items WHERE video_id = :video_id",
             {"video_id": item.video_id}
         )
 
@@ -352,16 +569,24 @@ async def collect_jable_item(request: Request, item: CollectItem):
                 params["publish_date"] = datetime.strptime(params["publish_date"], "%Y-%m-%d").date()
             except:
                 params["publish_date"] = None
-        # m3u8_url 允许为空，None 会存为 NULL
+        # m3u8_url 允许为空
         if not params.get("m3u8_url"):
             params["m3u8_url"] = None
+        # source 默认 jable
+        if not params.get("source"):
+            params["source"] = "jable"
 
         if existing:
+            # 更新时保留原有的 source（除非新数据有 source）
+            old_source = existing.get("source") or "jable"
+            if not params.get("source"):
+                params["source"] = old_source
             await missav_db.execute("""
                 UPDATE public.missav_items
                 SET title=:title, actress=:actress, description=:description,
                     publish_date=:publish_date, cover_url=:cover_url,
                     m3u8_url=:m3u8_url, source_url=:source_url,
+                    source=:source,
                     created_at=CURRENT_TIMESTAMP
                 WHERE video_id=:video_id
             """, params)
@@ -369,11 +594,11 @@ async def collect_jable_item(request: Request, item: CollectItem):
             await missav_db.execute("""
                 INSERT INTO public.missav_items (
                     video_id, title, actress, description,
-                    publish_date, cover_url, m3u8_url, source_url
+                    publish_date, cover_url, m3u8_url, source_url, source
                 )
                 VALUES (
                     :video_id, :title, :actress, :description,
-                    :publish_date, :cover_url, :m3u8_url, :source_url
+                    :publish_date, :cover_url, :m3u8_url, :source_url, :source
                 )
             """, params)
         return {"ok": True, "stored": True}
