@@ -1,8 +1,6 @@
 # ============================================================
 # jable_routes.py - Jable / HohoJ 双数据源模块
-# 修复：/collect 接口 m3u8_url 允许空值
-# 新增：HohoJ.tv 数据源支持
-# 修复：HohoJ 详情页标题、番号、女优名、发布日期提取
+# 修复：女优名只取最后一段，新增删除收藏接口
 # ============================================================
 
 import re
@@ -19,7 +17,7 @@ from shared import missav_db
 router = APIRouter(prefix="/api/jable", tags=["Jable"])
 
 # ============================================================
-# 模型（m3u8_url 改为可选）
+# 模型
 # ============================================================
 
 class CollectItem(BaseModel):
@@ -29,9 +27,9 @@ class CollectItem(BaseModel):
     description: str | None = None
     publish_date: str | None = None
     cover_url: str | None = None
-    m3u8_url: str | None = None  # 允许为空
+    m3u8_url: str | None = None
     source_url: str | None = None
-    source: str | None = "jable"  # 新增：数据源标识
+    source: str | None = "jable"
 
 # ============================================================
 # 工具函数
@@ -154,7 +152,6 @@ class JableFetcher:
         html = self._fetch(detail_url)
         soup = BeautifulSoup(html, 'lxml')
 
-        # 标题
         title_tag = soup.find('h1')
         title = title_tag.text.strip() if title_tag else ""
         if not title:
@@ -162,13 +159,11 @@ class JableFetcher:
             if meta_title:
                 title = meta_title.get('content', '')
 
-        # 番号
         code = ""
         code_match = re.match(r'^([A-Z]{2,6}-\d{3,5})', title)
         if code_match:
             code = code_match.group(1)
 
-        # 女优提取
         actress = ""
         models = soup.select('a[href*="/models/"]')
         if models:
@@ -197,7 +192,6 @@ class JableFetcher:
                     actress = candidate
                     break
 
-        # 封面
         cover = ""
         meta_og = soup.find('meta', property='og:image')
         if meta_og:
@@ -205,7 +199,6 @@ class JableFetcher:
         if cover and cover.startswith('//'):
             cover = 'https:' + cover
 
-        # 简介
         desc = ""
         meta_desc = soup.find('meta', attrs={'name': 'description'})
         if meta_desc:
@@ -213,14 +206,12 @@ class JableFetcher:
             if "免費高清AV在線看" in desc:
                 desc = ""
 
-        # 发布日期
         publish_date = ""
         date_pattern = re.compile(r'(\d{4}-\d{2}-\d{2})')
         date_match = date_pattern.search(html)
         if date_match:
             publish_date = date_match.group(1)
 
-        # 时长
         duration_str = ""
         duration_seconds = None
         for script in soup.find_all('script'):
@@ -256,7 +247,6 @@ class JableFetcher:
             else:
                 duration_str = f"{minutes:02d}:{seconds:02d}"
 
-        # video_url
         video_url = ""
         for script in soup.find_all('script'):
             if script.string:
@@ -288,7 +278,7 @@ class JableFetcher:
         }
 
 # ============================================================
-# HohoJ 抓取器（修复版）
+# HohoJ 抓取器（修复女优名提取）
 # ============================================================
 
 class HohoJFetcher:
@@ -314,7 +304,6 @@ class HohoJFetcher:
         self.session.headers.update(self.headers)
 
     def _fetch(self, url: str, retry: bool = False) -> str:
-        """请求页面，失败时重试一次"""
         if not retry:
             delay = random.uniform(1, 3)
             print(f"[HohoJ] 等待 {delay:.1f} 秒后请求...")
@@ -342,7 +331,6 @@ class HohoJFetcher:
             raise
 
     def search(self, keyword: str) -> list[dict]:
-        """搜索 HohoJ"""
         search_url = f"{self.base_url}/search?text={quote(keyword)}"
         html = self._fetch(search_url)
         soup = BeautifulSoup(html, 'lxml')
@@ -359,7 +347,6 @@ class HohoJFetcher:
             if href.startswith('/'):
                 href = self.base_url + href
 
-            # 提取视频 ID
             video_id = None
             if '?id=' in href:
                 video_id = href.split('?id=')[-1].split('&')[0]
@@ -369,7 +356,6 @@ class HohoJFetcher:
                 continue
             seen.add(video_id)
 
-            # 封面图
             img = item.find('img')
             cover = ''
             if img:
@@ -379,13 +365,10 @@ class HohoJFetcher:
                 if '/small_' in cover:
                     cover = cover.replace('/small_', '/large_')
 
-            # 标题
             title_div = item.select_one('.video-item-title')
             title = title_div.text.strip() if title_div else ''
 
-            # 番号
             code = ''
-            # 先去除 [無碼] 前缀再提取
             title_clean = re.sub(r'^\[?無碼\]?\s*', '', title)
             match = re.match(r'^([A-Z]{2,6}-\d{3,5})', title_clean)
             if match:
@@ -399,7 +382,6 @@ class HohoJFetcher:
                 "code": code,
             })
 
-        # 去重
         seen_ids = set()
         unique = []
         for r in results:
@@ -409,16 +391,15 @@ class HohoJFetcher:
         return unique
 
     def detail(self, video_id: str) -> dict:
-        """获取 HohoJ 影片详情（修复版）"""
         detail_url = f"{self.base_url}/video?id={video_id}"
         html = self._fetch(detail_url)
         soup = BeautifulSoup(html, 'lxml')
 
-        # ---------- 标题提取（使用 h5.mt-3） ----------
+        # 标题
         title_tag = soup.find('h5', class_='mt-3')
         title = title_tag.text.strip() if title_tag else ''
 
-        # ---------- 番号提取（去除 [無碼] 前缀） ----------
+        # 番号
         code = ''
         if title:
             title_clean = re.sub(r'^\[?無碼\]?\s*', '', title)
@@ -426,26 +407,21 @@ class HohoJFetcher:
             if match:
                 code = match.group(1)
 
-        # ---------- 女优名提取（去重） ----------
+        # ----- 女优名提取：只取末尾最后一段中日文字符 -----
         actress = ''
         if title:
-            # 先去除开头的 [無碼] 和番号
+            # 去除前缀和番号
             cleaned = re.sub(r'^\[?無碼\]?\s*', '', title)
             cleaned = re.sub(r'^[A-Z]{2,6}-\d{3,5}\s*', '', cleaned)
-            # 提取所有连续的中日文字符段
-            names = re.findall(r'[\u4e00-\u9fff\u3040-\u30ff]+', cleaned)
-            # 去重（保持顺序）并合并
-            seen_names = set()
-            unique_names = []
-            for n in names:
-                if n not in seen_names:
-                    seen_names.add(n)
-                    unique_names.append(n)
-            if unique_names:
-                # 如果有多段，用空格连接；通常第一段就是中文名，第二段是日文名
-                actress = ' '.join(unique_names)
+            # 匹配末尾的连续中日文字符（允许空格）
+            match = re.search(r'([\u4e00-\u9fff\u3040-\u30ff]+(?:\s*[\u4e00-\u9fff\u3040-\u30ff]+)*)$', cleaned)
+            if match:
+                full = match.group(1).strip()
+                # 按空格拆分，取最后一段（通常是日文名）
+                parts = re.split(r'\s+', full)
+                actress = parts[-1] if parts else full
 
-        # ---------- 封面图 ----------
+        # 封面
         cover = ''
         img_tag = soup.find('img', src=re.compile(r'large_'))
         if img_tag:
@@ -453,7 +429,7 @@ class HohoJFetcher:
             if cover.startswith('//'):
                 cover = 'https:' + cover
 
-        # ---------- 视频地址 ----------
+        # 视频地址
         video_url = ''
         embed_url = f"{self.base_url}/embed?id={video_id}"
         try:
@@ -464,7 +440,7 @@ class HohoJFetcher:
         except Exception as e:
             print(f"[HohoJ] 获取 embed 失败: {e}")
 
-        # ---------- 发布日期提取（新增） ----------
+        # 发布日期
         publish_date = None
         date_div = soup.find('div', class_='ms-auto')
         if date_div:
@@ -473,10 +449,10 @@ class HohoJFetcher:
                 date_text = span.text.strip()
                 try:
                     publish_date = datetime.strptime(date_text, '%Y-%m-%d').date()
-                except:
-                    pass
+                    print(f"[HohoJ] 提取到日期: {publish_date}")
+                except Exception as e:
+                    print(f"[HohoJ] 日期解析失败: {e}")
 
-        # 其他字段（HohoJ 没有简介和时长，保持空）
         description = ""
         duration = ""
 
@@ -492,7 +468,6 @@ class HohoJFetcher:
             "video_url": video_url,
             "url": detail_url,
         }
-
 
 # ============================================================
 # 创建抓取器实例
@@ -538,10 +513,6 @@ async def info_jable(
         traceback.print_exc()
         raise HTTPException(status_code=502, detail=f"获取详情失败: {str(e)}")
 
-# ============================================================
-# 采集
-# ============================================================
-
 @router.post("/collect")
 async def collect_jable_item(request: Request, item: CollectItem):
     if not is_developer(request):
@@ -550,7 +521,6 @@ async def collect_jable_item(request: Request, item: CollectItem):
         raise HTTPException(status_code=500, detail="数据库未配置")
 
     try:
-        # 确保表存在
         await missav_db.execute("""
             CREATE TABLE IF NOT EXISTS public.missav_items (
                 id SERIAL PRIMARY KEY,
@@ -566,7 +536,6 @@ async def collect_jable_item(request: Request, item: CollectItem):
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-
         try:
             await missav_db.execute("ALTER TABLE public.missav_items ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'jable'")
         except Exception:
@@ -578,7 +547,6 @@ async def collect_jable_item(request: Request, item: CollectItem):
         )
 
         params = item.dict()
-        # 日期转换
         if params.get("publish_date") and params["publish_date"] is not None:
             try:
                 if isinstance(params["publish_date"], str):
@@ -618,6 +586,28 @@ async def collect_jable_item(request: Request, item: CollectItem):
                 )
             """, params)
         return {"ok": True, "stored": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================
+# 新增：删除单个收藏（仅开发者）
+# ============================================================
+
+@router.delete("/collect/{video_id}")
+async def delete_collect_item(request: Request, video_id: str):
+    if not is_developer(request):
+        raise HTTPException(status_code=403, detail="permission denied")
+    if missav_db is None:
+        raise HTTPException(status_code=500, detail="数据库未配置")
+
+    try:
+        result = await missav_db.execute(
+            "DELETE FROM public.missav_items WHERE video_id = :video_id",
+            {"video_id": video_id}
+        )
+        if result == 0:
+            raise HTTPException(status_code=404, detail="未找到该收藏")
+        return {"ok": True, "deleted": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
