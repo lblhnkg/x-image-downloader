@@ -1246,8 +1246,7 @@
 
     <script>
         // ============================================================
-        // X 下载器 - 完整版（最终修复 HLS 和 MP4 预览）
-        // 核心：HLS（.m3u8）直接 Safari 原生播放，MP4 走代理
+        // X 下载器 - 最终修复版（强制识别 .m3u8）
         // ============================================================
 
         // ---- 状态 ----
@@ -2432,7 +2431,7 @@
         }
 
         // ============================================================
-        // 核心修复：预览 - 智能判断 MP4 走代理，HLS 走 Safari 原生
+        // 核心修复：预览 - 强制识别 .m3u8 直接播放
         // ============================================================
         function openModal(item) {
             currentItem = item;
@@ -2460,20 +2459,23 @@
                 video.preload = 'metadata';
                 video.style.cssText = 'max-width:100%;max-height:100%;';
 
-                // 【最终修复】构建视频源地址
+                // 【最终修复】强制识别 .m3u8，直接播放，绝对不走代理
+                var isM3u8 = rawVideoUrl.includes('.m3u8') || rawVideoUrl.includes('m3u8');
+                var isAlreadyProxy = rawVideoUrl.includes('/api/media-proxy');
                 var proxyUrl;
-                // 1. 如果已经是代理地址，直接使用（防止二次代理）
-                if (rawVideoUrl.includes('/api/media-proxy')) {
+
+                if (isM3u8) {
+                    // HLS 直接播放，不走代理
                     proxyUrl = rawVideoUrl;
-                }
-                // 2. 如果是 HLS 流（.m3u8），直接使用原始 URL（Safari 原生 HLS 支持，无需代理）
-                else if (rawVideoUrl.includes('.m3u8') || rawVideoUrl.includes('m3u8')) {
+                    console.log('[预览] 检测到 HLS (.m3u8)，直接播放，不走代理:', proxyUrl);
+                } else if (isAlreadyProxy) {
                     proxyUrl = rawVideoUrl;
-                }
-                // 3. 其他（主要是 MP4），走代理
-                else {
+                    console.log('[预览] 已是代理地址，直接使用:', proxyUrl);
+                } else {
                     proxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
+                    console.log('[预览] MP4 走代理:', proxyUrl);
                 }
+
                 video.src = proxyUrl;
 
                 // 显式加载
