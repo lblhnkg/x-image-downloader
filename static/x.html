@@ -1246,8 +1246,8 @@
 
     <script>
         // ============================================================
-        // X 下载器 - 完整版（修复“我的喜欢/书签”视频预览）
-        // 核心修复：openModal 中判断 rawVideoUrl 是否已是代理地址，避免二次代理
+        // X 下载器 - 完整版（最终修复 HLS 和 MP4 预览）
+        // 核心：HLS（.m3u8）直接 Safari 原生播放，MP4 走代理
         // ============================================================
 
         // ---- 状态 ----
@@ -2432,7 +2432,7 @@
         }
 
         // ============================================================
-        // 核心修复：预览 - 优先使用 originalUrl，且检测是否已是代理地址
+        // 核心修复：预览 - 智能判断 MP4 走代理，HLS 走 Safari 原生
         // ============================================================
         function openModal(item) {
             currentItem = item;
@@ -2460,11 +2460,18 @@
                 video.preload = 'metadata';
                 video.style.cssText = 'max-width:100%;max-height:100%;';
 
-                // 【核心修复】如果 rawVideoUrl 已经是代理地址，直接使用；否则包装为代理
+                // 【最终修复】构建视频源地址
                 var proxyUrl;
+                // 1. 如果已经是代理地址，直接使用（防止二次代理）
                 if (rawVideoUrl.includes('/api/media-proxy')) {
                     proxyUrl = rawVideoUrl;
-                } else {
+                }
+                // 2. 如果是 HLS 流（.m3u8），直接使用原始 URL（Safari 原生 HLS 支持，无需代理）
+                else if (rawVideoUrl.includes('.m3u8') || rawVideoUrl.includes('m3u8')) {
+                    proxyUrl = rawVideoUrl;
+                }
+                // 3. 其他（主要是 MP4），走代理
+                else {
                     proxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
                 }
                 video.src = proxyUrl;
