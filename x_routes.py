@@ -679,23 +679,18 @@ async def media_proxy(request: Request, url: str = Query(...)):
         "Connection": "keep-alive",
     }
 
-    # 获取 Range 头（Safari 拖拽时会发送）
     range_header = request.headers.get("range")
     if range_header:
         headers["Range"] = range_header
 
     try:
-        # 使用流式请求
         async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=15.0), follow_redirects=True, headers=headers) as client:
             response = await client.get(url)
 
-            # 确定 Content-Type
             content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
-            # 对于 MP4，强制设为 video/mp4
             if ".mp4" in url or "video" in content_type:
                 content_type = "video/mp4"
 
-            # 构建响应头
             response_headers = {
                 "Cache-Control": "public, max-age=86400",
                 "Access-Control-Allow-Origin": "*",
@@ -703,22 +698,17 @@ async def media_proxy(request: Request, url: str = Query(...)):
                 "Content-Type": content_type,
             }
 
-            # 如果原始响应有 Content-Length，透传
             if "content-length" in response.headers:
                 response_headers["Content-Length"] = response.headers["content-length"]
 
-            # 如果原始响应有 Content-Range（206 响应），透传
             if "content-range" in response.headers:
                 response_headers["Content-Range"] = response.headers["content-range"]
 
-            # 如果原始响应有 Accept-Ranges，透传
             if "accept-ranges" in response.headers:
                 response_headers["Accept-Ranges"] = response.headers["accept-ranges"]
             else:
-                # 如果没有，手动添加（支持 Range 请求）
                 response_headers["Accept-Ranges"] = "bytes"
 
-            # 使用 StreamingResponse 流式返回
             return StreamingResponse(
                 response.aiter_bytes(),
                 status_code=response.status_code,
