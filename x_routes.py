@@ -662,7 +662,7 @@ async def check_favorite(request: Request, username: str):
     return {"ok": True, "username": username, "favorited": exists}
 
 # ============================================================
-# 核心修复：media_proxy 流式代理（支持 Range，强制 video/mp4）
+# 核心修复：media_proxy 支持 HLS 文本代理
 # ============================================================
 @router.get("/api/media-proxy")
 async def media_proxy(request: Request, url: str = Query(...)):
@@ -687,6 +687,31 @@ async def media_proxy(request: Request, url: str = Query(...)):
         async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=15.0), follow_redirects=True, headers=headers) as client:
             response = await client.get(url)
 
+            # ========== 特殊处理 HLS（.m3u8）==========
+            if url.lower().endswith('.m3u8') or '.m3u8?' in url.lower():
+                # 1. 获取完整文本内容
+                content = response.text
+                # 2. 替换 ts 分片为代理地址
+                def repl_ts(m):
+                    ts_url = m.group(0)
+                    if not ts_url.startswith('http'):
+                        # 相对路径补全
+                        base = url[:url.rfind('/')+1]
+                        ts_url = base + ts_url
+                    return f'/api/media-proxy?url={quote(ts_url)}'
+                content = re.sub(r'(https?://[^\s"\']+\.ts|[\w\-./]+\.ts)', repl_ts, content)
+                # 3. 替换密钥（如果有）
+                def repl_key(m):
+                    key_url = m.group(1)
+                    if not key_url.startswith('http'):
+                        base = url[:url.rfind('/')+1]
+                        key_url = base + key_url
+                    return f'URI="/api/media-proxy?url={quote(key_url)}"'
+                content = re.sub(r'URI="([^"]+)"', repl_key, content)
+                # 4. 返回 Response（非流式）
+                return Response(content=content, media_type='application/vnd.apple.mpegurl')
+
+            # ========== 普通文件（MP4/图片）流式代理 ==========
             content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
             if ".mp4" in url or "video" in content_type:
                 content_type = "video/mp4"
