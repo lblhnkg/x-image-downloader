@@ -161,7 +161,7 @@
 
 <script>
     // ============================================================
-    // Jable 下载器（支持 Jable + HohoJ 双数据源）
+    // Jable 下载器（双数据源）
     // ============================================================
 
     const API_BASE = '/api/jable';
@@ -186,7 +186,6 @@
         }
     }
 
-    // ---- Tab 切换 ----
     document.querySelectorAll('.tab-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
@@ -202,7 +201,6 @@
         });
     });
 
-    // ---- 数据源切换 ----
     document.querySelectorAll('[data-group="datasource"] .option-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             document.querySelectorAll('[data-group="datasource"] .option-btn').forEach(function(b) {
@@ -231,7 +229,6 @@
         el.className = 'status-box';
     }
 
-    // ---- 搜索 ----
     function performSearch() {
         const input = $('searchInput');
         const keyword = input.value.trim();
@@ -282,7 +279,6 @@
         });
     }
 
-    // ---- 卡片生成 ----
     function createCard(item, mode) {
         const wrapper = document.createElement('div');
         wrapper.className = 'item';
@@ -301,7 +297,6 @@
             img.replaceWith(errDiv);
         };
 
-        // 点击行为：收藏模式直接打开模态框（使用缓存数据），搜索模式重新获取详情
         img.addEventListener('click', function() {
             if (mode === 'collection') {
                 openModal(item);
@@ -321,15 +316,19 @@
         title.textContent = item.title || '未知标题';
         info.appendChild(title);
 
+        let codeDisplay = item.code || '';
+        if (!codeDisplay && item.title) {
+            const match = item.title.match(/^([A-Z]{2,6}-\d{3,5})/);
+            if (match) codeDisplay = match[1];
+        }
         const code = document.createElement('div');
         code.className = 'item-code';
-        code.textContent = item.code || item.id || '';
+        code.textContent = codeDisplay || item.id || '';
         info.appendChild(code);
 
         const actions = document.createElement('div');
         actions.className = 'item-actions';
 
-        // 详情按钮
         const viewBtn = document.createElement('button');
         viewBtn.className = 'btn-view';
         viewBtn.textContent = '📺 详情';
@@ -343,7 +342,6 @@
         });
         actions.appendChild(viewBtn);
 
-        // 收藏/取消收藏按钮
         const collectBtn = document.createElement('button');
         collectBtn.className = 'btn-collect';
         collectBtn.textContent = mode === 'collection' ? '🗑️ 取消收藏' : '⭐ 收藏';
@@ -357,7 +355,6 @@
         });
         actions.appendChild(collectBtn);
 
-        // 原页按钮
         const originBtn = document.createElement('button');
         originBtn.className = 'btn-original';
         originBtn.textContent = '🔗 原页';
@@ -370,7 +367,6 @@
         info.appendChild(actions);
         wrapper.appendChild(info);
 
-        // 检查收藏状态（仅搜索模式）
         if (mode === 'search') {
             checkIfCollected(item.id).then(function(isCollected) {
                 if (isCollected) {
@@ -383,7 +379,6 @@
         return wrapper;
     }
 
-    // ---- 收藏相关 ----
     function checkIfCollected(videoId) {
         const mode = getMode();
         if (mode === 'developer') {
@@ -407,7 +402,6 @@
     }
 
     function collectItem(item, btn) {
-        // 先获取最新详情（含 m3u8）
         fetch(API_BASE + '/info?video_id=' + encodeURIComponent(item.id) + '&source=' + currentSource)
             .then(res => res.json())
             .then(data => {
@@ -416,6 +410,7 @@
                     const collectData = {
                         video_id: item.id,
                         title: detail.title || item.title,
+                        code: detail.code || '',
                         actress: detail.actress || '',
                         cover_url: detail.cover || item.cover || '',
                         source_url: detail.url || item.url || '',
@@ -447,10 +442,8 @@
 
     function deleteCollectItem(videoId, btn, wrapper) {
         if (!confirm('确定要取消收藏吗？')) return;
-
         const mode = getMode();
         if (mode === 'developer') {
-            // 调用后端删除接口
             fetch(API_BASE + '/collect/' + encodeURIComponent(videoId), {
                 method: 'DELETE',
                 credentials: 'include'
@@ -462,7 +455,7 @@
             .then(data => {
                 if (data.ok) {
                     wrapper.remove();
-                    loadCollection(); // 刷新列表
+                    loadCollection();
                 } else {
                     alert('删除失败：' + (data.message || '未知错误'));
                 }
@@ -471,7 +464,6 @@
                 alert('删除失败：' + err.message);
             });
         } else {
-            // 访客模式：本地删除
             let items = [];
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
@@ -564,7 +556,7 @@
                 title: item.title,
                 cover: item.cover_url,
                 url: item.source_url,
-                code: item.video_id,
+                code: item.code || '',
                 actress: item.actress,
                 duration: item.duration,
                 publish_date: item.publish_date,
@@ -576,7 +568,6 @@
         });
     }
 
-    // ---- 获取详情（用于搜索模式或刷新视频地址） ----
     function fetchDetail(videoId, source) {
         source = source || currentSource;
         const status = $('searchStatus');
@@ -586,21 +577,7 @@
             .then(data => {
                 if (data.ok && data.item) {
                     hideStatus(status);
-                    // 如果是收藏模式下刷新视频地址，则更新 currentItem 和视频元素
-                    if (currentItem && currentItem.id === videoId) {
-                        currentItem.video_url = data.item.video_url;
-                        const video = document.querySelector('#modalContent video');
-                        if (video) {
-                            video.src = data.item.video_url;
-                            video.load();
-                        }
-                        const previewBtn = document.getElementById('modalPreviewBtn');
-                        if (previewBtn) {
-                            previewBtn.textContent = '▶ 刷新视频';
-                        }
-                    } else {
-                        openModal(data.item);
-                    }
+                    openModal(data.item);
                 } else {
                     throw new Error(data.detail || '获取详情失败');
                 }
@@ -610,7 +587,6 @@
             });
     }
 
-    // ---- Modal 预览 ----
     function openModal(item) {
         currentItem = item;
         const modal = $('modal');
@@ -619,7 +595,6 @@
         title.textContent = item.code || item.id || '影片详情';
         content.innerHTML = '';
 
-        // 封面
         const coverDiv = document.createElement('div');
         coverDiv.className = 'modal-cover';
         const img = document.createElement('img');
@@ -635,7 +610,6 @@
         coverDiv.appendChild(img);
         content.appendChild(coverDiv);
 
-        // 信息
         const infoDiv = document.createElement('div');
         infoDiv.className = 'modal-info';
         let infoHTML = '';
@@ -655,20 +629,6 @@
         infoDiv.innerHTML = infoHTML;
         content.appendChild(infoDiv);
 
-        // 视频播放器（如果有 video_url 则直接显示）
-        if (item.video_url) {
-            const video = document.createElement('video');
-            video.controls = true;
-            video.autoplay = true;
-            video.playsInline = true;
-            video.preload = 'metadata';
-            video.style.cssText = 'width:100%;max-height:60vh;background:#000;border-radius:8px;';
-            video.src = item.video_url;
-            content.appendChild(video);
-            video.play().catch(e => console.log('自动播放被阻止'));
-        }
-
-        // 底部按钮
         const downloadBtn = $('modalDownloadBtn');
         downloadBtn.disabled = true;
         downloadBtn.textContent = '下载视频（暂不可用）';
@@ -678,25 +638,77 @@
         const previewBtn = $('modalPreviewBtn');
         previewBtn.replaceWith(previewBtn.cloneNode(true));
         const newPreviewBtn = $('modalPreviewBtn');
-        newPreviewBtn.textContent = item.video_url ? '▶ 刷新视频' : '▶ 预览视频';
+        newPreviewBtn.textContent = '▶ 预览视频';
         newPreviewBtn.addEventListener('click', function() {
-            if (currentItem) {
-                const src = currentItem.source || 'jable';
-                fetchDetail(currentItem.id, src);
-            }
+            playVideo(currentItem);
         });
 
         modal.classList.remove('hidden');
     }
 
-    // ---- 关闭 Modal ----
+    function playVideo(item) {
+        if (!item) return;
+        const url = item.video_url;
+        if (url) {
+            insertVideoAndPlay(url);
+        } else {
+            const status = $('searchStatus');
+            showStatus(status, '正在获取视频地址…', 'loading');
+            fetch(API_BASE + '/info?video_id=' + encodeURIComponent(item.id) + '&source=' + (item.source || currentSource))
+                .then(res => res.json())
+                .then(data => {
+                    if (data.ok && data.item) {
+                        hideStatus(status);
+                        currentItem = data.item;
+                        const existingVideo = document.querySelector('#modalContent video');
+                        if (existingVideo) {
+                            existingVideo.src = data.item.video_url;
+                            existingVideo.load();
+                            existingVideo.play().catch(e => console.log('播放失败', e));
+                        } else {
+                            insertVideoAndPlay(data.item.video_url);
+                        }
+                        const previewBtn = $('modalPreviewBtn');
+                        if (previewBtn) previewBtn.textContent = '▶ 刷新视频';
+                    } else {
+                        throw new Error(data.detail || '获取视频地址失败');
+                    }
+                })
+                .catch(err => {
+                    showStatus(status, '获取视频失败：' + err.message, 'error');
+                });
+        }
+    }
+
+    function insertVideoAndPlay(url) {
+        const modalContent = $('modalContent');
+        const oldVideo = modalContent.querySelector('video');
+        if (oldVideo) oldVideo.remove();
+
+        const video = document.createElement('video');
+        video.controls = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.preload = 'metadata';
+        video.style.cssText = 'width:100%;max-height:60vh;background:#000;border-radius:8px;';
+        video.src = url;
+        const infoDiv = modalContent.querySelector('.modal-info');
+        if (infoDiv) {
+            modalContent.insertBefore(video, infoDiv.nextSibling);
+        } else {
+            modalContent.appendChild(video);
+        }
+        video.play().catch(e => console.log('自动播放被阻止'));
+        const previewBtn = $('modalPreviewBtn');
+        if (previewBtn) previewBtn.textContent = '▶ 刷新视频';
+    }
+
     function closeModal() {
         $('modal').classList.add('hidden');
         $('modalContent').innerHTML = '';
         currentItem = null;
     }
 
-    // ---- 事件绑定 ----
     $('searchBtn').addEventListener('click', performSearch);
     $('searchSubmitBtn').addEventListener('click', performSearch);
     $('searchInput').addEventListener('keydown', function(e) {
@@ -717,7 +729,6 @@
 
     $('refreshCollectionBtn').addEventListener('click', loadCollection);
 
-    // ---- 初始化 ----
     function initApp() {
         updateModeBanner();
         $('tabSearch').classList.add('active');
@@ -733,11 +744,11 @@
     document.addEventListener('turbo:load', initApp);
     document.addEventListener('DOMContentLoaded', initApp);
 
-    // ---- 暴露收藏函数供外部调用 ----
     window.saveMissavItem = function(data) {
         const item = {
             video_id: data.video_id || data.id || '',
             title: data.title || '',
+            code: data.code || '',
             actress: data.actress || '',
             cover_url: data.cover_url || data.cover || '',
             source_url: data.source_url || data.url || '',
