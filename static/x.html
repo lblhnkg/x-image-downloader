@@ -1246,10 +1246,8 @@
 
     <script>
         // ============================================================
-        // X 下载器 - 最终修复版
-        // HLS 视频：新标签页打开（系统播放器）
-        // MP4 视频：在 Modal 中播放（走代理）
-        // 图片：在 Modal 中查看大图
+        // X 下载器 - 最终完整版
+        // 支持 HLS 在 Modal 中代理播放，保留所有按钮
         // ============================================================
 
         // ---- 状态 ----
@@ -2435,7 +2433,7 @@
 
         // ============================================================
         // 核心修复：预览
-        // HLS 视频：新标签页打开（系统播放器）
+        // HLS 视频：走代理在 Modal 中播放
         // MP4 视频：在 Modal 中播放（走代理）
         // 图片：在 Modal 中查看大图
         // ============================================================
@@ -2458,16 +2456,41 @@
                 var isM3u8 = rawVideoUrl.includes('.m3u8') || rawVideoUrl.includes('m3u8');
 
                 if (isM3u8) {
-                    // HLS 视频：直接在新标签页用系统播放器打开，不显示 Modal
-                    window.open(rawVideoUrl, '_blank');
-                    // 关闭 Modal
-                    modal.classList.add('hidden');
-                    modalContent.innerHTML = '';
-                    currentItem = null;
+                    // HLS 视频：走代理播放（不跳转新标签页）
+                    var proxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
+                    // 复用 MP4 的播放逻辑
+                    var container = document.createElement('div');
+                    container.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;';
+                    var video = document.createElement('video');
+                    video.controls = true;
+                    video.autoplay = true;
+                    video.playsInline = true;
+                    video.preload = 'metadata';
+                    video.style.cssText = 'max-width:100%;max-height:100%;';
+                    video.src = proxyUrl;
+                    video.load();
+                    video.addEventListener('loadedmetadata', function() {
+                        video.play().catch(function() {});
+                    });
+                    video.addEventListener('error', function(e) {
+                        console.error('视频播放错误:', video.error);
+                        video.style.display = 'none';
+                        var errorMsg = document.createElement('div');
+                        errorMsg.style.cssText = 'color:rgba(255,255,255,0.5);text-align:center;padding:20px;font-size:14px;font-weight:300;';
+                        errorMsg.textContent = '视频加载失败，请尝试下载后播放';
+                        container.appendChild(errorMsg);
+                    });
+                    container.appendChild(video);
+                    modalContent.appendChild(container);
+                    modalDownloadBtn.textContent = '下载视频';
+                    modalDownloadBtn.onclick = function() {
+                        downloadItem(item);
+                    };
+                    modal.classList.remove('hidden');
                     return;
                 }
 
-                // MP4 或其他：走代理播放（保留原有 Modal 逻辑）
+                // MP4 或其他：走代理播放（与 HLS 逻辑相同，只是 URL 来源不同）
                 var container = document.createElement('div');
                 container.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;';
 
