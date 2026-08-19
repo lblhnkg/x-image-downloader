@@ -629,7 +629,7 @@
                 <button class="search-btn-icon" id="searchBtn">⌕</button>
             </div>
 
-            <!-- ===== 数据源筛选（新增） ===== -->
+            <!-- 数据源筛选 -->
             <div class="source-filter">
                 <label class="search-label" style="margin-bottom:4px;">数据源</label>
                 <div class="option-row" data-group="datasource">
@@ -724,7 +724,6 @@
             btn.classList.add('active');
             currentSource = btn.dataset.value;
             console.log('[数据源] 切换到:', currentSource);
-            // 如果有搜索关键词，自动重新搜索
             const input = $('searchInput');
             if (input.value.trim()) {
                 performSearch();
@@ -815,12 +814,12 @@
             img.replaceWith(errDiv);
         };
 
+        // 图片点击：收藏模式用 item.source，搜索模式用 currentSource
         img.addEventListener('click', function() {
-            // 从收藏进入的，直接使用已有数据；从搜索进入的，重新获取详情
             if (mode === 'collection') {
-                openModal(item);
+                fetchDetail(item.id, item.source || 'jable');
             } else {
-                fetchDetail(item.id);
+                fetchDetail(item.id, currentSource);
             }
         });
 
@@ -849,9 +848,9 @@
         viewBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             if (mode === 'collection') {
-                openModal(item);
+                fetchDetail(item.id, item.source || 'jable');
             } else {
-                fetchDetail(item.id);
+                fetchDetail(item.id, currentSource);
             }
         });
         actions.appendChild(viewBtn);
@@ -911,6 +910,7 @@
     }
 
     function collectItem(item, btn) {
+        // 先获取最新详情（含 m3u8）
         fetch(API_BASE + '/info?video_id=' + encodeURIComponent(item.id) + '&source=' + currentSource)
             .then(res => res.json())
             .then(data => {
@@ -918,12 +918,13 @@
                     const detail = data.item;
                     const collectData = {
                         video_id: item.id,
-                        title: item.title,
+                        title: detail.title || item.title,
                         actress: detail.actress || '',
-                        cover_url: item.cover || '',
-                        source_url: item.url || '',
+                        cover_url: detail.cover || item.cover || '',
+                        source_url: detail.url || item.url || '',
                         publish_date: detail.publish_date || '',
                         description: detail.description || '',
+                        m3u8_url: detail.video_url || '',
                         source: currentSource,
                     };
                     return saveCollectItem(collectData);
@@ -1038,11 +1039,12 @@
         });
     }
 
-    // ---- 获取详情并预览 ----
-    function fetchDetail(videoId) {
+    // ---- 获取详情（支持指定 source） ----
+    function fetchDetail(videoId, source) {
+        source = source || currentSource;
         const status = $('searchStatus');
         showStatus(status, '正在获取影片信息…', 'loading');
-        fetch(API_BASE + '/info?video_id=' + encodeURIComponent(videoId) + '&source=' + currentSource)
+        fetch(API_BASE + '/info?video_id=' + encodeURIComponent(videoId) + '&source=' + source)
             .then(res => res.json())
             .then(data => {
                 if (data.ok && data.item) {
@@ -1096,7 +1098,6 @@
         if (item.description && !item.description.includes("免費高清AV在線看")) {
             infoHTML += `<div class="mi-desc">${item.description}</div>`;
         }
-        // 显示数据源
         if (item.source) {
             infoHTML += `<div style="font-size:11px;color:rgba(255,255,255,0.2);margin-top:4px;">来源：${item.source === 'hohoj' ? 'HoHoJ' : 'Jable'}</div>`;
         }
