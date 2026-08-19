@@ -422,17 +422,15 @@ class HohoJFetcher:
         if match:
             code = match.group(1)
 
-        # 女优名（从标题末尾提取中文或日文名）
+        # ========== 修改点 1：女优名提取（只取最后一个连续的中日文字符） ==========
         actress = ''
         if title:
             # 去除开头的 [無碼] 和番号
             cleaned = re.sub(r'^\[?無碼\]?\s*', '', title)
             cleaned = re.sub(r'^[A-Z]{2,6}-\d{3,5}\s*', '', cleaned)
-            # 提取末尾的中文或日文名
-            # 匹配连续的汉字或日文假名（包括空格）
-            names = re.findall(r'[\u4e00-\u9fff\u3040-\u30ff]+\s*[\u4e00-\u9fff\u3040-\u30ff]*', cleaned)
+            # 匹配连续的中日文字符（不包含空格）
+            names = re.findall(r'[\u4e00-\u9fff\u3040-\u30ff]+', cleaned)
             if names:
-                # 取最后一个作为女优名
                 actress = names[-1].strip()
 
         # 封面图（从页面中找 large 图片）
@@ -458,8 +456,8 @@ class HohoJFetcher:
         # 简介（HohoJ 可能没有，留空）
         description = ""
 
-        # 发布日期（HohoJ 可能没有，留空）
-        publish_date = ""
+        # ========== 修改点 2：publish_date 改为 None（而不是空字符串） ==========
+        publish_date = None   # 避免传入空字符串导致数据库报错
 
         # 时长（HohoJ 可能没有，留空）
         duration = ""
@@ -563,12 +561,15 @@ async def collect_jable_item(request: Request, item: CollectItem):
         )
 
         params = item.dict()
-        # 转换日期
-        if params.get("publish_date"):
+        # 转换日期：仅当 publish_date 不为空且不为 None 时转换
+        if params.get("publish_date") and params["publish_date"] is not None:
             try:
                 params["publish_date"] = datetime.strptime(params["publish_date"], "%Y-%m-%d").date()
             except:
                 params["publish_date"] = None
+        else:
+            params["publish_date"] = None
+
         # m3u8_url 允许为空
         if not params.get("m3u8_url"):
             params["m3u8_url"] = None
