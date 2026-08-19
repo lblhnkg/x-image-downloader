@@ -1,6 +1,7 @@
 # ============================================================
 # jable_routes.py - Jable / HohoJ 双数据源模块
-# 修复：女优名只取最后一段，新增删除收藏接口
+# 包含：完整 JableFetcher、HohoJFetcher（女优名取最后一段）
+#       收藏增加 code 字段、删除接口、日期修复
 # ============================================================
 
 import re
@@ -17,12 +18,13 @@ from shared import missav_db
 router = APIRouter(prefix="/api/jable", tags=["Jable"])
 
 # ============================================================
-# 模型
+# 模型（增加 code 字段）
 # ============================================================
 
 class CollectItem(BaseModel):
     video_id: str
     title: str
+    code: str | None = None
     actress: str | None = None
     description: str | None = None
     publish_date: str | None = None
@@ -39,7 +41,7 @@ def is_developer(request: Request):
     return bool(request.cookies.get("session"))
 
 # ============================================================
-# Jable 抓取器
+# Jable 抓取器（完整实现）
 # ============================================================
 
 class JableFetcher:
@@ -407,17 +409,14 @@ class HohoJFetcher:
             if match:
                 code = match.group(1)
 
-        # ----- 女优名提取：只取末尾最后一段中日文字符 -----
+        # 女优名：只取末尾最后一段（日文名）
         actress = ''
         if title:
-            # 去除前缀和番号
             cleaned = re.sub(r'^\[?無碼\]?\s*', '', title)
             cleaned = re.sub(r'^[A-Z]{2,6}-\d{3,5}\s*', '', cleaned)
-            # 匹配末尾的连续中日文字符（允许空格）
             match = re.search(r'([\u4e00-\u9fff\u3040-\u30ff]+(?:\s*[\u4e00-\u9fff\u3040-\u30ff]+)*)$', cleaned)
             if match:
                 full = match.group(1).strip()
-                # 按空格拆分，取最后一段（通常是日文名）
                 parts = re.split(r'\s+', full)
                 actress = parts[-1] if parts else full
 
@@ -449,12 +448,8 @@ class HohoJFetcher:
                 date_text = span.text.strip()
                 try:
                     publish_date = datetime.strptime(date_text, '%Y-%m-%d').date()
-                    print(f"[HohoJ] 提取到日期: {publish_date}")
-                except Exception as e:
-                    print(f"[HohoJ] 日期解析失败: {e}")
-
-        description = ""
-        duration = ""
+                except:
+                    pass
 
         return {
             "id": video_id,
@@ -462,9 +457,9 @@ class HohoJFetcher:
             "title": title,
             "actress": actress,
             "cover": cover,
-            "description": description,
+            "description": "",
             "publish_date": publish_date,
-            "duration": duration,
+            "duration": "",
             "video_url": video_url,
             "url": detail_url,
         }
@@ -521,11 +516,13 @@ async def collect_jable_item(request: Request, item: CollectItem):
         raise HTTPException(status_code=500, detail="数据库未配置")
 
     try:
+        # 建表（包含 code 列）
         await missav_db.execute("""
             CREATE TABLE IF NOT EXISTS public.missav_items (
                 id SERIAL PRIMARY KEY,
                 video_id TEXT UNIQUE NOT NULL,
                 title TEXT NOT NULL,
+                code TEXT,
                 actress TEXT,
                 description TEXT,
                 publish_date DATE,
@@ -536,6 +533,11 @@ async def collect_jable_item(request: Request, item: CollectItem):
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        # 添加 code 列（兼容旧表）
+        try:
+            await missav_db.execute("ALTER TABLE public.missav_items ADD COLUMN IF NOT EXISTS code TEXT")
+        except Exception:
+            pass
         try:
             await missav_db.execute("ALTER TABLE public.missav_items ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'jable'")
         except Exception:
@@ -547,6 +549,7 @@ async def collect_jable_item(request: Request, item: CollectItem):
         )
 
         params = item.dict()
+        # 日期转换
         if params.get("publish_date") and params["publish_date"] is not None:
             try:
                 if isinstance(params["publish_date"], str):
@@ -567,7 +570,7 @@ async def collect_jable_item(request: Request, item: CollectItem):
                 params["source"] = old_source
             await missav_db.execute("""
                 UPDATE public.missav_items
-                SET title=:title, actress=:actress, description=:description,
+                SET title=:title, code=:code, actress=:actress, description=:description,
                     publish_date=:publish_date, cover_url=:cover_url,
                     m3u8_url=:m3u8_url, source_url=:source_url,
                     source=:source,
@@ -577,21 +580,17 @@ async def collect_jable_item(request: Request, item: CollectItem):
         else:
             await missav_db.execute("""
                 INSERT INTO public.missav_items (
-                    video_id, title, actress, description,
+                    video_id, title, code, actress, description,
                     publish_date, cover_url, m3u8_url, source_url, source
                 )
                 VALUES (
-                    :video_id, :title, :actress, :description,
+                    :video_id, :title, :code, :actress, :description,
                     :publish_date, :cover_url, :m3u8_url, :source_url, :source
                 )
             """, params)
         return {"ok": True, "stored": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-# ============================================================
-# 新增：删除单个收藏（仅开发者）
-# ============================================================
 
 @router.delete("/collect/{video_id}")
 async def delete_collect_item(request: Request, video_id: str):
@@ -610,10 +609,6 @@ async def delete_collect_item(request: Request, video_id: str):
         return {"ok": True, "deleted": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-# ============================================================
-# 我的收藏
-# ============================================================
 
 @router.get("/my-items")
 async def get_my_items(request: Request):
