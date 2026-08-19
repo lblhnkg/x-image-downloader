@@ -1246,7 +1246,8 @@
 
     <script>
         // ============================================================
-        // X 下载器 - 完整版（简化预览，统一走代理）
+        // X 下载器 - 完整版（修复“我的喜欢/书签”视频预览）
+        // 改动：openModal 中优先使用 originalUrl
         // ============================================================
 
         // ---- 状态 ----
@@ -2431,13 +2432,14 @@
         }
 
         // ============================================================
-        // 核心修复：预览 - 统一走 /api/media-proxy，简化逻辑
+        // 核心修复：预览 - 优先使用 originalUrl（支持“我的喜欢/书签”）
         // ============================================================
         function openModal(item) {
             currentItem = item;
             modalContent.innerHTML = '';
 
-            var rawVideoUrl = item.video_url || item.media_url || item.url || '';
+            // 【关键修复】优先使用 originalUrl，其次 video_url，避免在“我的喜欢/书签”中取到代理地址
+            var rawVideoUrl = item.originalUrl || item.video_url || item.media_url || item.url || '';
             var isVideo = item.media_type === 'video' || item.type === 'video';
 
             if (isVideo) {
