@@ -1,6 +1,6 @@
 # ============================================================
 # jable_routes.py - Jable / HohoJ / MissAV 三数据源模块
-# MissAV 带有详细诊断日志，用于排查库加载问题
+# MissAV 使用环境变量设置代理，兼容库版本 2.6
 # ============================================================
 
 import re
@@ -10,6 +10,7 @@ import json
 import traceback
 import sys
 import subprocess
+import os
 from datetime import datetime
 from urllib.parse import quote, urlparse
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -466,15 +467,16 @@ class HohoJFetcher:
         }
 
 # ============================================================
-# MissAV 抓取器（带有详细诊断）
+# MissAV 抓取器（使用环境变量设置代理）
 # ============================================================
 
 class MissAVFetcher:
     def __init__(self):
-        self.proxies = {
-            "http": "http://127.0.0.1:1081",
-            "https": "http://127.0.0.1:1081"
-        }
+        # ----- 设置环境变量代理（库会自动读取） -----
+        os.environ['HTTP_PROXY'] = 'http://127.0.0.1:1081'
+        os.environ['HTTPS_PROXY'] = 'http://127.0.0.1:1081'
+        print("[MissAV] 已设置环境变量 HTTP_PROXY/HTTPS_PROXY")
+
         self.client = None
         self.use_library = False
 
@@ -482,7 +484,7 @@ class MissAVFetcher:
         print(f"[MissAV] Python 版本: {sys.version}")
         print("[MissAV] 开始诊断依赖...")
 
-        # 尝试列出已安装的包（检查 pip list）
+        # 检查已安装包
         try:
             result = subprocess.run([sys.executable, "-m", "pip", "list"], capture_output=True, text=True, timeout=5)
             if result.returncode == 0:
@@ -496,10 +498,10 @@ class MissAVFetcher:
         except Exception as e:
             print(f"[MissAV] pip list 执行异常: {e}")
 
-        # 尝试导入库
+        # 尝试导入库（不传 proxies 参数，由环境变量生效）
         try:
             from missav_api import Client
-            self.client = Client(proxies=self.proxies)
+            self.client = Client()   # 不传参数
             self.use_library = True
             print("[MissAV] 成功加载 unofficial-api-for-missav 库")
         except ImportError as e:
