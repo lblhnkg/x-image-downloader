@@ -1,6 +1,6 @@
 # ============================================================
 # jable_routes.py - Jable / HohoJ / MissAV 三数据源模块
-# 完整版：包含所有 Fetcher 和路由，可独立运行
+# 完整版：包含所有 Fetcher 和路由，属性安全访问
 # ============================================================
 
 import re
@@ -467,7 +467,7 @@ class HohoJFetcher:
         }
 
 # ============================================================
-# MissAV 抓取器（修复版：异步生成器迭代）
+# MissAV 抓取器（修复属性访问，增加调试）
 # ============================================================
 
 class MissAVFetcher:
@@ -516,26 +516,39 @@ class MissAVFetcher:
         try:
             print(f"[MissAV] 使用库搜索关键词: {keyword}")
             results = []
-            # 修复：async for 迭代异步生成器
             async for vid in self.client.search(keyword):
+                # 调试：打印对象属性
+                attrs = dir(vid)
+                print(f"[MissAV] 原始对象属性: {attrs}")
+                # 安全获取属性
+                vid_id = getattr(vid, 'id', '')
+                vid_title = getattr(vid, 'title', '') or getattr(vid, 'name', '') or getattr(vid, 'video_title', '') or ''
+                vid_cover = getattr(vid, 'cover', '') or getattr(vid, 'cover_url', '') or getattr(vid, 'thumbnail', '') or ''
+                vid_url = getattr(vid, 'url', '') or getattr(vid, 'link', '') or ''
+                
                 code = ''
-                if hasattr(vid, 'code') and vid.code:
-                    code = vid.code
-                else:
-                    match = re.match(r'^([A-Z]{2,6}-\d{3,5})', vid.title)
+                if vid_title:
+                    match = re.match(r'^([A-Z]{2,6}-\d{3,5})', vid_title)
+                    if match:
+                        code = match.group(1)
+                
+                if not code and vid_id:
+                    match = re.match(r'^([A-Z]{2,6}-\d{3,5})', vid_id.upper())
                     if match:
                         code = match.group(1)
                     else:
-                        code = vid.id
+                        code = vid_id
+                
                 results.append({
-                    "id": vid.id,
-                    "url": vid.url,
-                    "title": vid.title,
-                    "cover": vid.cover,
+                    "id": vid_id,
+                    "url": vid_url,
+                    "title": vid_title,
+                    "cover": vid_cover,
                     "code": code,
-                    "preview_video": getattr(vid, 'preview', None),
-                    "tags": getattr(vid, 'tags', []),
+                    "preview_video": None,
+                    "tags": [],
                 })
+                print(f"[MissAV] 解析结果: id={vid_id}, title={vid_title[:30] if vid_title else 'N/A'}...")
             print(f"[MissAV] 搜索完成，找到 {len(results)} 个视频")
             return results
         except Exception as e:
@@ -582,37 +595,48 @@ class MissAVFetcher:
                     "url": "",
                 }
 
-            # 提取元数据
+            # 安全访问详情属性
+            vid_title = getattr(video_obj, 'title', '') or getattr(video_obj, 'name', '') or ''
+            vid_cover = getattr(video_obj, 'cover', '') or getattr(video_obj, 'cover_url', '') or ''
+            vid_url = getattr(video_obj, 'url', '') or getattr(video_obj, 'link', '') or ''
+            vid_actress = getattr(video_obj, 'actress', '') or getattr(video_obj, 'actors', '') or ''
+            vid_description = getattr(video_obj, 'description', '') or ''
+            vid_release_date = getattr(video_obj, 'release_date', '') or getattr(video_obj, 'publish_date', '') or ''
+            vid_duration = getattr(video_obj, 'duration', 0) or 0
+            vid_m3u8 = getattr(video_obj, 'm3u8_url', '') or getattr(video_obj, 'video_url', '') or ''
+
             code = ''
-            if hasattr(video_obj, 'code') and video_obj.code:
-                code = video_obj.code
-            else:
-                match = re.match(r'^([A-Z]{2,6}-\d{3,5})', video_obj.title)
+            if vid_title:
+                match = re.match(r'^([A-Z]{2,6}-\d{3,5})', vid_title)
+                if match:
+                    code = match.group(1)
+            if not code and video_id:
+                match = re.match(r'^([A-Z]{2,6}-\d{3,5})', video_id.upper())
                 if match:
                     code = match.group(1)
                 else:
                     code = video_id.upper()
 
             actress = ''
-            if hasattr(video_obj, 'actress') and video_obj.actress:
-                if isinstance(video_obj.actress, list):
-                    actress = ', '.join(video_obj.actress) if video_obj.actress else ''
+            if vid_actress:
+                if isinstance(vid_actress, list):
+                    actress = ', '.join(vid_actress) if vid_actress else ''
                 else:
-                    actress = str(video_obj.actress)
+                    actress = str(vid_actress)
 
             publish_date = None
-            if hasattr(video_obj, 'release_date') and video_obj.release_date:
+            if vid_release_date:
                 try:
-                    if isinstance(video_obj.release_date, str):
-                        publish_date = datetime.strptime(video_obj.release_date, '%Y-%m-%d').date()
+                    if isinstance(vid_release_date, str):
+                        publish_date = datetime.strptime(vid_release_date, '%Y-%m-%d').date()
                     else:
-                        publish_date = video_obj.release_date
+                        publish_date = vid_release_date
                 except:
                     pass
 
             duration_str = ''
-            if hasattr(video_obj, 'duration') and video_obj.duration:
-                seconds = int(video_obj.duration)
+            if vid_duration:
+                seconds = int(vid_duration)
                 hours = seconds // 3600
                 minutes = (seconds % 3600) // 60
                 secs = seconds % 60
@@ -621,28 +645,23 @@ class MissAVFetcher:
                 else:
                     duration_str = f"{minutes:02d}:{secs:02d}"
 
-            video_url = None
-            if hasattr(video_obj, 'm3u8_url') and video_obj.m3u8_url:
-                video_url = video_obj.m3u8_url
+            video_url = vid_m3u8 if vid_m3u8 else None
+            if video_url:
                 print(f"[MissAV] 获取到视频地址: {video_url[:80]}...")
             else:
                 print("[MissAV] 警告：视频对象中没有 m3u8_url")
 
-            cover = video_obj.cover if hasattr(video_obj, 'cover') else ''
-            description = video_obj.description if hasattr(video_obj, 'description') else ''
-            detail_url = video_obj.url if hasattr(video_obj, 'url') else ''
-
             return {
                 "id": video_id,
                 "code": code,
-                "title": video_obj.title,
+                "title": vid_title,
                 "actress": actress,
-                "cover": cover,
-                "description": description,
+                "cover": vid_cover,
+                "description": vid_description,
                 "publish_date": publish_date,
                 "duration": duration_str,
                 "video_url": video_url,
-                "url": detail_url,
+                "url": vid_url,
             }
         except Exception as e:
             log_error("detail", e)
