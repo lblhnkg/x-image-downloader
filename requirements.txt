@@ -9,3 +9,4 @@ lxml>=4.9.0
 python-multipart>=0.0.9
 requests>=2.31.0
 curl_cffi>=0.5.10
+unofficial-api-for-missav
