@@ -111,17 +111,19 @@
 
     <div class="tab-content active" id="tabSearch">
         <div class="search-section">
-            <label class="search-label">搜索 Jable / HohoJ</label>
+            <label class="search-label">搜索 Jable / HohoJ / MissAV</label>
             <div class="search-row">
                 <input type="text" id="searchInput" placeholder="番号如 SSIS-005 或 演员名" autocomplete="off" autocapitalize="off" spellcheck="false">
                 <button class="search-btn-icon" id="searchBtn">⌕</button>
             </div>
 
+            <!-- 数据源筛选器（新增 MissAV） -->
             <div class="source-filter">
                 <label class="search-label" style="margin-bottom:4px;">数据源</label>
                 <div class="option-row" data-group="datasource">
                     <button class="option-btn active" data-value="jable">Jable</button>
                     <button class="option-btn" data-value="hohoj">HoHoJ</button>
+                    <button class="option-btn" data-value="missav">MissAV</button>
                 </div>
             </div>
 
@@ -161,7 +163,7 @@
 
 <script>
     // ============================================================
-    // Jable 下载器（双数据源）
+    // Jable 下载器（三数据源：Jable / HohoJ / MissAV）
     // ============================================================
 
     const API_BASE = '/api/jable';
@@ -186,6 +188,7 @@
         }
     }
 
+    // ---- Tab 切换 ----
     document.querySelectorAll('.tab-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
@@ -201,6 +204,7 @@
         });
     });
 
+    // ---- 数据源切换（已包含 missav） ----
     document.querySelectorAll('[data-group="datasource"] .option-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             document.querySelectorAll('[data-group="datasource"] .option-btn').forEach(function(b) {
@@ -229,6 +233,7 @@
         el.className = 'status-box';
     }
 
+    // ---- 搜索 ----
     function performSearch() {
         const input = $('searchInput');
         const keyword = input.value.trim();
@@ -240,7 +245,7 @@
         const submitBtn = $('searchSubmitBtn');
         submitBtn.disabled = true;
         submitBtn.textContent = '搜索中…';
-        showStatus($('searchStatus'), '正在搜索 ' + (currentSource === 'hohoj' ? 'HoHoJ' : 'Jable') + '…', 'loading');
+        showStatus($('searchStatus'), '正在搜索 ' + (currentSource === 'hohoj' ? 'HoHoJ' : currentSource === 'missav' ? 'MissAV' : 'Jable') + '…', 'loading');
         $('resultHeader').classList.add('hidden');
         $('searchGallery').innerHTML = '';
 
@@ -267,7 +272,8 @@
         const gallery = $('searchGallery');
         const header = $('resultHeader');
         header.classList.remove('hidden');
-        $('resultTitle').textContent = '搜索结果（' + (currentSource === 'hohoj' ? 'HoHoJ' : 'Jable') + '）';
+        const sourceLabel = currentSource === 'hohoj' ? 'HoHoJ' : currentSource === 'missav' ? 'MissAV' : 'Jable';
+        $('resultTitle').textContent = '搜索结果（' + sourceLabel + '）';
         $('resultCount').textContent = '找到 ' + data.count + ' 部影片';
         gallery.innerHTML = '';
         if (!data.items || data.items.length === 0) {
@@ -279,6 +285,7 @@
         });
     }
 
+    // ---- 卡片生成 ----
     function createCard(item, mode) {
         const wrapper = document.createElement('div');
         wrapper.className = 'item';
@@ -379,6 +386,7 @@
         return wrapper;
     }
 
+    // ---- 收藏相关（与之前完全一致） ----
     function checkIfCollected(videoId) {
         const mode = getMode();
         if (mode === 'developer') {
@@ -624,7 +632,7 @@
             infoHTML += `<div class="mi-desc">${item.description}</div>`;
         }
         if (item.source) {
-            infoHTML += `<div style="font-size:11px;color:rgba(255,255,255,0.2);margin-top:4px;">来源：${item.source === 'hohoj' ? 'HoHoJ' : 'Jable'}</div>`;
+            infoHTML += `<div style="font-size:11px;color:rgba(255,255,255,0.2);margin-top:4px;">来源：${item.source === 'hohoj' ? 'HoHoJ' : item.source === 'missav' ? 'MissAV' : 'Jable'}</div>`;
         }
         infoDiv.innerHTML = infoHTML;
         content.appendChild(infoDiv);
@@ -737,7 +745,7 @@
             btn.classList.remove('active');
             if (btn.dataset.tab === 'search') btn.classList.add('active');
         });
-        console.log('🎬 Jable 下载器已加载（双数据源：Jable + HoHoJ）');
+        console.log('🎬 Jable 下载器已加载（三数据源：Jable + HoHoJ + MissAV）');
         console.log('当前数据源：' + currentSource);
     }
 
