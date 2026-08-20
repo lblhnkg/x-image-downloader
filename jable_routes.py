@@ -1,24 +1,33 @@
 # ============================================================
-# jable_routes.py - Jable / HohoJ 双数据源模块
-# 包含：完整 JableFetcher、HohoJFetcher（女优名取最后一段）
-#       收藏增加 code 字段、删除接口、日期修复
+# jable_routes.py - Jable / HohoJ / MissAV 三数据源模块
+# MissAV 使用 unofficial-api-for-missav 库（完全采用）
+# 代理统一，详细日志，字段映射兼容现有收藏
 # ============================================================
 
 import re
 import time
 import random
+import json
+import traceback
 from datetime import datetime
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
-from curl_cffi import requests
+from curl_cffi import requests as cffi_requests
 from bs4 import BeautifulSoup
 from shared import missav_db
+
+# 导入 MissAV 库（需先安装：pip install unofficial-api-for-missav）
+try:
+    from missav_api import Client, Video, SearchResult
+except ImportError:
+    print("[MissAV] 警告：未安装 unofficial-api-for-missav，MissAV 功能将不可用")
+    Client = None
 
 router = APIRouter(prefix="/api/jable", tags=["Jable"])
 
 # ============================================================
-# 模型（增加 code 字段）
+# 模型（包含 code 字段，兼容所有来源）
 # ============================================================
 
 class CollectItem(BaseModel):
@@ -40,8 +49,13 @@ class CollectItem(BaseModel):
 def is_developer(request: Request):
     return bool(request.cookies.get("session"))
 
+def log_error(operation: str, error: Exception):
+    """打印详细的错误日志"""
+    print(f"[MissAV] 错误发生在 {operation}: {type(error).__name__}: {str(error)}")
+    traceback.print_exc()
+
 # ============================================================
-# Jable 抓取器（完整实现）
+# Jable 抓取器（保持不变）
 # ============================================================
 
 class JableFetcher:
@@ -65,7 +79,7 @@ class JableFetcher:
             "http": "http://127.0.0.1:1081",
             "https": "http://127.0.0.1:1081"
         }
-        self.session = requests.Session(
+        self.session = cffi_requests.Session(
             impersonate="safari15_5",
             proxies=self.proxies,
             timeout=self.timeout
@@ -280,7 +294,7 @@ class JableFetcher:
         }
 
 # ============================================================
-# HohoJ 抓取器（修复女优名提取）
+# HohoJ 抓取器（保持不变）
 # ============================================================
 
 class HohoJFetcher:
@@ -298,7 +312,7 @@ class HohoJFetcher:
             "http": "http://127.0.0.1:1081",
             "https": "http://127.0.0.1:1081"
         }
-        self.session = requests.Session(
+        self.session = cffi_requests.Session(
             impersonate="safari15_5",
             proxies=self.proxies,
             timeout=self.timeout
@@ -397,11 +411,9 @@ class HohoJFetcher:
         html = self._fetch(detail_url)
         soup = BeautifulSoup(html, 'lxml')
 
-        # 标题
         title_tag = soup.find('h5', class_='mt-3')
         title = title_tag.text.strip() if title_tag else ''
 
-        # 番号
         code = ''
         if title:
             title_clean = re.sub(r'^\[?無碼\]?\s*', '', title)
@@ -409,7 +421,6 @@ class HohoJFetcher:
             if match:
                 code = match.group(1)
 
-        # 女优名：只取末尾最后一段（日文名）
         actress = ''
         if title:
             cleaned = re.sub(r'^\[?無碼\]?\s*', '', title)
@@ -420,7 +431,6 @@ class HohoJFetcher:
                 parts = re.split(r'\s+', full)
                 actress = parts[-1] if parts else full
 
-        # 封面
         cover = ''
         img_tag = soup.find('img', src=re.compile(r'large_'))
         if img_tag:
@@ -428,7 +438,6 @@ class HohoJFetcher:
             if cover.startswith('//'):
                 cover = 'https:' + cover
 
-        # 视频地址
         video_url = ''
         embed_url = f"{self.base_url}/embed?id={video_id}"
         try:
@@ -439,7 +448,6 @@ class HohoJFetcher:
         except Exception as e:
             print(f"[HohoJ] 获取 embed 失败: {e}")
 
-        # 发布日期
         publish_date = None
         date_div = soup.find('div', class_='ms-auto')
         if date_div:
@@ -465,11 +473,191 @@ class HohoJFetcher:
         }
 
 # ============================================================
+# MissAV 抓取器（完全采用 unofficial-api-for-missav 库）
+# ============================================================
+
+class MissAVFetcher:
+    def __init__(self):
+        self.proxies = {
+            "http": "http://127.0.0.1:1081",
+            "https": "http://127.0.0.1:1081"
+        }
+        print("[MissAV] 初始化 Client，代理已配置为 http://127.0.0.1:1081")
+        if Client is None:
+            raise RuntimeError("MissAV 库未安装，请运行: pip install unofficial-api-for-missav")
+        # 创建 Client 实例，传入代理
+        try:
+            self.client = Client(proxies=self.proxies)
+            print("[MissAV] Client 初始化成功")
+        except Exception as e:
+            print(f"[MissAV] Client 初始化失败: {e}")
+            raise
+
+    async def search(self, keyword: str) -> list[dict]:
+        results = []
+        try:
+            print(f"[MissAV] 开始搜索关键词: {keyword}")
+            search_result = await self.client.search(keyword)
+            print(f"[MissAV] 搜索完成，找到 {len(search_result.videos)} 个视频")
+
+            for vid in search_result.videos:
+                # 提取番号（code）
+                code = ''
+                if hasattr(vid, 'code') and vid.code:
+                    code = vid.code
+                else:
+                    # 从标题提取
+                    match = re.match(r'^([A-Z]{2,6}-\d{3,5})', vid.title)
+                    if match:
+                        code = match.group(1)
+                    else:
+                        code = vid.id  # fallback
+
+                # 构造 item
+                item = {
+                    "id": vid.id,
+                    "url": vid.url,
+                    "title": vid.title,
+                    "cover": vid.cover,
+                    "code": code,
+                    # 以下字段详情页会补充，搜索时留空
+                    "preview_video": getattr(vid, 'preview', None),
+                    "tags": getattr(vid, 'tags', []),
+                }
+                results.append(item)
+                print(f"[MissAV] 搜索结果: {code} - {vid.title[:30]}...")
+        except Exception as e:
+            log_error("search", e)
+            # 返回空列表，但保留错误信息在日志中
+        return results
+
+    async def detail(self, video_id: str) -> dict:
+        # 构造完整 URL（中文页面）
+        # 库的 get_video 需要完整 URL，所以我们用 missav.ws 的路径
+        base_domain = "https://missav.ws"
+        # 尝试多种路径格式
+        possible_urls = [
+            f"{base_domain}/dm33/cn/{video_id}",
+            f"{base_domain}/dm33/{video_id}",
+            f"{base_domain}/en/{video_id}",
+            f"{base_domain}/ja/{video_id}",
+            f"{base_domain}/cn/{video_id}",
+        ]
+        video_obj = None
+        last_error = None
+        for url in possible_urls:
+            try:
+                print(f"[MissAV] 尝试获取详情: {url}")
+                video_obj = await self.client.get_video(url)
+                if video_obj:
+                    print(f"[MissAV] 获取成功，使用 URL: {url}")
+                    break
+            except Exception as e:
+                last_error = e
+                print(f"[MissAV] 尝试 {url} 失败: {e}")
+                continue
+
+        if not video_obj:
+            log_error("get_video (all attempts failed)", last_error or Exception("所有 URL 尝试失败"))
+            # 返回基础信息（只有 id）
+            return {
+                "id": video_id,
+                "code": "",
+                "title": "",
+                "actress": "",
+                "cover": "",
+                "description": "",
+                "publish_date": None,
+                "duration": "",
+                "video_url": None,
+                "url": "",
+            }
+
+        # 提取元数据
+        code = ''
+        if hasattr(video_obj, 'code') and video_obj.code:
+            code = video_obj.code
+        else:
+            match = re.match(r'^([A-Z]{2,6}-\d{3,5})', video_obj.title)
+            if match:
+                code = match.group(1)
+            else:
+                code = video_id.upper()
+
+        # 女优（可能为列表，取第一个）
+        actress = ''
+        if hasattr(video_obj, 'actress') and video_obj.actress:
+            if isinstance(video_obj.actress, list):
+                actress = ', '.join(video_obj.actress) if video_obj.actress else ''
+            else:
+                actress = str(video_obj.actress)
+
+        # 发布日期
+        publish_date = None
+        if hasattr(video_obj, 'release_date') and video_obj.release_date:
+            try:
+                if isinstance(video_obj.release_date, str):
+                    publish_date = datetime.strptime(video_obj.release_date, '%Y-%m-%d').date()
+                else:
+                    publish_date = video_obj.release_date
+            except:
+                pass
+
+        # 时长（秒）转换为 HH:MM:SS
+        duration_str = ''
+        if hasattr(video_obj, 'duration') and video_obj.duration:
+            seconds = int(video_obj.duration)
+            hours = seconds // 3600
+            minutes = (seconds % 3600) // 60
+            secs = seconds % 60
+            if hours > 0:
+                duration_str = f"{hours}:{minutes:02d}:{secs:02d}"
+            else:
+                duration_str = f"{minutes:02d}:{secs:02d}"
+
+        # 视频地址
+        video_url = None
+        if hasattr(video_obj, 'm3u8_url') and video_obj.m3u8_url:
+            video_url = video_obj.m3u8_url
+            print(f"[MissAV] 获取到视频地址: {video_url[:80]}...")
+        else:
+            print("[MissAV] 警告：视频对象中没有 m3u8_url")
+
+        # 封面
+        cover = video_obj.cover if hasattr(video_obj, 'cover') else ''
+
+        # 描述
+        description = video_obj.description if hasattr(video_obj, 'description') else ''
+
+        # 原始 URL（我们尝试成功的那一个）
+        detail_url = video_obj.url if hasattr(video_obj, 'url') else ''
+
+        return {
+            "id": video_id,
+            "code": code,
+            "title": video_obj.title,
+            "actress": actress,
+            "cover": cover,
+            "description": description,
+            "publish_date": publish_date,
+            "duration": duration_str,
+            "video_url": video_url,
+            "url": detail_url,
+        }
+
+# ============================================================
 # 创建抓取器实例
 # ============================================================
 
 fetcher = JableFetcher()
 hohoj_fetcher = HohoJFetcher()
+# 检查库是否可用，若不可用则 MissAV 功能不可用
+try:
+    missav_fetcher = MissAVFetcher()
+    print("[MissAV] 抓取器已就绪")
+except Exception as e:
+    print(f"[MissAV] 抓取器初始化失败: {e}")
+    missav_fetcher = None
 
 # ============================================================
 # API 路由
@@ -478,35 +666,49 @@ hohoj_fetcher = HohoJFetcher()
 @router.get("/search")
 async def search_jable(
     q: str = Query(..., min_length=1),
-    source: str = Query("jable", regex="^(jable|hohoj)$")
+    source: str = Query("jable", regex="^(jable|hohoj|missav)$")
 ):
     try:
         print(f"[搜索] 来源: {source}, 关键词: {q}")
         if source == "hohoj":
             items = hohoj_fetcher.search(q)
+        elif source == "missav":
+            if missav_fetcher is None:
+                raise HTTPException(status_code=503, detail="MissAV 服务不可用（库未安装或初始化失败）")
+            items = await missav_fetcher.search(q)
         else:
             items = fetcher.search(q)
         return {"ok": True, "count": len(items), "items": items}
+    except HTTPException:
+        raise
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        log_error("search_route", e)
         raise HTTPException(status_code=502, detail=f"搜索失败: {str(e)}")
 
 @router.get("/info")
 async def info_jable(
     video_id: str = Query(...),
-    source: str = Query("jable", regex="^(jable|hohoj)$")
+    source: str = Query("jable", regex="^(jable|hohoj|missav)$")
 ):
     try:
         if source == "hohoj":
             data = hohoj_fetcher.detail(video_id)
+        elif source == "missav":
+            if missav_fetcher is None:
+                raise HTTPException(status_code=503, detail="MissAV 服务不可用（库未安装或初始化失败）")
+            data = await missav_fetcher.detail(video_id)
         else:
             data = fetcher.detail(video_id)
         return {"ok": True, "item": data}
+    except HTTPException:
+        raise
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        log_error("info_route", e)
         raise HTTPException(status_code=502, detail=f"获取详情失败: {str(e)}")
+
+# ============================================================
+# 收藏（包含 code 字段和 source 字段）保持不变
+# ============================================================
 
 @router.post("/collect")
 async def collect_jable_item(request: Request, item: CollectItem):
@@ -516,7 +718,7 @@ async def collect_jable_item(request: Request, item: CollectItem):
         raise HTTPException(status_code=500, detail="数据库未配置")
 
     try:
-        # 建表（包含 code 列）
+        # 确保表存在并包含 code 列
         await missav_db.execute("""
             CREATE TABLE IF NOT EXISTS public.missav_items (
                 id SERIAL PRIMARY KEY,
@@ -533,7 +735,6 @@ async def collect_jable_item(request: Request, item: CollectItem):
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        # 添加 code 列（兼容旧表）
         try:
             await missav_db.execute("ALTER TABLE public.missav_items ADD COLUMN IF NOT EXISTS code TEXT")
         except Exception:
@@ -549,7 +750,6 @@ async def collect_jable_item(request: Request, item: CollectItem):
         )
 
         params = item.dict()
-        # 日期转换
         if params.get("publish_date") and params["publish_date"] is not None:
             try:
                 if isinstance(params["publish_date"], str):
@@ -590,7 +790,8 @@ async def collect_jable_item(request: Request, item: CollectItem):
             """, params)
         return {"ok": True, "stored": True}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        log_error("collect", e)
+        raise HTTPException(status_code=500, detail=f"收藏失败: {str(e)}")
 
 @router.delete("/collect/{video_id}")
 async def delete_collect_item(request: Request, video_id: str):
@@ -608,6 +809,7 @@ async def delete_collect_item(request: Request, video_id: str):
             raise HTTPException(status_code=404, detail="未找到该收藏")
         return {"ok": True, "deleted": True}
     except Exception as e:
+        log_error("delete", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/my-items")
@@ -617,10 +819,37 @@ async def get_my_items(request: Request):
     if missav_db is None:
         return {"ok": True, "items": [], "mode": "developer", "message": "database not configured"}
     try:
+        # 确保表结构
+        await missav_db.execute("""
+            CREATE TABLE IF NOT EXISTS public.missav_items (
+                id SERIAL PRIMARY KEY,
+                video_id TEXT UNIQUE NOT NULL,
+                title TEXT NOT NULL,
+                code TEXT,
+                actress TEXT,
+                description TEXT,
+                publish_date DATE,
+                cover_url TEXT,
+                m3u8_url TEXT,
+                source_url TEXT,
+                source TEXT DEFAULT 'jable',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        try:
+            await missav_db.execute("ALTER TABLE public.missav_items ADD COLUMN IF NOT EXISTS code TEXT")
+        except Exception:
+            pass
+        try:
+            await missav_db.execute("ALTER TABLE public.missav_items ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'jable'")
+        except Exception:
+            pass
+
         rows = await missav_db.fetch_all("SELECT * FROM public.missav_items ORDER BY created_at DESC")
         return {"ok": True, "items": [dict(row) for row in rows], "mode": "developer"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        log_error("my_items", e)
+        raise HTTPException(status_code=500, detail=f"获取收藏列表失败: {str(e)}")
 
 @router.get("/db-search")
 async def search_db_items(q: str = ""):
@@ -632,6 +861,7 @@ async def search_db_items(q: str = ""):
         """, {"q": f"%{q}%"})
         return {"ok": True, "items": [dict(row) for row in rows]}
     except Exception as e:
+        log_error("db_search", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/actress/{name}")
@@ -644,6 +874,7 @@ async def actress_items(name: str):
         """, {"name": f"%{name}%"})
         return {"ok": True, "items": [dict(row) for row in rows]}
     except Exception as e:
+        log_error("actress_items", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/stats")
@@ -653,6 +884,7 @@ async def stats():
         actresses = await missav_db.fetch_val("SELECT COUNT(DISTINCT actress) FROM public.missav_items")
         return {"ok": True, "total": total, "actresses": actresses}
     except Exception as e:
+        log_error("stats", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/clear")
@@ -663,6 +895,7 @@ async def clear_items(request: Request):
         await missav_db.execute("DELETE FROM public.missav_items")
         return {"ok": True}
     except Exception as e:
+        log_error("clear", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/debug-db")
@@ -706,4 +939,5 @@ async def debug_db():
             }
         }
     except Exception as e:
+        log_error("debug_db", e)
         return {"ok": False, "error": str(e)}
