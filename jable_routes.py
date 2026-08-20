@@ -1,6 +1,6 @@
 # ============================================================
 # jable_routes.py - Jable / HohoJ / MissAV 三数据源模块
-# MissAV 使用环境变量设置代理，兼容库版本 2.6
+# 完整版：包含所有 Fetcher 和路由，可独立运行
 # ============================================================
 
 import re
@@ -467,12 +467,11 @@ class HohoJFetcher:
         }
 
 # ============================================================
-# MissAV 抓取器（使用环境变量设置代理）
+# MissAV 抓取器（修复版：异步生成器迭代）
 # ============================================================
 
 class MissAVFetcher:
     def __init__(self):
-        # ----- 设置环境变量代理（库会自动读取） -----
         os.environ['HTTP_PROXY'] = 'http://127.0.0.1:1081'
         os.environ['HTTPS_PROXY'] = 'http://127.0.0.1:1081'
         print("[MissAV] 已设置环境变量 HTTP_PROXY/HTTPS_PROXY")
@@ -480,11 +479,9 @@ class MissAVFetcher:
         self.client = None
         self.use_library = False
 
-        # ----- 诊断信息 -----
         print(f"[MissAV] Python 版本: {sys.version}")
         print("[MissAV] 开始诊断依赖...")
 
-        # 检查已安装包
         try:
             result = subprocess.run([sys.executable, "-m", "pip", "list"], capture_output=True, text=True, timeout=5)
             if result.returncode == 0:
@@ -498,10 +495,9 @@ class MissAVFetcher:
         except Exception as e:
             print(f"[MissAV] pip list 执行异常: {e}")
 
-        # 尝试导入库（不传 proxies 参数，由环境变量生效）
         try:
             from missav_api import Client
-            self.client = Client()   # 不传参数
+            self.client = Client()
             self.use_library = True
             print("[MissAV] 成功加载 unofficial-api-for-missav 库")
         except ImportError as e:
@@ -512,16 +508,16 @@ class MissAVFetcher:
             traceback.print_exc()
 
         if not self.use_library:
-            print("[MissAV] 库不可用，所有 MissAV 功能将返回 503 错误。请检查上述日志。")
+            print("[MissAV] 库不可用，所有 MissAV 功能将返回 503 错误。")
 
     async def search(self, keyword: str) -> list[dict]:
         if not self.use_library:
             raise RuntimeError("MissAV 库未初始化，无法搜索")
         try:
             print(f"[MissAV] 使用库搜索关键词: {keyword}")
-            search_result = await self.client.search(keyword)
             results = []
-            for vid in search_result.videos:
+            # 修复：async for 迭代异步生成器
+            async for vid in self.client.search(keyword):
                 code = ''
                 if hasattr(vid, 'code') and vid.code:
                     code = vid.code
@@ -679,7 +675,7 @@ async def search_jable(
             items = hohoj_fetcher.search(q)
         elif source == "missav":
             if missav_fetcher is None:
-                raise HTTPException(status_code=503, detail="MissAV 服务不可用（库未安装或初始化失败）")
+                raise HTTPException(status_code=503, detail="MissAV 服务不可用（库未加载）")
             items = await missav_fetcher.search(q)
         else:
             items = fetcher.search(q)
@@ -700,7 +696,7 @@ async def info_jable(
             data = hohoj_fetcher.detail(video_id)
         elif source == "missav":
             if missav_fetcher is None:
-                raise HTTPException(status_code=503, detail="MissAV 服务不可用（库未安装或初始化失败）")
+                raise HTTPException(status_code=503, detail="MissAV 服务不可用（库未加载）")
             data = await missav_fetcher.detail(video_id)
         else:
             data = fetcher.detail(video_id)
