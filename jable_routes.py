@@ -1,6 +1,6 @@
 # ============================================================
 # jable_routes.py - Jable / HohoJ / MissAV 三数据源模块
-# 完整版：包含所有 Fetcher 和路由，属性安全访问
+# 最终修复：从 ScrapeResult.item 提取数据
 # ============================================================
 
 import re
@@ -49,7 +49,7 @@ def log_error(operation: str, error: Exception):
     traceback.print_exc()
 
 # ============================================================
-# Jable 抓取器
+# Jable 抓取器（完整，与之前相同）
 # ============================================================
 
 class JableFetcher:
@@ -288,7 +288,7 @@ class JableFetcher:
         }
 
 # ============================================================
-# HohoJ 抓取器
+# HohoJ 抓取器（完整，与之前相同）
 # ============================================================
 
 class HohoJFetcher:
@@ -467,7 +467,7 @@ class HohoJFetcher:
         }
 
 # ============================================================
-# MissAV 抓取器（修复属性访问，增加调试）
+# MissAV 抓取器（最终修复：从 item 提取数据）
 # ============================================================
 
 class MissAVFetcher:
@@ -516,22 +516,32 @@ class MissAVFetcher:
         try:
             print(f"[MissAV] 使用库搜索关键词: {keyword}")
             results = []
-            async for vid in self.client.search(keyword):
-                # 调试：打印对象属性
-                attrs = dir(vid)
-                print(f"[MissAV] 原始对象属性: {attrs}")
-                # 安全获取属性
-                vid_id = getattr(vid, 'id', '')
-                vid_title = getattr(vid, 'title', '') or getattr(vid, 'name', '') or getattr(vid, 'video_title', '') or ''
-                vid_cover = getattr(vid, 'cover', '') or getattr(vid, 'cover_url', '') or getattr(vid, 'thumbnail', '') or ''
-                vid_url = getattr(vid, 'url', '') or getattr(vid, 'link', '') or ''
+            async for result in self.client.search(keyword):
+                # 实际数据在 result.item 中
+                vid = getattr(result, 'item', {})
+                if not vid:
+                    print("[MissAV] 警告：result 中没有 item")
+                    continue
+                
+                # 现在从 vid 中提取字段（vid 可能是 dict 或对象）
+                if hasattr(vid, 'get'):
+                    # dict 类型
+                    vid_id = vid.get('id', '') or vid.get('code', '')
+                    vid_title = vid.get('title', '') or vid.get('name', '')
+                    vid_cover = vid.get('cover', '') or vid.get('thumbnail', '')
+                    vid_url = vid.get('url', '') or vid.get('link', '')
+                else:
+                    # 对象类型，使用 getattr
+                    vid_id = getattr(vid, 'id', '') or getattr(vid, 'code', '')
+                    vid_title = getattr(vid, 'title', '') or getattr(vid, 'name', '')
+                    vid_cover = getattr(vid, 'cover', '') or getattr(vid, 'thumbnail', '')
+                    vid_url = getattr(vid, 'url', '') or getattr(vid, 'link', '')
                 
                 code = ''
                 if vid_title:
                     match = re.match(r'^([A-Z]{2,6}-\d{3,5})', vid_title)
                     if match:
                         code = match.group(1)
-                
                 if not code and vid_id:
                     match = re.match(r'^([A-Z]{2,6}-\d{3,5})', vid_id.upper())
                     if match:
@@ -595,15 +605,15 @@ class MissAVFetcher:
                     "url": "",
                 }
 
-            # 安全访问详情属性
-            vid_title = getattr(video_obj, 'title', '') or getattr(video_obj, 'name', '') or ''
-            vid_cover = getattr(video_obj, 'cover', '') or getattr(video_obj, 'cover_url', '') or ''
-            vid_url = getattr(video_obj, 'url', '') or getattr(video_obj, 'link', '') or ''
-            vid_actress = getattr(video_obj, 'actress', '') or getattr(video_obj, 'actors', '') or ''
-            vid_description = getattr(video_obj, 'description', '') or ''
-            vid_release_date = getattr(video_obj, 'release_date', '') or getattr(video_obj, 'publish_date', '') or ''
+            # 同样，详情可能也返回类似结构，但直接使用对象属性
+            vid_title = getattr(video_obj, 'title', '') or getattr(video_obj, 'name', '')
+            vid_cover = getattr(video_obj, 'cover', '') or getattr(video_obj, 'cover_url', '')
+            vid_url = getattr(video_obj, 'url', '') or getattr(video_obj, 'link', '')
+            vid_actress = getattr(video_obj, 'actress', '') or getattr(video_obj, 'actors', '')
+            vid_description = getattr(video_obj, 'description', '')
+            vid_release_date = getattr(video_obj, 'release_date', '') or getattr(video_obj, 'publish_date', '')
             vid_duration = getattr(video_obj, 'duration', 0) or 0
-            vid_m3u8 = getattr(video_obj, 'm3u8_url', '') or getattr(video_obj, 'video_url', '') or ''
+            vid_m3u8 = getattr(video_obj, 'm3u8_url', '') or getattr(video_obj, 'video_url', '')
 
             code = ''
             if vid_title:
