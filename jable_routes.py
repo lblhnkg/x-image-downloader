@@ -1,6 +1,6 @@
 # ============================================================
 # jable_routes.py - Jable / HohoJ / MissAV 三数据源模块
-# 最终修复：从 ScrapeResult.item 提取数据
+# 完整修复版：搜索、详情、收藏全部正常
 # ============================================================
 
 import re
@@ -49,7 +49,7 @@ def log_error(operation: str, error: Exception):
     traceback.print_exc()
 
 # ============================================================
-# Jable 抓取器（完整，与之前相同）
+# Jable 抓取器
 # ============================================================
 
 class JableFetcher:
@@ -288,7 +288,7 @@ class JableFetcher:
         }
 
 # ============================================================
-# HohoJ 抓取器（完整，与之前相同）
+# HohoJ 抓取器
 # ============================================================
 
 class HohoJFetcher:
@@ -467,7 +467,7 @@ class HohoJFetcher:
         }
 
 # ============================================================
-# MissAV 抓取器（最终修复：从 item 提取数据）
+# MissAV 抓取器（最终修复版）
 # ============================================================
 
 class MissAVFetcher:
@@ -517,38 +517,27 @@ class MissAVFetcher:
             print(f"[MissAV] 使用库搜索关键词: {keyword}")
             results = []
             async for result in self.client.search(keyword):
-                # 实际数据在 result.item 中
                 vid = getattr(result, 'item', {})
                 if not vid:
                     print("[MissAV] 警告：result 中没有 item")
                     continue
-                
-                # 现在从 vid 中提取字段（vid 可能是 dict 或对象）
                 if hasattr(vid, 'get'):
-                    # dict 类型
                     vid_id = vid.get('id', '') or vid.get('code', '')
                     vid_title = vid.get('title', '') or vid.get('name', '')
                     vid_cover = vid.get('cover', '') or vid.get('thumbnail', '')
                     vid_url = vid.get('url', '') or vid.get('link', '')
                 else:
-                    # 对象类型，使用 getattr
                     vid_id = getattr(vid, 'id', '') or getattr(vid, 'code', '')
                     vid_title = getattr(vid, 'title', '') or getattr(vid, 'name', '')
                     vid_cover = getattr(vid, 'cover', '') or getattr(vid, 'thumbnail', '')
                     vid_url = getattr(vid, 'url', '') or getattr(vid, 'link', '')
-                
-                code = ''
-                if vid_title:
+                if not vid_id and vid_title:
                     match = re.match(r'^([A-Z]{2,6}-\d{3,5})', vid_title)
                     if match:
-                        code = match.group(1)
-                if not code and vid_id:
-                    match = re.match(r'^([A-Z]{2,6}-\d{3,5})', vid_id.upper())
-                    if match:
-                        code = match.group(1)
+                        vid_id = match.group(1)
                     else:
-                        code = vid_id
-                
+                        vid_id = vid_title.split(' ')[0]
+                code = vid_id
                 results.append({
                     "id": vid_id,
                     "url": vid_url,
@@ -585,6 +574,10 @@ class MissAVFetcher:
                     video_obj = await self.client.get_video(url)
                     if video_obj:
                         print(f"[MissAV] 获取成功，使用 URL: {url}")
+                        # 如果 video_obj 本身是 ScrapeResult 且包含 item 属性，则提取
+                        if hasattr(video_obj, 'item') and video_obj.item:
+                            print("[MissAV] 检测到 .item 属性，使用它")
+                            video_obj = video_obj.item
                         break
                 except Exception as e:
                     last_error = e
@@ -605,15 +598,25 @@ class MissAVFetcher:
                     "url": "",
                 }
 
-            # 同样，详情可能也返回类似结构，但直接使用对象属性
-            vid_title = getattr(video_obj, 'title', '') or getattr(video_obj, 'name', '')
-            vid_cover = getattr(video_obj, 'cover', '') or getattr(video_obj, 'cover_url', '')
-            vid_url = getattr(video_obj, 'url', '') or getattr(video_obj, 'link', '')
-            vid_actress = getattr(video_obj, 'actress', '') or getattr(video_obj, 'actors', '')
-            vid_description = getattr(video_obj, 'description', '')
-            vid_release_date = getattr(video_obj, 'release_date', '') or getattr(video_obj, 'publish_date', '')
-            vid_duration = getattr(video_obj, 'duration', 0) or 0
-            vid_m3u8 = getattr(video_obj, 'm3u8_url', '') or getattr(video_obj, 'video_url', '')
+            # 提取属性（兼容 dict 和对象）
+            if hasattr(video_obj, 'get'):
+                vid_title = video_obj.get('title', '') or video_obj.get('name', '')
+                vid_cover = video_obj.get('cover', '') or video_obj.get('cover_url', '')
+                vid_url = video_obj.get('url', '') or video_obj.get('link', '')
+                vid_actress = video_obj.get('actress', '') or video_obj.get('actors', '')
+                vid_description = video_obj.get('description', '')
+                vid_release_date = video_obj.get('release_date', '') or video_obj.get('publish_date', '')
+                vid_duration = video_obj.get('duration', 0) or 0
+                vid_m3u8 = video_obj.get('m3u8_url', '') or video_obj.get('video_url', '')
+            else:
+                vid_title = getattr(video_obj, 'title', '') or getattr(video_obj, 'name', '')
+                vid_cover = getattr(video_obj, 'cover', '') or getattr(video_obj, 'cover_url', '')
+                vid_url = getattr(video_obj, 'url', '') or getattr(video_obj, 'link', '')
+                vid_actress = getattr(video_obj, 'actress', '') or getattr(video_obj, 'actors', '')
+                vid_description = getattr(video_obj, 'description', '')
+                vid_release_date = getattr(video_obj, 'release_date', '') or getattr(video_obj, 'publish_date', '')
+                vid_duration = getattr(video_obj, 'duration', 0) or 0
+                vid_m3u8 = getattr(video_obj, 'm3u8_url', '') or getattr(video_obj, 'video_url', '')
 
             code = ''
             if vid_title:
@@ -661,6 +664,7 @@ class MissAVFetcher:
             else:
                 print("[MissAV] 警告：视频对象中没有 m3u8_url")
 
+            print(f"[MissAV] 详情解析: title={vid_title[:30] if vid_title else 'N/A'}, cover={vid_cover[:30] if vid_cover else 'N/A'}, video_url={video_url[:30] if video_url else 'N/A'}")
             return {
                 "id": video_id,
                 "code": code,
