@@ -16,6 +16,7 @@ from shared import database, init_db, missav_db
 
 # 导入各模块路由
 from x_routes import router as x_router
+from x_routes import close_x_clients
 from jable_routes import router as jable_router
 from bilibili_routes import router as bilibili_router
 
@@ -73,6 +74,7 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
+    await close_x_clients()
     await database.disconnect()
     if missav_db is not None:
         await missav_db.disconnect()

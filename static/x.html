@@ -1292,6 +1292,9 @@
         var searchGallery = $('searchGallery');
         var searchInputArea = $('searchInputArea');
 
+        var searchItems = [];      // 流式搜索累积结果
+        var searchUsername = '';   // 当前搜索的博主
+
         var libraryTitle = $('libraryTitle');
         var libraryDesc = $('libraryDesc');
         var libraryCount = $('libraryCount');
@@ -1653,7 +1656,7 @@
             searchStatus.className = 'status-box';
         }
 
-        // ---- 搜索 ----
+        // ---- 搜索（流式：边抓边展示，首批 7 个 → 每批 7 个 → 49 后按 50 一批） ----
         function performSearch() {
             var raw = profileInput.value.trim();
             var username = normalizeUsername(raw);
@@ -1671,6 +1674,8 @@
             hideSearchStatus();
             searchResultHeader.classList.add('hidden');
             searchGallery.innerHTML = '';
+            searchItems = [];
+            searchUsername = username;
 
             var params = new URLSearchParams();
             params.set('profile', 'https://x.com/' + username);
@@ -1679,19 +1684,71 @@
             if (dates.start) params.set('start_date', dates.start);
             if (dates.end) params.set('end_date', dates.end);
 
-            fetch('/api/search?' + params.toString())
-                .then(function(res) { return res.json(); })
-                .then(function(data) {
-                    if (!data.ok) throw new Error(data.detail || '搜索失败');
-                    renderSearchResults(data, username);
+            showSearchStatus('正在获取 @' + username + ' 的媒体…');
+
+            fetch('/api/search/stream?' + params.toString())
+                .then(function(res) {
+                    if (!res.ok || !res.body) {
+                        return res.json().then(function(d) {
+                            throw new Error(d.detail || '搜索失败');
+                        });
+                    }
+                    var reader = res.body.getReader();
+                    var decoder = new TextDecoder();
+                    var buf = '';
+                    function pump() {
+                        return reader.read().then(function(result) {
+                            if (result.done) {
+                                if (buf.trim()) handleStreamMsg(buf);
+                                finishStreamSearch();
+                                return;
+                            }
+                            buf += decoder.decode(result.value, { stream: true });
+                            var lines = buf.split('\n');
+                            buf = lines.pop();
+                            lines.forEach(handleStreamMsg);
+                            return pump();
+                        });
+                    }
+                    return pump();
                 })
                 .catch(function(err) {
                     showSearchStatus(err.message || '搜索失败', 'error');
-                })
-                .finally(function() {
-                    searchSubmitBtn.disabled = false;
-                    searchSubmitBtn.textContent = '开始收集媒体';
+                    finishStreamSearch();
                 });
+        }
+
+        function handleStreamMsg(line) {
+            line = (line || '').trim();
+            if (!line) return;
+            var msg;
+            try { msg = JSON.parse(line); } catch (e) { return; }
+            if (msg.type === 'batch') {
+                var batch = msg.items || [];
+                if (batch.length === 0) return;
+                batch.forEach(function(item) {
+                    searchItems.push(item);
+                    searchGallery.appendChild(createMediaItem(item, 'search'));
+                });
+                searchResultHeader.classList.remove('hidden');
+                searchResultTitle.textContent = '@' + searchUsername;
+                searchResultCount.textContent = '已加载 ' + searchItems.length + ' 个媒体，继续获取中…';
+            } else if (msg.type === 'done') {
+                var suffix = msg.from_cache ? '（缓存秒开）' : '';
+                searchResultCount.textContent = '找到 ' + msg.count + ' 个媒体 · 查询 ' + msg.pages + ' 页' + suffix;
+                if (searchItems.length === 0) {
+                    searchResultHeader.classList.remove('hidden');
+                    searchResultTitle.textContent = '@' + searchUsername;
+                    searchGallery.innerHTML = '<div class="loader">没有找到媒体</div>';
+                }
+            } else if (msg.type === 'error') {
+                showSearchStatus(msg.detail || '搜索失败', 'error');
+            }
+        }
+
+        function finishStreamSearch() {
+            searchSubmitBtn.disabled = false;
+            searchSubmitBtn.textContent = '开始收集媒体';
         }
 
         function renderSearchResults(data, username) {

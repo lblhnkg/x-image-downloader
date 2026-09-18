@@ -5,6 +5,7 @@
 import re
 import os
 import json
+import time
 import asyncio
 import subprocess
 import tempfile
@@ -46,6 +47,45 @@ from shared import (
 router = APIRouter()
 
 # ============================================================
+# 全局复用客户端（连接复用，避免每页/每图重复 TLS 握手）
+# ============================================================
+_X_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+
+# fxtwitter 搜索客户端
+_fx_client = httpx.AsyncClient(
+    timeout=30,
+    follow_redirects=True,
+    headers={"User-Agent": _X_UA, "Accept": "application/json"},
+    proxy="http://127.0.0.1:10808",
+)
+
+# 媒体（图片/视频）加载客户端
+_media_client = httpx.AsyncClient(
+    timeout=httpx.Timeout(120.0, connect=15.0),
+    follow_redirects=True,
+    headers={
+        "User-Agent": _X_UA,
+        "Accept": "*/*",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        "Referer": "https://x.com/",
+        "Origin": "https://x.com",
+        "Connection": "keep-alive",
+    },
+    proxy="http://127.0.0.1:10808",
+)
+
+async def close_x_clients():
+    """应用关闭时释放全局客户端"""
+    try:
+        await _fx_client.aclose()
+    except Exception:
+        pass
+    try:
+        await _media_client.aclose()
+    except Exception:
+        pass
+
+# ============================================================
 # X 专属工具函数
 # ============================================================
 
@@ -74,24 +114,13 @@ def get_username(profile: str):
     return username
 
 async def fetch_media_page(username, cursor=None, count=100):
-    """从 fxtwitter API 获取媒体数据（统一走本地代理 v2rayN 10808）"""
+    """从 fxtwitter API 获取媒体数据（统一走本地代理 v2rayN 10808，复用连接）"""
     params = {"count": min(count, 100)}
     if cursor:
         params["cursor"] = cursor
     url = f"https://api.fxtwitter.com/2/profile/{username}/media"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
-        "Accept": "application/json"
-    }
-    client_kwargs = {
-        "timeout": 30,
-        "follow_redirects": True,
-        "headers": headers,
-        "proxy": "http://127.0.0.1:10808",
-    }
     try:
-        async with httpx.AsyncClient(**client_kwargs) as client:
-            response = await client.get(url, params=params)
+        response = await _fx_client.get(url, params=params)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"无法连接图片数据源：{str(e)}")
     if response.status_code != 200:
@@ -265,38 +294,69 @@ def cleanup_video_directory(directory):
 # X API 路由
 # ============================================================
 
-@router.get("/api/search")
-async def search(
-    profile: str = Query(...),
-    start_date: str | None = None,
-    end_date: str | None = None,
-    media_type: str = Query("photo"),
-    source_type: str = Query("all"),
-    max_pages: int = Query(100, ge=1, le=100),
-):
-    try:
-        username = get_username(profile)
-        start_dt = date_from_string(start_date)
-        end_dt = date_from_string(end_date, end_of_day=True)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+# ============================================================
+# 搜索缓存 + 增量刷新 + 流式推送
+# ============================================================
+_SEARCH_CACHE = {}
+CACHE_TTL_SECONDS = 3600      # 缓存 1 小时
+INCREMENTAL_PAGES = 3         # 缓存过期后只翻前 3 页拿新增
 
-    if start_dt and end_dt and start_dt > end_dt:
-        raise HTTPException(status_code=400, detail="开始日期不能晚于结束日期")
+def _cache_key(username, media_type, source_type, start_date, end_date):
+    return f"{username}|{media_type}|{source_type}|{start_date or ''}|{end_date or ''}"
 
-    if media_type not in {"photo", "video", "all"}:
-        raise HTTPException(status_code=400, detail="媒体类型无效")
-    if source_type not in {"all", "original", "repost"}:
-        raise HTTPException(status_code=400, detail="帖子来源类型无效")
+def _batch_target(total):
+    """分批节奏：7,14,21,...,49 后按 50,100,150..."""
+    if total <= 49:
+        return (total // 7) * 7 if total >= 7 else 0
+    return (total // 50) * 50
 
-    items = []
+async def _run_search(username, start_dt, end_dt, media_type, source_type,
+                      max_pages, start_date, end_date, emit=None):
+    """
+    核心搜索：支持缓存命中 / 增量刷新 / 流式推送。
+    emit(msg_dict) 为可选回调；返回 (items, pages, from_cache)。
+    """
+    key = _cache_key(username, media_type, source_type, start_date, end_date)
+    now = time.time()
+    cache = _SEARCH_CACHE.get(key)
+
+    # 1) 新鲜缓存：直接返回（秒开）
+    if cache and (now - cache["ts"]) < CACHE_TTL_SECONDS:
+        items = cache["items"]
+        if emit:
+            for i in range(0, len(items), 50):
+                emit({"type": "batch", "items": items[i:i + 50]})
+            emit({"type": "done", "count": len(items), "pages": cache["pages"], "from_cache": True})
+        return items, cache["pages"], True
+
+    # 2) 过期缓存：先推旧数据，再增量抓取前几页合并
+    merged = []
+    merged_ids = set()
+    max_new_pages = max_pages
+    base_pages = 0
+    if cache:
+        merged = list(cache["items"])
+        merged_ids = {x["media_id"] for x in merged}
+        max_new_pages = INCREMENTAL_PAGES
+        base_pages = cache["pages"]
+        if emit:
+            for i in range(0, len(merged), 50):
+                emit({"type": "batch", "items": merged[i:i + 50], "cached": True})
+
+    # 3) 翻页抓取
     cursor = None
     pages = 0
     seen_cursors = set()
+    emitted = len(merged)
 
-    while pages < max_pages:
+    while pages < max_new_pages:
         pages += 1
-        tweets, cursor_data = await fetch_media_page(username, cursor=cursor, count=100)
+        try:
+            tweets, cursor_data = await fetch_media_page(username, cursor=cursor, count=100)
+        except HTTPException as e:
+            if emit:
+                emit({"type": "error", "detail": e.detail})
+            break
         if not tweets:
             break
         reached_start = False
@@ -328,9 +388,8 @@ async def search(
             }
 
             if media_type in {"photo", "all"}:
-                photos = extract_photos(tweet)
-                for photo in photos:
-                    items.append({
+                for photo in extract_photos(tweet):
+                    it = {
                         **base,
                         "media_type": "photo",
                         "media_id": photo["id"],
@@ -342,12 +401,20 @@ async def search(
                         "alt": photo["alt"],
                         "media_index": photo["index"],
                         "media_total": photo["total"],
-                    })
+                    }
+                    if it["media_id"] not in merged_ids:
+                        merged_ids.add(it["media_id"])
+                        merged.append(it)
+                        # 页内按 7 条节奏推送
+                        if emit and len(merged) % 7 == 0:
+                            _t = _batch_target(len(merged))
+                            if _t > emitted:
+                                emit({"type": "batch", "items": merged[emitted:_t]})
+                                emitted = _t
 
             if media_type in {"video", "all"}:
-                videos = extract_videos(tweet)
-                for video in videos:
-                    items.append({
+                for video in extract_videos(tweet):
+                    it = {
                         **base,
                         "media_type": "video",
                         "media_id": video["id"],
@@ -360,7 +427,23 @@ async def search(
                         "duration": video["duration"],
                         "media_index": video["index"],
                         "media_total": video["total"],
-                    })
+                    }
+                    if it["media_id"] not in merged_ids:
+                        merged_ids.add(it["media_id"])
+                        merged.append(it)
+                        # 页内按 7 条节奏推送
+                        if emit and len(merged) % 7 == 0:
+                            _t = _batch_target(len(merged))
+                            if _t > emitted:
+                                emit({"type": "batch", "items": merged[emitted:_t]})
+                                emitted = _t
+
+        # 流式推送：按 7/14/.../49/50/100 节奏
+        if emit:
+            t = _batch_target(len(merged))
+            if t > emitted:
+                emit({"type": "batch", "items": merged[emitted:t]})
+                emitted = t
 
         if start_dt and reached_start:
             break
@@ -373,8 +456,95 @@ async def search(
         seen_cursors.add(next_cursor)
         cursor = next_cursor
 
-    items.sort(key=lambda x: x["timestamp"], reverse=True)
-    return {"ok": True, "username": username, "count": len(items), "pages": pages, "items": items}
+    merged.sort(key=lambda x: x["timestamp"], reverse=True)
+    total_pages = pages + base_pages
+    _SEARCH_CACHE[key] = {"items": merged, "pages": total_pages, "ts": time.time()}
+
+    if emit:
+        if emitted < len(merged):
+            emit({"type": "batch", "items": merged[emitted:]})
+        emit({"type": "done", "count": len(merged), "pages": total_pages, "from_cache": False})
+
+    return merged, total_pages, False
+
+@router.get("/api/search")
+async def search(
+    profile: str = Query(...),
+    start_date: str | None = None,
+    end_date: str | None = None,
+    media_type: str = Query("photo"),
+    source_type: str = Query("all"),
+    max_pages: int = Query(100, ge=1, le=100),
+):
+    try:
+        username = get_username(profile)
+        start_dt = date_from_string(start_date)
+        end_dt = date_from_string(end_date, end_of_day=True)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if start_dt and end_dt and start_dt > end_dt:
+        raise HTTPException(status_code=400, detail="开始日期不能晚于结束日期")
+    if media_type not in {"photo", "video", "all"}:
+        raise HTTPException(status_code=400, detail="媒体类型无效")
+    if source_type not in {"all", "original", "repost"}:
+        raise HTTPException(status_code=400, detail="帖子来源类型无效")
+
+    items, pages, from_cache = await _run_search(
+        username, start_dt, end_dt, media_type, source_type, max_pages, start_date, end_date
+    )
+    return {"ok": True, "username": username, "count": len(items), "pages": pages, "items": items, "from_cache": from_cache}
+
+@router.get("/api/search/stream")
+async def search_stream(
+    profile: str = Query(...),
+    start_date: str | None = None,
+    end_date: str | None = None,
+    media_type: str = Query("photo"),
+    source_type: str = Query("all"),
+    max_pages: int = Query(100, ge=1, le=100),
+):
+    """流式搜索：边抓取边推送结果（NDJSON），前端渐进渲染"""
+    try:
+        username = get_username(profile)
+        start_dt = date_from_string(start_date)
+        end_dt = date_from_string(end_date, end_of_day=True)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if start_dt and end_dt and start_dt > end_dt:
+        raise HTTPException(status_code=400, detail="开始日期不能晚于结束日期")
+    if media_type not in {"photo", "video", "all"}:
+        raise HTTPException(status_code=400, detail="媒体类型无效")
+    if source_type not in {"all", "original", "repost"}:
+        raise HTTPException(status_code=400, detail="帖子来源类型无效")
+
+    queue = asyncio.Queue()
+
+    async def producer():
+        try:
+            await _run_search(
+                username, start_dt, end_dt, media_type, source_type, max_pages,
+                start_date, end_date, emit=lambda m: queue.put_nowait(m)
+            )
+        except Exception as e:
+            queue.put_nowait({"type": "error", "detail": str(e)[:300]})
+        finally:
+            queue.put_nowait(None)
+
+    async def gen():
+        task = asyncio.create_task(producer())
+        try:
+            while True:
+                msg = await queue.get()
+                if msg is None:
+                    break
+                yield json.dumps(msg, ensure_ascii=False) + "\n"
+        finally:
+            if not task.done():
+                task.cancel()
+
+    return StreamingResponse(gen(), media_type="application/x-ndjson")
 
 @router.post("/api/import-media")
 async def import_media(request: Request, payload: dict = Body(...)):
@@ -621,51 +791,40 @@ async def media_proxy(request: Request, url: str = Query(...)):
     url = normalize_x_media_url(url)
     validate_media_url(url)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
-        "Accept": "*/*",
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-        "Referer": "https://x.com/",
-        "Origin": "https://x.com",
-        "Connection": "keep-alive",
-    }
-
-    range_header = request.headers.get("range")
-    if range_header:
-        headers["Range"] = range_header
-
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=15.0), follow_redirects=True, headers=headers, proxy="http://127.0.0.1:10808") as client:
-            response = await client.get(url)
+        if request.headers.get("range"):
+            response = await _media_client.get(url, headers={"Range": request.headers.get("range")})
+        else:
+            response = await _media_client.get(url)
 
-            content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
-            if ".mp4" in url or "video" in content_type:
-                content_type = "video/mp4"
+        content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
+        if ".mp4" in url or "video" in content_type:
+            content_type = "video/mp4"
 
-            response_headers = {
-                "Cache-Control": "public, max-age=86400",
-                "Access-Control-Allow-Origin": "*",
-                "Cross-Origin-Resource-Policy": "cross-origin",
-                "Content-Type": content_type,
-            }
+        response_headers = {
+            "Cache-Control": "public, max-age=86400",
+            "Access-Control-Allow-Origin": "*",
+            "Cross-Origin-Resource-Policy": "cross-origin",
+            "Content-Type": content_type,
+        }
 
-            if "content-length" in response.headers:
-                response_headers["Content-Length"] = response.headers["content-length"]
+        if "content-length" in response.headers:
+            response_headers["Content-Length"] = response.headers["content-length"]
 
-            if "content-range" in response.headers:
-                response_headers["Content-Range"] = response.headers["content-range"]
+        if "content-range" in response.headers:
+            response_headers["Content-Range"] = response.headers["content-range"]
 
-            if "accept-ranges" in response.headers:
-                response_headers["Accept-Ranges"] = response.headers["accept-ranges"]
-            else:
-                response_headers["Accept-Ranges"] = "bytes"
+        if "accept-ranges" in response.headers:
+            response_headers["Accept-Ranges"] = response.headers["accept-ranges"]
+        else:
+            response_headers["Accept-Ranges"] = "bytes"
 
-            return StreamingResponse(
-                response.aiter_bytes(),
-                status_code=response.status_code,
-                media_type=content_type,
-                headers=response_headers
-            )
+        return StreamingResponse(
+            response.aiter_bytes(),
+            status_code=response.status_code,
+            media_type=content_type,
+            headers=response_headers
+        )
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=502, detail=f"X 服务器返回错误：{e.response.status_code}")
     except Exception as e:
@@ -696,18 +855,8 @@ async def download(url: str = Query(...), filename: str = Query("x-media")):
     url = normalize_x_media_url(url)
     validate_media_url(url)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
-        "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-        "Referer": "https://x.com/",
-        "Origin": "https://x.com",
-        "Connection": "keep-alive",
-    }
-
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=20.0), follow_redirects=True, headers=headers, proxy="http://127.0.0.1:10808") as client:
-            response = await client.get(url)
+        response = await _media_client.get(url)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"下载失败：{str(e)}")
 
