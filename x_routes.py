@@ -20,7 +20,6 @@ from starlette.background import BackgroundTask
 # 从共享模块导入
 from shared import (
     database,
-    APP_PASSWORD,
     media_library,
     load_all_media,
     save_media_item,
@@ -260,28 +259,6 @@ def cleanup_video_directory(directory):
 # X API 路由
 # ============================================================
 
-@router.post("/api/auth/login")
-async def login(response: Response, payload: dict = Body(...)):
-    password = payload.get("password", "")
-    if password == APP_PASSWORD:
-        response.set_cookie(
-            key="session",
-            value=APP_PASSWORD,
-            httponly=False,
-            secure=True,
-            samesite="none",
-            max_age=3600*24*7
-        )
-        return {"ok": True, "message": "登录成功"}
-    raise HTTPException(status_code=401, detail="密码错误")
-
-@router.get("/api/auth/check")
-async def check_auth(request: Request):
-    session = request.cookies.get("session")
-    if session == APP_PASSWORD:
-        return {"ok": True, "authenticated": True}
-    return {"ok": True, "authenticated": False}
-
 @router.get("/api/search")
 async def search(
     profile: str = Query(...),
@@ -397,11 +374,6 @@ async def search(
 async def import_media(request: Request, payload: dict = Body(...)):
     global media_library
 
-    api_key = request.headers.get("X-API-Key")
-    if api_key != APP_PASSWORD:
-        print(f"[AUTH] 无效的 API Key: {api_key}")
-        raise HTTPException(status_code=401, detail="无效的 API Key")
-
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="上传数据格式错误")
     items = payload.get("items") or payload.get("records") or []
@@ -499,10 +471,6 @@ async def get_media(
 ):
     global media_library
 
-    session = request.cookies.get("session")
-    if session != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="未登录")
-
     if not media_library:
         media_library = await load_all_media()
 
@@ -579,10 +547,6 @@ async def get_media(
 async def delete_media(request: Request, media_ids: list[str] = Body(...)):
     global media_library
 
-    session = request.cookies.get("session")
-    if session != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="未登录")
-
     if not media_ids or not isinstance(media_ids, list):
         raise HTTPException(status_code=400, detail="media_ids 必须是字符串数组")
 
@@ -602,28 +566,17 @@ async def delete_media(request: Request, media_ids: list[str] = Body(...)):
 async def clear_media(request: Request):
     global media_library
 
-    session = request.cookies.get("session")
-    if session != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="未登录")
-
     media_library = {}
     await clear_all_media()
     return {"ok": True, "count": 0}
 
 @router.get("/api/favorites")
 async def get_favorites(request: Request):
-    api_key = request.headers.get("X-API-Key")
-    if api_key != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="无效的 API Key")
     favorites = await load_all_favorites()
     return {"ok": True, "items": favorites}
 
 @router.post("/api/favorites")
 async def add_favorite(request: Request, payload: dict = Body(...)):
-    api_key = request.headers.get("X-API-Key")
-    if api_key != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="无效的 API Key")
-    
     username = payload.get("username")
     if not username:
         raise HTTPException(status_code=400, detail="username 不能为空")
@@ -637,10 +590,6 @@ async def add_favorite(request: Request, payload: dict = Body(...)):
 
 @router.delete("/api/favorites/{username}")
 async def remove_favorite(request: Request, username: str):
-    api_key = request.headers.get("X-API-Key")
-    if api_key != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="无效的 API Key")
-    
     username = re.sub(r"[^A-Za-z0-9_]", "", username)
     if not username:
         raise HTTPException(status_code=400, detail="用户名无效")
@@ -650,10 +599,6 @@ async def remove_favorite(request: Request, username: str):
 
 @router.get("/api/favorites/check/{username}")
 async def check_favorite(request: Request, username: str):
-    api_key = request.headers.get("X-API-Key")
-    if api_key != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="无效的 API Key")
-    
     username = re.sub(r"[^A-Za-z0-9_]", "", username)
     if not username:
         raise HTTPException(status_code=400, detail="用户名无效")
@@ -723,10 +668,6 @@ async def media_proxy(request: Request, url: str = Query(...)):
 @router.post("/api/media/{media_id}/downloaded")
 async def mark_downloaded(request: Request, media_id: str, payload: dict = Body(default={})):
     global media_library
-
-    session = request.cookies.get("session")
-    if session != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="未登录")
 
     if not media_library:
         media_library = await load_all_media()

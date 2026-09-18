@@ -18,8 +18,6 @@
         .back-link:hover { color:rgba(255,255,255,0.7); }
         .app-title { font-size:26px; font-weight:600; letter-spacing:-0.5px; text-align:center; margin-bottom:4px; color:#fff; }
         .app-subtitle { text-align:center; font-size:13px; color:rgba(255,255,255,0.3); font-weight:300; margin-bottom:20px; }
-        .mode-banner { background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.15); border-radius:8px; padding:10px 14px; margin-bottom:16px; font-size:12px; color:rgba(255,215,0,0.6); text-align:center; font-weight:300; }
-        .mode-banner.developer { background:rgba(0,200,255,0.06); border-color:rgba(0,200,255,0.1); color:rgba(0,200,255,0.5); }
         .tab-bar { display:flex; gap:4px; background:rgba(255,255,255,0.04); border-radius:10px; padding:4px; margin-bottom:20px; }
         .tab-btn { flex:1; padding:10px 0; border:0; border-radius:8px; font-size:14px; font-weight:450; cursor:pointer; font-family:inherit; transition:all 0.25s; background:transparent; color:rgba(255,255,255,0.4); }
         .tab-btn.active { background:rgba(255,255,255,0.08); color:#fff; }
@@ -102,8 +100,6 @@
     <div class="app-title">🎬 Jable 下载器</div>
     <div class="app-subtitle">搜索 · 收藏 · 预览</div>
 
-    <div id="modeBanner"></div>
-
     <div class="tab-bar">
         <button class="tab-btn active" data-tab="search">🔍 搜索</button>
         <button class="tab-btn" data-tab="collection">📦 我的收藏</button>
@@ -167,26 +163,11 @@
     // ============================================================
 
     const API_BASE = '/api/jable';
-    const STORAGE_KEY = 'jable_items';
 
     let currentItem = null;
     let currentSource = 'jable';
 
     function $(id) { return document.getElementById(id); }
-
-    function getMode() {
-        return localStorage.getItem('userMode') || 'guest';
-    }
-
-    function updateModeBanner() {
-        const mode = getMode();
-        const banner = $('modeBanner');
-        if (mode === 'developer') {
-            banner.innerHTML = `<div class="mode-banner developer">🔒 开发者模式 · 数据存储在云端</div>`;
-        } else {
-            banner.innerHTML = `<div class="mode-banner">📌 访客模式 · 数据仅保存在本地浏览器</div>`;
-        }
-    }
 
     // ---- Tab 切换 ----
     document.querySelectorAll('.tab-btn').forEach(function(btn) {
@@ -386,27 +367,17 @@
         return wrapper;
     }
 
-    // ---- 收藏相关（与之前完全一致） ----
+    // ---- 收藏相关 ----
     function checkIfCollected(videoId) {
-        const mode = getMode();
-        if (mode === 'developer') {
-            return fetch(API_BASE + '/my-items', { credentials: 'include' })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.ok && data.items) {
-                        return data.items.some(function(item) { return item.video_id === videoId; });
-                    }
-                    return false;
-                })
-                .catch(function() { return false; });
-        } else {
-            let items = [];
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (raw) items = JSON.parse(raw);
-            } catch (e) {}
-            return Promise.resolve(items.some(function(item) { return item.video_id === videoId; }));
-        }
+        return fetch(API_BASE + '/my-items', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.ok && data.items) {
+                    return data.items.some(function(item) { return item.video_id === videoId; });
+                }
+                return false;
+            })
+            .catch(function() { return false; });
     }
 
     function collectItem(item, btn) {
@@ -450,72 +421,42 @@
 
     function deleteCollectItem(videoId, btn, wrapper) {
         if (!confirm('确定要取消收藏吗？')) return;
-        const mode = getMode();
-        if (mode === 'developer') {
-            fetch(API_BASE + '/collect/' + encodeURIComponent(videoId), {
-                method: 'DELETE',
-                credentials: 'include'
-            })
-            .then(res => {
-                if (!res.ok) return res.json().then(data => { throw new Error(data.detail || '删除失败'); });
-                return res.json();
-            })
-            .then(data => {
-                if (data.ok) {
-                    wrapper.remove();
-                    loadCollection();
-                } else {
-                    alert('删除失败：' + (data.message || '未知错误'));
-                }
-            })
-            .catch(err => {
-                alert('删除失败：' + err.message);
-            });
-        } else {
-            let items = [];
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (raw) items = JSON.parse(raw);
-            } catch (e) {}
-            items = items.filter(function(i) { return i.video_id !== videoId; });
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-            wrapper.remove();
-            loadCollection();
-        }
+        fetch(API_BASE + '/collect/' + encodeURIComponent(videoId), {
+            method: 'DELETE',
+            credentials: 'include'
+        })
+        .then(res => {
+            if (!res.ok) return res.json().then(data => { throw new Error(data.detail || '删除失败'); });
+            return res.json();
+        })
+        .then(data => {
+            if (data.ok) {
+                wrapper.remove();
+                loadCollection();
+            } else {
+                alert('删除失败：' + (data.message || '未知错误'));
+            }
+        })
+        .catch(err => {
+            alert('删除失败：' + err.message);
+        });
     }
 
     function saveCollectItem(data) {
-        const mode = getMode();
-        if (mode === 'developer') {
-            return fetch(API_BASE + '/collect', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-                credentials: 'include'
-            })
-            .then(res => res.json())
-            .then(res => {
-                if (res.ok) {
-                    return { ok: true };
-                } else {
-                    throw new Error(res.detail || '存储失败');
-                }
-            });
-        } else {
-            let items = [];
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (raw) items = JSON.parse(raw);
-            } catch (e) {}
-            const idx = items.findIndex(function(i) { return i.video_id === data.video_id; });
-            if (idx >= 0) {
-                items[idx] = data;
+        return fetch(API_BASE + '/collect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+            credentials: 'include'
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.ok) {
+                return { ok: true };
             } else {
-                items.unshift(data);
+                throw new Error(res.detail || '存储失败');
             }
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-            return Promise.resolve({ ok: true });
-        }
+        });
     }
 
     function loadCollection() {
@@ -523,28 +464,18 @@
         const count = $('collectionCount');
         gallery.innerHTML = '<div class="loader">加载中...</div>';
 
-        const mode = getMode();
-        if (mode === 'developer') {
-            fetch(API_BASE + '/my-items', { credentials: 'include' })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.ok && data.items) {
-                        renderCollection(data.items);
-                    } else {
-                        renderCollection([]);
-                    }
-                })
-                .catch(function() {
+        fetch(API_BASE + '/my-items', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.ok && data.items) {
+                    renderCollection(data.items);
+                } else {
                     renderCollection([]);
-                });
-        } else {
-            let items = [];
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (raw) items = JSON.parse(raw);
-            } catch (e) {}
-            renderCollection(items);
-        }
+                }
+            })
+            .catch(function() {
+                renderCollection([]);
+            });
     }
 
     function renderCollection(items) {
@@ -738,7 +669,6 @@
     $('refreshCollectionBtn').addEventListener('click', loadCollection);
 
     function initApp() {
-        updateModeBanner();
         $('tabSearch').classList.add('active');
         $('tabCollection').classList.remove('active');
         document.querySelectorAll('.tab-btn').forEach(function(btn) {

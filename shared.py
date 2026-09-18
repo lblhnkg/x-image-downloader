@@ -18,7 +18,6 @@ from fastapi import HTTPException
 # ============================================================
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
-APP_PASSWORD = os.environ.get("APP_PASSWORD", "fushengruomeng")
 
 if not DATABASE_URL:
     print("⚠️ 警告：DATABASE_URL 未设置，使用本地 SQLite（重启会丢数据）")

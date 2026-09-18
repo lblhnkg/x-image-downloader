@@ -41,9 +41,6 @@ class CollectItem(BaseModel):
 # 工具函数
 # ============================================================
 
-def is_developer(request: Request):
-    return bool(request.cookies.get("session"))
-
 def log_error(operation: str, error: Exception):
     print(f"[Error] 发生在 {operation}: {type(error).__name__}: {str(error)}")
     traceback.print_exc()
@@ -746,8 +743,6 @@ async def info_jable(
 
 @router.post("/collect")
 async def collect_jable_item(request: Request, item: CollectItem):
-    if not is_developer(request):
-        return {"ok": True, "stored": False, "message": "guest mode"}
     if missav_db is None:
         raise HTTPException(status_code=500, detail="数据库未配置")
 
@@ -828,8 +823,6 @@ async def collect_jable_item(request: Request, item: CollectItem):
 
 @router.delete("/collect/{video_id}")
 async def delete_collect_item(request: Request, video_id: str):
-    if not is_developer(request):
-        raise HTTPException(status_code=403, detail="permission denied")
     if missav_db is None:
         raise HTTPException(status_code=500, detail="数据库未配置")
 
@@ -847,8 +840,6 @@ async def delete_collect_item(request: Request, video_id: str):
 
 @router.get("/my-items")
 async def get_my_items(request: Request):
-    if not is_developer(request):
-        return {"ok": True, "items": [], "mode": "guest"}
     if missav_db is None:
         return {"ok": True, "items": [], "mode": "developer", "message": "database not configured"}
     try:
@@ -921,8 +912,6 @@ async def stats():
 
 @router.delete("/clear")
 async def clear_items(request: Request):
-    if not is_developer(request):
-        raise HTTPException(status_code=403, detail="permission denied")
     try:
         await missav_db.execute("DELETE FROM public.missav_items")
         return {"ok": True}
