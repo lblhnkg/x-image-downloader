@@ -74,7 +74,7 @@ def get_username(profile: str):
     return username
 
 async def fetch_media_page(username, cursor=None, count=100):
-    """从 fxtwitter API 获取媒体数据"""
+    """从 fxtwitter API 获取媒体数据（统一走本地代理 v2rayN 10808）"""
     params = {"count": min(count, 100)}
     if cursor:
         params["cursor"] = cursor
@@ -83,8 +83,14 @@ async def fetch_media_page(username, cursor=None, count=100):
         "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
         "Accept": "application/json"
     }
+    client_kwargs = {
+        "timeout": 30,
+        "follow_redirects": True,
+        "headers": headers,
+        "proxy": "http://127.0.0.1:10808",
+    }
     try:
-        async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=headers) as client:
+        async with httpx.AsyncClient(**client_kwargs) as client:
             response = await client.get(url, params=params)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"无法连接图片数据源：{str(e)}")
@@ -629,7 +635,7 @@ async def media_proxy(request: Request, url: str = Query(...)):
         headers["Range"] = range_header
 
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=15.0), follow_redirects=True, headers=headers) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=15.0), follow_redirects=True, headers=headers, proxy="http://127.0.0.1:10808") as client:
             response = await client.get(url)
 
             content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
@@ -700,7 +706,7 @@ async def download(url: str = Query(...), filename: str = Query("x-media")):
     }
 
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=20.0), follow_redirects=True, headers=headers) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=20.0), follow_redirects=True, headers=headers, proxy="http://127.0.0.1:10808") as client:
             response = await client.get(url)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"下载失败：{str(e)}")

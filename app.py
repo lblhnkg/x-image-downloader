@@ -38,8 +38,8 @@ app.add_middleware(
 # 预热函数
 # ============================================================
 def warm_up_proxy():
-    """在应用启动时预热 sing-box 的 urltest，确保节点选择已完成"""
-    proxy_url = "http://127.0.0.1:1081"
+    """在应用启动时验证本地代理（v2rayN 10808）可用"""
+    proxy_url = "http://127.0.0.1:10808"
     try:
         print("[预热] 正在通过代理预热 urltest...")
         resp = requests.get(
@@ -68,7 +68,7 @@ async def startup():
         print("[MissAV DB] 未配置，跳过")
     print("[DB] 主数据库连接成功")
 
-    # 预热 sing-box 的 urltest（非阻塞，但会等待最多 10 秒）
+    # 预热本地代理（非阻塞，但会等待最多 10 秒）
     warm_up_proxy()
 
 @app.on_event("shutdown")
@@ -91,8 +91,8 @@ app.include_router(bilibili_router)   # Bilibili API（/bilibili/*）
 # 代理路由（为 M3U8 工具提供 CORS 绕过 + 解密支持）
 # ============================================================
 
-# 创建两个客户端：一个走代理，一个不走代理
-proxy_client = httpx.AsyncClient(proxy="http://127.0.0.1:1081", timeout=30.0)
+# 创建两个客户端：一个走代理（v2rayN 10808），一个不走代理
+proxy_client = httpx.AsyncClient(proxy="http://127.0.0.1:10808", timeout=30.0)
 direct_client = httpx.AsyncClient(timeout=30.0)
 
 @app.get("/proxy/m3u8")

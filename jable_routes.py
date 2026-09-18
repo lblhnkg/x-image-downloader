@@ -67,8 +67,8 @@ class JableFetcher:
             "Cache-Control": "max-age=0",
         }
         self.proxies = {
-            "http": "http://127.0.0.1:1081",
-            "https": "http://127.0.0.1:1081"
+            "http": "http://127.0.0.1:10808",
+            "https": "http://127.0.0.1:10808"
         }
         self.session = cffi_requests.Session(
             impersonate="safari15_5",
@@ -300,8 +300,8 @@ class HohoJFetcher:
             "Connection": "keep-alive",
         }
         self.proxies = {
-            "http": "http://127.0.0.1:1081",
-            "https": "http://127.0.0.1:1081"
+            "http": "http://127.0.0.1:10808",
+            "https": "http://127.0.0.1:10808"
         }
         self.session = cffi_requests.Session(
             impersonate="safari15_5",
@@ -469,8 +469,8 @@ class HohoJFetcher:
 
 class MissAVFetcher:
     def __init__(self):
-        os.environ['HTTP_PROXY'] = 'http://127.0.0.1:1081'
-        os.environ['HTTPS_PROXY'] = 'http://127.0.0.1:1081'
+        os.environ['HTTP_PROXY'] = 'http://127.0.0.1:10808'
+        os.environ['HTTPS_PROXY'] = 'http://127.0.0.1:10808'
         print("[MissAV] 已设置环境变量 HTTP_PROXY/HTTPS_PROXY")
 
         self.client = None
