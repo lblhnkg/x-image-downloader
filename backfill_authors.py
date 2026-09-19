@@ -122,6 +122,21 @@ async def main():
         print("失败博主:", ", ".join("@" + x for x in fail_list), "（可稍后重跑本脚本补齐）")
 
     await database.disconnect()
+# ============================================================
+# 手动入口（一般不需要：服务上传/启动时已自动回填）
+# 用法：venv\\Scripts\\python.exe backfill_authors.py [--force]
+#   --force 全量刷新所有博主的昵称/头像
+# ============================================================
+import asyncio
+import sys
+
+from backfill import backfill_missing_authors
+
+
+async def main():
+    force = "--force" in sys.argv
+    result = await backfill_missing_authors(force=force)
+    print("[BACKFILL]", result)
 
 
 if __name__ == "__main__":

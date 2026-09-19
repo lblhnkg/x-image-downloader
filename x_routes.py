@@ -570,6 +570,7 @@ async def import_media(request: Request, payload: dict = Body(...)):
     duplicates = 0
     failed = 0
     failed_ids = []
+    involved_authors = set()
 
     if not media_library:
         media_library = await load_all_media()
@@ -578,6 +579,8 @@ async def import_media(request: Request, payload: dict = Body(...)):
         item = normalize_import_item(raw_item)
         if not item:
             continue
+        if item.get("author"):
+            involved_authors.add(item["author"])
         for media in item["media"]:
             media_id = make_media_id(item["tweet_id"], media["type"], media["index"])
             
@@ -633,6 +636,16 @@ async def import_media(request: Request, payload: dict = Body(...)):
                 print(f"[IMPORT] 保存失败 (新增) {media_id}: {err}")
 
     print(f"[IMPORT] 完成: 导入 {imported}, 新增 {added}, 更新 {updated}, 重复 {duplicates}, 失败 {failed}")
+
+    # 自动回填：本次涉及的新博主缺昵称/头像则后台补齐（不阻塞上传）
+    if involved_authors:
+        try:
+            from backfill import backfill_missing_authors
+            asyncio.create_task(backfill_missing_authors(involved_authors, library_ref=media_library))
+            print(f"[IMPORT] 已触发 {len(involved_authors)} 位博主自动回填")
+        except Exception as e:
+            print(f"[IMPORT] 自动回填启动失败: {str(e)[:120]}")
+
     return {
         "ok": True,
         "imported": imported,

@@ -4,6 +4,7 @@
 
 import os
 import re
+import asyncio
 import httpx
 from urllib.parse import quote
 import requests
@@ -71,6 +72,14 @@ async def startup():
 
     # 预热本地代理（非阻塞，但会等待最多 10 秒）
     warm_up_proxy()
+
+    # 启动后自动回填缺失的博主昵称/头像（异步，不阻塞启动）
+    try:
+        from backfill import backfill_missing_authors
+        asyncio.create_task(backfill_missing_authors())
+        print("[BACKFILL] 已触发全库自动回填")
+    except Exception as e:
+        print(f"[BACKFILL] 自动回填启动失败: {str(e)[:120]}")
 
 @app.on_event("shutdown")
 async def shutdown():

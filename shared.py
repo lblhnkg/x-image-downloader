@@ -134,15 +134,11 @@ async def delete_media_items(media_ids):
     batch_size = 100
     for i in range(0, len(media_ids), batch_size):
         batch = media_ids[i:i+batch_size]
-        if DATABASE_URL.startswith("postgresql"):
-            placeholders = ','.join([f'${j+1}' for j in range(len(batch))])
-            query = f"DELETE FROM media WHERE id IN ({placeholders})"
-            result = await database.execute(query, batch)
-        else:
-            placeholders = ','.join(['?'] * len(batch))
-            query = f"DELETE FROM media WHERE id IN ({placeholders})"
-            result = await database.execute(query, batch)
-        deleted += result
+        params = {f"p{j+1}": mid for j, mid in enumerate(batch)}
+        placeholders = ','.join([f':p{j+1}' for j in range(len(batch))])
+        query = f"DELETE FROM media WHERE id IN ({placeholders}) RETURNING id"
+        rows = await database.fetch_all(query, params)
+        deleted += len(rows)
     return deleted
 
 async def clear_all_media():
