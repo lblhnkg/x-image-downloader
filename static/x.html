@@ -4,10 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
     <title>X 媒体下载器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.3.0/dist/turbo.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js">
     </script>
     <style>
+        :root {
+            --bg-app: #000000;
+            --bg-surface: rgba(20, 20, 24, 0.72);
+            --bg-surface-solid: #101013;
+            --bg-elevated: rgba(28, 28, 34, 0.85);
+            --bg-glass: rgba(12, 12, 16, 0.72);
+            --chip: rgba(255, 255, 255, 0.06);
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --accent-subtle: rgba(56, 189, 248, 0.14);
+            --accent-glow: rgba(56, 189, 248, 0.35);
+            --gold: #f59e0b;
+            --danger: #f43f5e;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-medium: rgba(255, 255, 255, 0.14);
+            --border-accent: rgba(56, 189, 248, 0.5);
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --shadow-glow: 0 0 25px -4px rgba(56, 189, 248, 0.30);
+            --shadow-card: 0 12px 32px -8px rgba(0, 0, 0, 0.85);
+        }
         * {
             margin: 0;
             padding: 0;
@@ -1188,9 +1216,352 @@
             font-size: 13px;
             font-weight: 300;
         }
-    </style>
+
+        /* ========== 视觉覆盖层（女菩萨风格） ========== */
+        html, body {
+            background: #000000 !important;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif !important;
+            color: var(--text-main);
+            padding-top: 72px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 粒子背景 canvas */
+        #bg-particles {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* 磨砂玻璃吸顶导航 */
+        .glass-nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 900;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            height: 56px;
+            background: rgba(8, 8, 10, 0.72);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .glass-nav .nav-brand {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .glass-nav .nav-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* 主容器玻璃拟态 */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            background: var(--bg-surface) !important;
+            backdrop-filter: blur(24px) saturate(150%);
+            -webkit-backdrop-filter: blur(24px) saturate(150%);
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        /* 主色：灰蓝 → 天蓝 */
+        .folder-back-btn { color: var(--accent); background: var(--accent-subtle); }
+        .folder-back-btn:hover { background: rgba(56,189,248,0.25); }
+        .folder-toggle-btn.active {
+            background: var(--accent-subtle);
+            border-color: var(--accent);
+            color: #fff;
+        }
+        .item.selected {
+            border-color: var(--accent);
+            background: rgba(56,189,248,0.10);
+        }
+        .item.selected .select-check {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        .confirm-cancel { color: var(--accent) !important; }
+        .confirm-cancel:hover { background: var(--accent-subtle) !important; }
+
+        /* 主按钮：白 → 天蓝渐变 */
+        .primary-btn {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%) !important;
+            color: #04121a !important;
+            font-weight: 600;
+            border-radius: var(--radius-lg) !important;
+            box-shadow: 0 8px 24px -6px var(--accent-glow);
+            letter-spacing: 0.2px;
+        }
+        .primary-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 32px -6px var(--accent-glow);
+            opacity: 1;
+        }
+        .primary-btn:active { transform: scale(0.98); }
+
+        /* 卡片/子菜单 hover 辉光 + 上浮 */
+        .submenu-card {
+            background: var(--chip);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+        }
+        .submenu-card:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: var(--border-accent);
+            box-shadow: var(--shadow-glow);
+            transform: translateY(-2px);
+        }
+        .folder-card {
+            background: var(--chip);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            transition: all 0.25s ease;
+        }
+        .folder-card:hover {
+            background: rgba(255,255,255,0.09);
+            border-color: var(--accent);
+            box-shadow: var(--shadow-glow);
+            transform: translateY(-3px);
+        }
+        .item {
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
+            transition: all 0.22s ease;
+        }
+        .item:hover {
+            border-color: var(--border-medium);
+            box-shadow: 0 8px 24px -8px rgba(0,0,0,0.8);
+            transform: translateY(-2px);
+        }
+        .item:hover .media-wrap img { transform: scale(1.03); }
+        .media-wrap img { transition: transform 0.3s ease; }
+        .media-wrap { background: #000; }
+
+        /* 选项按钮选中态主色 */
+        .option-btn.active {
+            background: var(--accent-subtle);
+            border-color: var(--accent);
+            color: #fff;
+        }
+        .option-btn:hover { border-color: var(--border-medium); color: #fff; }
+
+        /* 输入框聚焦主色 */
+        .search-row input:focus { border-bottom-color: var(--accent); }
+        .date-row input[type="date"]:focus { border-bottom-color: var(--accent); }
+
+        /* 扫描按钮主色 */
+        .scan-btn {
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            box-shadow: 0 4px 14px -4px var(--accent-glow);
+        }
+        .scan-btn:hover { filter: brightness(1.1); }
+
+        /* 选中态工具栏危险按钮 */
+        .toolbar-btn.danger {
+            background: var(--danger);
+            color: #fff;
+            border-radius: 12px;
+        }
+        .toolbar-btn.danger:hover { opacity: 0.9; }
+
+        /* 删除弹窗 */
+        .delete-confirm-box {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+        .confirm-delete { background: var(--danger) !important; color: #fff !important; }
+
+        /* 多选工具栏玻璃化 */
+        .selection-toolbar {
+            background: rgba(10, 10, 13, 0.82) !important;
+            backdrop-filter: blur(24px) saturate(160%);
+            -webkit-backdrop-filter: blur(24px) saturate(160%);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        /* 弹窗底部按钮 */
+        .modal-download {
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover)) !important;
+            color: #04121a !important;
+        }
+
+        /* 收藏金色保留 */
+        .search-favorite-btn.favorited { color: var(--gold); }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+    
+        /* ========== 复刻级：鼠标光影 + 3D偏转 + 卡片质感 ========== */
+        .submenu-card, .folder-card, .item {
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                        box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                        border-color 0.25s ease;
+            will-change: transform;
+        }
+        /* 鼠标跟随光晕层 */
+        .submenu-card::before, .folder-card::before, .item::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(
+                420px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                rgba(56, 189, 248, 0.16),
+                transparent 70%
+            );
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .submenu-card:hover::before, .folder-card:hover::before, .item:hover::before {
+            opacity: 1;
+        }
+        /* hover 上浮 + 主色描边发光（复刻 blogger-card:hover） */
+        .submenu-card:hover, .folder-card:hover, .item:hover {
+            transform: translateY(-4px);
+            border-color: rgba(56, 189, 248, 0.45) !important;
+            box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.3),
+                        0 16px 36px -6px rgba(56, 189, 248, 0.16);
+        }
+        /* 媒体缩略图 hover 放大（复刻 card-banner-img scale） */
+        .media-wrap img {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .item:hover .media-wrap img {
+            transform: scale(1.06);
+        }
+        /* 文件夹头像 hover 发光 */
+        .folder-avatar {
+            transition: box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+        .folder-card:hover .folder-avatar {
+            border-color: rgba(56, 189, 248, 0.85);
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+        }
+        /* 子菜单标题/描述在光影层之上 */
+        .submenu-card-title, .submenu-card-desc { position: relative; z-index: 2; }
+        .folder-avatar, .folder-name, .folder-handle, .folder-count { position: relative; z-index: 2; }
+        .item-info, .video-badge, .source-badge, .library-badge, .item-actions { position: relative; z-index: 2; }
+        /* 收藏列表行：鼠标光影 + hover */
+        .favorite-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            transition: background 0.25s ease;
+        }
+        .favorite-item::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(420px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(56,189,248,0.12), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .favorite-item:hover::before { opacity: 1; }
+        .favorite-item:hover { background: rgba(255,255,255,0.05); }
+        .favorite-item > * { position: relative; z-index: 1; }
+    
+        /* ========== 细节补全：复刻它的文字与按钮 ========== */
+        /* @handle 天蓝 + 等宽字体 */
+        .item-author, .fav-handle, .folder-handle, .search-username {
+            color: #38bdf8 !important;
+            font-family: 'JetBrains Mono', monospace !important;
+            font-weight: 500;
+        }
+        .item-author:hover, .fav-handle:hover {
+            color: #7dd3fc !important;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        /* 时间戳等宽 */
+        .item-date, .folder-count, .card-meta {
+            font-family: 'JetBrains Mono', monospace;
+            color: rgba(255,255,255,0.28);
+        }
+        /* 主按钮：天蓝实底 + 黑字 + 全圆角胶囊 + 辉光（弃用渐变） */
+        .scan-btn, .primary-btn, .modal-download {
+            background: #38bdf8 !important;
+            color: #000 !important;
+            border-radius: 9999px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.2px;
+            box-shadow: 0 0 18px -4px rgba(56,189,248,0.55) !important;
+            border: 0 !important;
+            transition: all 0.18s cubic-bezier(0.16,1,0.3,1) !important;
+        }
+        .scan-btn:hover, .primary-btn:hover, .modal-download:hover {
+            background: #0ea5e9 !important;
+            transform: translateY(-1px);
+        }
+        .scan-btn:active, .primary-btn:active { transform: scale(0.97); }
+        /* 次按钮：深灰胶囊，hover 变主色 */
+        .scan-btn-open, .item-actions button, .toolbar-btn:not(.danger) {
+            background: rgba(255,255,255,0.05) !important;
+            color: rgba(255,255,255,0.55) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            border-radius: 9999px !important;
+            font-weight: 600;
+            transition: all 0.18s ease !important;
+        }
+        .scan-btn-open:hover, .item-actions button:hover {
+            background: rgba(56,189,248,0.12) !important;
+            color: #38bdf8 !important;
+            border-color: rgba(56,189,248,0.5) !important;
+        }
+        /* tab 胶囊：active 主色 */
+        .option-btn {
+            border-radius: 9999px !important;
+            transition: all 0.18s ease;
+        }
+        .option-btn.active {
+            background: rgba(56,189,248,0.15) !important;
+            color: #38bdf8 !important;
+            border-color: rgba(56,189,248,0.5) !important;
+        }
+        /* 输入框 focus 主色描边 */
+        .search-row input, #profileInput, input[type="text"] {
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .search-row input:focus, #profileInput:focus, input[type="text"]:focus {
+            border-color: rgba(56,189,248,0.6) !important;
+            box-shadow: 0 0 0 3px rgba(56,189,248,0.15) !important;
+            outline: none !important;
+        }
+        </style>
 </head>
 <body>
+    <canvas id="bg-particles"></canvas>
+    <header class="glass-nav">
+        <span class="nav-brand">X 媒体库</span>
+        <span class="nav-sub">gallery</span>
+    </header>
 
     <div class="app-container">
 
@@ -2977,5 +3348,84 @@
         document.addEventListener('turbo:load', initApp);
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
+
+<script>
+(function () {
+    const canvas = document.getElementById('bg-particles');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [];
+    const COUNT = 70;
+
+    function resize() {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    for (let i = 0; i < COUNT; i++) {
+        particles.push({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: Math.random() * 1.6 + 0.4,
+            vx: (Math.random() - 0.5) * 0.25,
+            vy: (Math.random() - 0.5) * 0.25,
+            a: Math.random() * 0.5 + 0.15,
+            tw: Math.random() * 0.02 + 0.005
+        });
+    }
+
+    function tick() {
+        ctx.clearRect(0, 0, W, H);
+        for (const p of particles) {
+            p.x += p.vx; p.y += p.vy;
+            p.a += p.tw * (Math.random() > 0.5 ? 1 : -1);
+            if (p.a < 0.08) p.a = 0.08; if (p.a > 0.7) p.a = 0.7;
+            if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+            if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(56, 189, 248,' + p.a.toFixed(3) + ')';
+            ctx.fill();
+        }
+        requestAnimationFrame(tick);
+    }
+    tick();
+})();
+</script>
+
+<script>
+(function () {
+    // 大卡片才做 3D 偏转；所有卡片都吃鼠标光影
+    var TILT = '.submenu-card, .folder-card';
+    var SPOT = '.submenu-card, .folder-card, .item, .favorite-item';
+    var MAX_TILT = 5;
+
+    document.addEventListener('mousemove', function (e) {
+        var el = e.target.closest(SPOT);
+        if (!el) return;
+        var rect = el.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var y = e.clientY - rect.top;
+        el.style.setProperty('--mouse-x', x + 'px');
+        el.style.setProperty('--mouse-y', y + 'px');
+        if (el.matches(TILT)) {
+            var cx = rect.width / 2, cy = rect.height / 2;
+            var rx = ((y - cy) / cy) * -MAX_TILT;
+            var ry = ((x - cx) / cx) * MAX_TILT;
+            el.style.transform = 'perspective(1000px) rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg) translateY(-4px)';
+        }
+    });
+
+    document.addEventListener('mouseout', function (e) {
+        var el = e.target.closest(SPOT);
+        if (!el) return;
+        if (el.matches(TILT) && !el.contains(e.relatedTarget)) {
+            el.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0)';
+        }
+    });
+})();
+</script>
 </body>
 </html>

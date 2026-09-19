@@ -5,92 +5,123 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
     <title>万能媒体下载器</title>
     <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.3.0/dist/turbo.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --bg-app: #000000;
+            --bg-surface: rgba(20, 20, 24, 0.72);
+            --bg-glass: rgba(12, 12, 16, 0.72);
+            --chip: rgba(255, 255, 255, 0.05);
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --accent-subtle: rgba(56, 189, 248, 0.14);
+            --accent-glow: rgba(56, 189, 248, 0.35);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-accent: rgba(56, 189, 248, 0.5);
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --shadow-glow: 0 0 25px -4px rgba(56, 189, 248, 0.30);
+            --shadow-card: 0 12px 32px -8px rgba(0, 0, 0, 0.85);
         }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background: #0a0a0a;
-            color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            background: #000000;
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            padding-bottom: 80px;
+            padding: 76px 20px 80px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #bg-particles {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .glass-nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 900;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            height: 56px;
+            background: rgba(8, 8, 10, 0.72);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .glass-nav .nav-brand {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .glass-nav .nav-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
         .app-container {
+            position: relative;
+            z-index: 1;
             width: 100%;
             max-width: 480px;
             margin: 0 auto;
-            background: linear-gradient(145deg, #141414 0%, #1a1a1a 100%);
-            border-radius: 32px;
-            padding: 40px 28px 30px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            background: var(--bg-surface);
+            backdrop-filter: blur(24px) saturate(150%);
+            -webkit-backdrop-filter: blur(24px) saturate(150%);
+            border: 1px solid var(--border-subtle);
+            border-radius: 28px;
+            padding: 44px 28px 30px;
+            box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.05);
             min-height: 560px;
-            position: relative;
             transition: all 0.3s ease;
         }
-
         @media (min-width: 700px) {
-            .app-container {
-                max-width: 900px;
-                padding: 50px 40px 40px;
-                border-radius: 36px;
-            }
-            .search-row input {
-                font-size: 18px;
-            }
-            .option-btn {
-                padding: 8px 18px;
-                font-size: 13px;
-            }
+            .app-container { max-width: 520px; padding: 52px 40px 36px; border-radius: 32px; }
         }
 
-        @media (min-width: 1024px) {
-            .app-container {
-                max-width: 1100px;
-                padding: 60px 50px 50px;
-                border-radius: 40px;
-            }
-        }
-
-        .page {
-            animation: fadeIn 0.4s ease;
-        }
-
+        .page { animation: fadeIn 0.4s ease; }
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(12px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .app-title {
-            font-size: 26px;
-            font-weight: 600;
+            font-size: 28px;
+            font-weight: 700;
             letter-spacing: -0.5px;
             text-align: center;
             margin-bottom: 6px;
-            color: #fff;
+            background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-
         .app-subtitle {
             text-align: center;
             font-size: 13px;
-            color: rgba(255, 255, 255, 0.35);
+            color: var(--text-muted);
             font-weight: 300;
             letter-spacing: 0.5px;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
 
         .menu-grid {
@@ -101,63 +132,86 @@
         }
 
         .menu-card {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            background: var(--chip);
+            border: 1px solid var(--border-subtle);
+            border-radius: 18px;
             padding: 22px 24px;
             cursor: pointer;
-            transition: all 0.25s ease;
+            transition: transform 0.25s cubic-bezier(0.16,1,0.3,1),
+                        box-shadow 0.25s cubic-bezier(0.16,1,0.3,1),
+                        border-color 0.25s ease,
+                        background 0.25s ease;
+            will-change: transform;
         }
-
+        .menu-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(420px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(56,189,248,0.16), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .menu-card:hover::before { opacity: 1; }
         .menu-card:hover {
-            background: rgba(255, 255, 255, 0.07);
-            border-color: rgba(255, 255, 255, 0.12);
-            transform: translateY(-1px);
+            border-color: rgba(56,189,248,0.45);
+            box-shadow: 0 0 0 1px rgba(56,189,248,0.3), 0 16px 36px -6px rgba(56,189,248,0.16);
         }
+        .menu-card:active { transform: scale(0.98); }
 
-        .menu-card:active {
-            transform: scale(0.98);
-        }
-
+        .menu-card-title, .menu-card-desc, .menu-arrow { position: relative; z-index: 1; }
         .menu-card-title {
             font-size: 18px;
-            font-weight: 500;
+            font-weight: 600;
             color: #fff;
             letter-spacing: -0.2px;
         }
-
         .menu-card-desc {
             font-size: 13px;
-            color: rgba(255, 255, 255, 0.35);
+            color: var(--text-muted);
             margin-top: 4px;
             font-weight: 300;
             letter-spacing: 0.2px;
         }
-
         .menu-card .menu-arrow {
             float: right;
-            color: rgba(255, 255, 255, 0.2);
-            font-size: 18px;
-            margin-top: 2px;
+            color: rgba(255,255,255,0.25);
+            font-size: 20px;
+            margin-top: 0px;
+            transition: transform 0.25s ease, color 0.25s ease;
+        }
+        .menu-card:hover .menu-arrow {
+            color: var(--accent);
+            transform: translateX(4px);
         }
 
         .dev-signature {
             text-align: center;
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.15);
-            margin-top: 32px;
+            color: rgba(255,255,255,0.18);
+            margin-top: 36px;
             letter-spacing: 0.5px;
             font-weight: 300;
         }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
     </style>
 </head>
 <body>
+    <canvas id="bg-particles"></canvas>
+    <header class="glass-nav">
+        <span class="nav-brand">万能媒体下载器</span>
+        <span class="nav-sub">local</span>
+    </header>
 
     <div class="app-container" id="app">
-
-        <!-- =====================================================
-        首页菜单
-        ===================================================== -->
         <div class="page" id="pageMenu">
             <div class="app-title">万能媒体下载器</div>
             <div class="app-subtitle">本地部署 · 开发者模式</div>
@@ -185,33 +239,77 @@
             </div>
             <div class="dev-signature">开发者：浮生若夢</div>
         </div>
-
     </div>
 
     <script>
-        // ============================================================
-        // 首页菜单（本地部署 · 无登录直接进入）
-        // ============================================================
-
-        document.getElementById('menuX').addEventListener('click', function() {
-            window.location.href = '/x';
-        });
-
-        document.getElementById('menuMissav').addEventListener('click', function() {
-            window.location.href = '/missav';
-        });
-
-        document.getElementById('menuM3u8').addEventListener('click', function() {
-            window.location.href = '/m3u8';
-        });
-
-        document.getElementById('menuBilibili').addEventListener('click', function() {
-            window.location.href = '/bilibili';
-        });
-
-        console.log('📱 万能媒体下载器 已加载（本地部署 · 开发者模式）');
-        console.log('开发者：浮生若夢');
+        document.getElementById('menuX').addEventListener('click', function() { window.location.href = '/x'; });
+        document.getElementById('menuMissav').addEventListener('click', function() { window.location.href = '/missav'; });
+        document.getElementById('menuM3u8').addEventListener('click', function() { window.location.href = '/m3u8'; });
+        document.getElementById('menuBilibili').addEventListener('click', function() { window.location.href = '/bilibili'; });
     </script>
 
+    <script>
+    // 粒子背景
+    (function () {
+        var canvas = document.getElementById('bg-particles');
+        var ctx = canvas.getContext('2d');
+        var W, H, particles = [];
+        var COUNT = 70;
+        function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
+        for (var i = 0; i < COUNT; i++) {
+            particles.push({
+                x: Math.random() * W, y: Math.random() * H,
+                r: Math.random() * 1.6 + 0.4,
+                vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
+                a: Math.random() * 0.5 + 0.15, tw: Math.random() * 0.02 + 0.005
+            });
+        }
+        function tick() {
+            ctx.clearRect(0, 0, W, H);
+            for (var i = 0; i < particles.length; i++) {
+                var p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.a += p.tw * (Math.random() > 0.5 ? 1 : -1);
+                if (p.a < 0.08) p.a = 0.08; if (p.a > 0.7) p.a = 0.7;
+                if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+                if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(56,189,248,' + p.a.toFixed(3) + ')';
+                ctx.fill();
+            }
+            requestAnimationFrame(tick);
+        }
+        tick();
+    })();
+
+    // 鼠标光影 + 3D 偏转
+    (function () {
+        var TILT = '.menu-card';
+        var SPOT = '.menu-card';
+        var MAX_TILT = 5;
+        document.addEventListener('mousemove', function (e) {
+            var el = e.target.closest(SPOT);
+            if (!el) return;
+            var rect = el.getBoundingClientRect();
+            var x = e.clientX - rect.left, y = e.clientY - rect.top;
+            el.style.setProperty('--mouse-x', x + 'px');
+            el.style.setProperty('--mouse-y', y + 'px');
+            if (el.matches(TILT)) {
+                var cx = rect.width / 2, cy = rect.height / 2;
+                var rx = ((y - cy) / cy) * -MAX_TILT;
+                var ry = ((x - cx) / cx) * MAX_TILT;
+                el.style.transform = 'perspective(1000px) rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg) translateY(-4px)';
+            }
+        });
+        document.addEventListener('mouseout', function (e) {
+            var el = e.target.closest(SPOT);
+            if (el && el.matches(TILT) && !el.contains(e.relatedTarget)) {
+                el.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0)';
+            }
+        });
+    })();
+    </script>
 </body>
 </html>

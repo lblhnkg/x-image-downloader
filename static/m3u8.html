@@ -6,6 +6,7 @@
     <title>M3U8 视频转换下载器</title>
     <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.3.0/dist/turbo.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.css" onerror="this.remove()">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -477,9 +478,39 @@
                 padding: 10px 0;
             }
         }
+    
+        /* ===== 统一视觉：女菩萨风格 ===== */
+        body { background:#000 !important; font-family:'Plus Jakarta Sans',-apple-system,sans-serif !important; padding-top:76px !important; }
+        #bg-particles { position:fixed; inset:0; z-index:0; pointer-events:none; }
+        .glass-nav { position:fixed; top:0; left:0; right:0; z-index:900; display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:56px; background:rgba(8,8,10,0.72); backdrop-filter:blur(20px) saturate(160%); -webkit-backdrop-filter:blur(20px) saturate(160%); border-bottom:1px solid rgba(255,255,255,0.08); }
+        .glass-nav .nav-brand { font-size:16px; font-weight:600; background:linear-gradient(135deg,#fff,#94a3b8); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+        .glass-nav .nav-sub { font-size:11px; color:#64748b; letter-spacing:1px; text-transform:uppercase; }
+        .app-container { position:relative; z-index:1 !important; background:rgba(20,20,24,0.72) !important; backdrop-filter:blur(24px) saturate(150%) !important; -webkit-backdrop-filter:blur(24px) saturate(150%) !important; border:1px solid rgba(255,255,255,0.08) !important; box-shadow:0 20px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05) !important; }
+        .app-title { background:linear-gradient(135deg,#fff,#cbd5e1); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+        /* 主按钮：天蓝实底黑字胶囊（覆盖白色） */
+        .primary-btn, .search-btn-main { background:#38bdf8 !important; color:#000 !important; border-radius:9999px !important; font-weight:700 !important; box-shadow:0 0 18px -4px rgba(56,189,248,0.55) !important; border:0 !important; transition:all 0.18s cubic-bezier(0.16,1,0.3,1) !important; }
+        .primary-btn:hover, .search-btn-main:hover { background:#0ea5e9 !important; transform:translateY(-1px) !important; opacity:1 !important; }
+        /* tab active 主色 */
+        .tab-btn.active, .option-btn.active { background:rgba(56,189,248,0.15) !important; color:#38bdf8 !important; }
+        /* 输入框 focus 主色 */
+        input[type="text"]:focus, .search-row input:focus { border-color:rgba(56,189,248,0.6) !important; box-shadow:0 0 0 3px rgba(56,189,248,0.15) !important; outline:none !important; }
+        /* 卡片 hover 光晕 */
+        .item { position:relative; overflow:hidden; transition:transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s, border-color 0.25s; }
+        .item::before { content:''; position:absolute; inset:0; border-radius:inherit; background:radial-gradient(420px circle at var(--mouse-x,50%) var(--mouse-y,50%), rgba(56,189,248,0.15), transparent 70%); opacity:0; transition:opacity 0.3s; pointer-events:none; z-index:1; }
+        .item:hover::before { opacity:1; }
+        .item:hover { transform:translateY(-3px); border-color:rgba(56,189,248,0.4) !important; box-shadow:0 0 0 1px rgba(56,189,248,0.25), 0 12px 28px -6px rgba(56,189,248,0.14); }
+        .item > * { position:relative; z-index:2; }
+        .media-wrap img { transition:transform 0.4s cubic-bezier(0.16,1,0.3,1); }
+        .item:hover .media-wrap img { transform:scale(1.05); }
+        ::-webkit-scrollbar { width:8px; } ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.12); border-radius:4px; }
+
     </style>
 </head>
 <body>
+    <canvas id="bg-particles"></canvas>
+    <header class="glass-nav"><span class="nav-brand">M3U8 转换器</span><span class="nav-sub">local</span></header>
+
 
 <div class="app-container">
     <span class="back-link" id="backToHome">‹ 返回首页</span>
@@ -1022,5 +1053,28 @@
     setStatus('等待输入...');
     updateLoadButton();
 </script>
+
+<script>
+(function () {
+    var c = document.getElementById('bg-particles'); if (!c) return;
+    var ctx = c.getContext('2d'), W, H, ps = [], N = 70;
+    function rs() { W = c.width = innerWidth; H = c.height = innerHeight; }
+    addEventListener('resize', rs); rs();
+    for (var i=0;i<N;i++) ps.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+0.4,vx:(Math.random()-0.5)*0.25,vy:(Math.random()-0.5)*0.25,a:Math.random()*0.5+0.15,tw:Math.random()*0.02+0.005});
+    (function t(){ ctx.clearRect(0,0,W,H);
+        for (var i=0;i<ps.length;i++){ var p=ps[i]; p.x+=p.vx; p.y+=p.vy; p.a+=p.tw*(Math.random()>0.5?1:-1);
+            if(p.a<0.08)p.a=0.08; if(p.a>0.7)p.a=0.7;
+            if(p.x<0)p.x=W; if(p.x>W)p.x=0; if(p.y<0)p.y=H; if(p.y>H)p.y=0;
+            ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle='rgba(56,189,248,'+p.a.toFixed(3)+')'; ctx.fill(); }
+        requestAnimationFrame(t); })();
+    document.addEventListener('mousemove', function(e){
+        var el = e.target.closest('.item'); if(!el) return;
+        var r = el.getBoundingClientRect();
+        el.style.setProperty('--mouse-x', (e.clientX-r.left)+'px');
+        el.style.setProperty('--mouse-y', (e.clientY-r.top)+'px');
+    });
+})();
+</script>
+
 </body>
 </html>
