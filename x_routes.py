@@ -378,6 +378,12 @@ async def _run_search(username, start_dt, end_dt, media_type, source_type,
                 continue
 
             tweet_url = tweet.get("url") or f"https://x.com/{username}/status/{tweet.get('id')}"
+            # 博主昵称与头像（fxtwitter user 字段；头像取大图 _200x200）
+            user_info = tweet.get("user") or {}
+            author_name = (user_info.get("name") or "").strip()
+            author_avatar = (user_info.get("avatar_url") or user_info.get("profile_image_url") or "").strip()
+            if author_avatar and "_normal." in author_avatar:
+                author_avatar = author_avatar.replace("_normal.", "_200x200.")
             base = {
                 "tweet_id": str(tweet.get("id") or ""),
                 "tweet_url": tweet_url,
@@ -385,6 +391,8 @@ async def _run_search(username, start_dt, end_dt, media_type, source_type,
                 "timestamp": int(created_at.timestamp()),
                 "text": tweet.get("text") or "",
                 "source": post_source,
+                "author_name": author_name,
+                "author_avatar": author_avatar,
             }
 
             if media_type in {"photo", "all"}:
@@ -785,6 +793,31 @@ async def check_favorite(request: Request, username: str):
 # ============================================================
 # 核心修复：media_proxy 流式代理（支持 Range，强制 video/mp4）
 # ============================================================
+def rewrite_hls_manifest(content: str, manifest_url: str, base_url: str) -> str:
+    """把 HLS 清单中的媒体分段地址重写为本地代理地址（前端 hls.js 嵌入播放必需）"""
+    import re as _re
+    from urllib.parse import urljoin, quote
+
+    proxy_prefix = base_url + "/api/media-proxy?url="
+    new_lines = []
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            # 重写 URI="..."（如 EXT-X-KEY / EXT-X-MEDIA / EXT-X-MAP）
+            def _rewrite_uri(m):
+                raw = m.group(1)
+                abs_url = urljoin(manifest_url, raw)
+                return 'URI="' + proxy_prefix + quote(abs_url, safe="") + '"'
+
+            new_lines.append(_re.sub(r'URI="([^"]+)"', _rewrite_uri, line))
+        elif stripped:
+            abs_url = urljoin(manifest_url, stripped)
+            new_lines.append(proxy_prefix + quote(abs_url, safe=""))
+        else:
+            new_lines.append(line)
+    return "\n".join(new_lines)
+
+
 @router.get("/api/media-proxy")
 async def media_proxy(request: Request, url: str = Query(...)):
     url = resolve_proxy_url(url)
@@ -800,6 +833,26 @@ async def media_proxy(request: Request, url: str = Query(...)):
         content_type = response.headers.get("content-type", "").split(";")[0].strip().lower()
         if ".mp4" in url or "video" in content_type:
             content_type = "video/mp4"
+
+        # HLS 清单：读全文并重写分段地址为代理地址
+        if "mpegurl" in content_type or ".m3u8" in url.lower():
+            try:
+                body_bytes = await response.aread()
+                text = body_bytes.decode("utf-8", errors="ignore")
+                if text.lstrip().startswith("#EXTM3U"):
+                    rewritten = rewrite_hls_manifest(text, url, str(request.base_url).rstrip("/"))
+                    return Response(
+                        content=rewritten.encode("utf-8"),
+                        status_code=response.status_code,
+                        media_type="application/vnd.apple.mpegurl",
+                        headers={
+                            "Cache-Control": "public, max-age=3600",
+                            "Access-Control-Allow-Origin": "*",
+                            "Cross-Origin-Resource-Policy": "cross-origin",
+                        }
+                    )
+            except Exception:
+                pass
 
         response_headers = {
             "Cache-Control": "public, max-age=86400",

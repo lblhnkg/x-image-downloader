@@ -556,6 +556,135 @@
             animation: fadeIn 0.35s ease;
         }
 
+        .folder-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .folder-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 18px 10px 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 120px;
+            justify-content: center;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        .folder-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(77, 163, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .folder-avatar {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .folder-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            text-align: center;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            line-height: 1.35;
+        }
+
+        .folder-handle {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.35);
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+
+        .folder-count {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 4px;
+        }
+
+        .folder-back-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 4px 12px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .folder-back-btn {
+            cursor: pointer;
+            color: #4da3ff;
+            font-size: 13px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(77, 163, 255, 0.12);
+            transition: background 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .folder-back-btn:hover {
+            background: rgba(77, 163, 255, 0.25);
+        }
+
+        .folder-back-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            max-width: 40%;
+            min-width: 0;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            line-height: 1.35;
+        }
+
+        .folder-back-count {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-left: auto;
+            white-space: nowrap;
+        }
+
+        .folder-toggle-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            padding: 6px 14px;
+            border-radius: 999px;
+            transition: all 0.2s ease;
+        }
+
+        .folder-toggle-btn.active {
+            background: rgba(77, 163, 255, 0.18);
+            border-color: #4da3ff;
+            color: #fff;
+        }
+
         .item {
             background: rgba(255, 255, 255, 0.04);
             border-radius: 10px;
@@ -1007,6 +1136,27 @@
             color: #fff;
         }
 
+        .scan-btn {
+            background: rgba(0, 120, 255, 0.85);
+            border: 0;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            padding: 7px 12px;
+            border-radius: 999px;
+            transition: all 0.2s ease;
+        }
+        .scan-btn:hover {
+            background: rgba(0, 120, 255, 1);
+        }
+        .scan-btn.scan-btn-open {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .scan-btn.scan-btn-open:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
         .dev-signature {
             text-align: center;
             font-size: 12px;
@@ -1057,10 +1207,18 @@
                 <div class="submenu-card" id="subLikes">
                     <div class="submenu-card-title">❤️ 我的喜欢</div>
                     <div class="submenu-card-desc">查看采集器上传的喜欢列表</div>
+                    <div style="display:flex;gap:8px;margin-top:10px;">
+                        <button class="scan-btn" data-scan="likes">📡 扫描</button>
+                        <button class="scan-btn scan-btn-open" data-open="likes">打开列表</button>
+                    </div>
                 </div>
                 <div class="submenu-card" id="subBookmarks">
                     <div class="submenu-card-title">🔖 我的书签</div>
                     <div class="submenu-card-desc">查看采集器上传的书签列表</div>
+                    <div style="display:flex;gap:8px;margin-top:10px;">
+                        <button class="scan-btn" data-scan="bookmarks">📡 扫描</button>
+                        <button class="scan-btn scan-btn-open" data-open="bookmarks">打开列表</button>
+                    </div>
                 </div>
             </div>
             <div class="dev-signature">开发者：浮生若夢</div>
@@ -1149,6 +1307,10 @@
                     <button style="background:transparent;border:0;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;" id="refreshLibraryBtn">刷新</button>
                 </div>
                 <div><button id="selectToggleBtn" style="background:transparent;border:0;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;">选择</button></div>
+            </div>
+
+            <div style="display:flex;align-items:center;margin-bottom:4px;margin-top:4px;">
+                <button id="libraryFolderBtn" class="folder-toggle-btn">📁 按博主分类</button>
             </div>
 
             <div class="option-section" style="margin-top:0;">
@@ -1241,6 +1403,13 @@
         let mediaType = 'all';
         let sourceType = 'all';
         let libraryMediaType = 'all';
+        let libraryFolderMode = false;
+        let folderAuthor = '';
+        let allFolderGroups = [];
+        let currentFolderBatch = 0;
+        const FOLDER_BATCH_SIZE = 60;
+        let sentinelObserver = null;
+        let loadSentinel = null;
         let libraryRange = 'all';
 
         let favorites = [];
@@ -1257,7 +1426,7 @@
         let cachedLibrarySource = '';
         let allFilteredItems = [];
         let currentBatch = 0;
-        const BATCH_SIZE = 50;
+        const BATCH_SIZE = 100;
         let isLoadingMore = false;
         let allLoaded = false;
         let scrollListenerAttached = false;
@@ -1294,6 +1463,10 @@
 
         var searchItems = [];      // 流式搜索累积结果
         var searchUsername = '';   // 当前搜索的博主
+        var searchRenderedCount = 0;  // 已渲染到第几个
+        var searchTotal = 0;          // 总数（done 后知道）
+        var searchSentinelObserver = null;
+        var searchLoadSentinel = null;
 
         var libraryTitle = $('libraryTitle');
         var libraryDesc = $('libraryDesc');
@@ -1676,6 +1849,10 @@
             searchGallery.innerHTML = '';
             searchItems = [];
             searchUsername = username;
+            searchRenderedCount = 0;
+            searchTotal = 0;
+            clearSearchSentinel();
+            window.scrollTo(0, 0);
 
             var params = new URLSearchParams();
             params.set('profile', 'https://x.com/' + username);
@@ -1728,18 +1905,21 @@
                 if (batch.length === 0) return;
                 batch.forEach(function(item) {
                     searchItems.push(item);
-                    searchGallery.appendChild(createMediaItem(item, 'search'));
                 });
                 searchResultHeader.classList.remove('hidden');
                 searchResultTitle.textContent = '@' + searchUsername;
-                searchResultCount.textContent = '已加载 ' + searchItems.length + ' 个媒体，继续获取中…';
+                searchResultCount.textContent = '已获取 ' + searchItems.length + ' 个媒体，继续获取中…';
+                renderSearchVisibleBatch();
             } else if (msg.type === 'done') {
                 var suffix = msg.from_cache ? '（缓存秒开）' : '';
-                searchResultCount.textContent = '找到 ' + msg.count + ' 个媒体 · 查询 ' + msg.pages + ' 页' + suffix;
+                searchTotal = msg.count || searchItems.length;
+                searchResultCount.textContent = '找到 ' + searchTotal + ' 个媒体 · 查询 ' + msg.pages + ' 页' + suffix;
                 if (searchItems.length === 0) {
                     searchResultHeader.classList.remove('hidden');
                     searchResultTitle.textContent = '@' + searchUsername;
                     searchGallery.innerHTML = '<div class="loader">没有找到媒体</div>';
+                } else {
+                    renderSearchVisibleBatch();
                 }
             } else if (msg.type === 'error') {
                 showSearchStatus(msg.detail || '搜索失败', 'error');
@@ -1751,18 +1931,58 @@
             searchSubmitBtn.textContent = '开始收集媒体';
         }
 
+        // ---- 搜索结果分批渲染（哨兵控制） ----
+        function clearSearchSentinel() {
+            if (searchSentinelObserver && searchLoadSentinel) {
+                searchSentinelObserver.unobserve(searchLoadSentinel);
+            }
+            searchLoadSentinel = null;
+        }
+
+        function setupSearchSentinel() {
+            clearSearchSentinel();
+            var items = searchGallery.querySelectorAll('.item');
+            if (!items.length) return;
+            var target = items.length >= 50 ? items[items.length - 50] : items[items.length - 1];
+            searchLoadSentinel = target;
+            if (!searchSentinelObserver) {
+                searchSentinelObserver = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(en) {
+                        if (en.isIntersecting) renderSearchVisibleBatch();
+                    });
+                }, { rootMargin: '100px 0px' });
+            }
+            searchSentinelObserver.observe(searchLoadSentinel);
+        }
+
+        function renderSearchVisibleBatch() {
+            if (searchRenderedCount >= searchItems.length) return;
+            var end = Math.min(searchRenderedCount + 100, searchItems.length);
+            var fragment = document.createDocumentFragment();
+            for (var i = searchRenderedCount; i < end; i++) {
+                fragment.appendChild(createMediaItem(searchItems[i], 'search'));
+            }
+            searchGallery.appendChild(fragment);
+            searchRenderedCount = end;
+            if (searchTotal > 0) {
+                searchResultCount.textContent = '已显示 ' + searchRenderedCount + ' / ' + searchTotal + ' 个媒体';
+            }
+            setupSearchSentinel();
+        }
+
         function renderSearchResults(data, username) {
             searchResultHeader.classList.remove('hidden');
             searchResultTitle.textContent = '@' + username;
-            searchResultCount.textContent = '找到 ' + data.count + ' 个媒体 · 查询 ' + data.pages + ' 页';
+            searchTotal = data.count || (data.items || []).length;
             searchGallery.innerHTML = '';
-            if (!data.items || data.items.length === 0) {
+            searchItems = data.items || [];
+            searchRenderedCount = 0;
+            searchResultCount.textContent = '找到 ' + searchTotal + ' 个媒体 · 查询 ' + data.pages + ' 页';
+            if (searchItems.length === 0) {
                 searchGallery.innerHTML = '<div class="loader">没有找到媒体</div>';
                 return;
             }
-            data.items.forEach(function(item) {
-                searchGallery.appendChild(createMediaItem(item, 'search'));
-            });
+            renderSearchVisibleBatch();
         }
 
         // ---- 媒体库 ----
@@ -1805,6 +2025,8 @@
 
         function openLibrary(source) {
             currentSubPage = source;
+            folderAuthor = ''; // 切页回到文件夹列表级
+            window.scrollTo(0, 0);
             if (source === 'likes') {
                 libraryTitle.textContent = '我的喜欢';
                 libraryDesc.textContent = '查看采集器上传的喜欢列表';
@@ -1818,6 +2040,7 @@
         }
 
         function renderLibraryResults() {
+            window.scrollTo(0, 0);
             var filtered = cachedLibraryItems;
             if (libraryMediaType === 'image') {
                 filtered = cachedLibraryItems.filter(function(item) { return item.type === 'image'; });
@@ -1840,6 +2063,26 @@
                         return true;
                     } catch (e) { return true; }
                 });
+            }
+
+            // 博主文件夹视图
+            if (libraryFolderMode) {
+                var oldBar = document.querySelector('.folder-back-bar');
+                if (oldBar) oldBar.remove();
+                libraryGallery.classList.remove('folder-grid');
+
+                if (folderAuthor) {
+                    filtered = filtered.filter(function(item) { return (item.author || '') === folderAuthor; });
+                    var curGroup = null;
+                    for (var gi = 0; gi < allFolderGroups.length; gi++) {
+                        if (allFolderGroups[gi].author === folderAuthor) { curGroup = allFolderGroups[gi]; break; }
+                    }
+                    if (curGroup) renderFolderBackBar(curGroup);
+                    selectToggleBtn.classList.remove('hidden');
+                } else {
+                    renderFolderGrid(filtered);
+                    return;
+                }
             }
 
             allFilteredItems = filtered;
@@ -1891,6 +2134,10 @@
         }
 
         function loadNextBatch() {
+            if (libraryFolderMode && !folderAuthor) {
+                loadNextFolderBatch();
+                return;
+            }
             if (allLoaded || isLoadingMore) return;
             if (currentBatch * BATCH_SIZE >= allFilteredItems.length) {
                 allLoaded = true;
@@ -1898,6 +2145,7 @@
                 return;
             }
 
+            clearLoadSentinel();
             isLoadingMore = true;
             requestAnimationFrame(function() {
                 var start = currentBatch * BATCH_SIZE;
@@ -1915,24 +2163,44 @@
                     libraryGallery.classList.add('fade-in');
                 }
                 isLoadingMore = false;
+                setupLoadSentinel();
             });
         }
 
         var scrollTimeout = null;
 
         function handleScroll() {
-            if (scrollTimeout) return;
-            scrollTimeout = setTimeout(function() {
-                scrollTimeout = null;
-                var scrollY = window.scrollY || window.pageYOffset;
-                var windowHeight = window.innerHeight;
-                var docHeight = document.documentElement.scrollHeight;
-                if (scrollY + windowHeight >= docHeight - 300) {
-                    if (!allLoaded && !isLoadingMore) {
-                        loadNextBatch();
-                    }
-                }
-            }, 150);
+            // 加载由哨兵(IntersectionObserver)控制，见 setupLoadSentinel
+        }
+
+        function clearLoadSentinel() {
+            if (sentinelObserver && loadSentinel) {
+                sentinelObserver.unobserve(loadSentinel);
+            }
+            loadSentinel = null;
+        }
+
+        function setupLoadSentinel() {
+            if (sentinelObserver && loadSentinel) {
+                sentinelObserver.unobserve(loadSentinel);
+                loadSentinel = null;
+            }
+            if (allLoaded || isLoadingMore) return;
+            if (libraryFolderMode && !folderAuthor) return;
+            var items = libraryGallery.querySelectorAll('.item');
+            if (!items.length) return;
+            var target = items.length >= 50 ? items[items.length - 50] : items[items.length - 1];
+            loadSentinel = target;
+            if (!sentinelObserver) {
+                sentinelObserver = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(en) {
+                        if (en.isIntersecting && !allLoaded && !isLoadingMore) {
+                            loadNextBatch();
+                        }
+                    });
+                }, { rootMargin: '100px 0px' });
+            }
+            sentinelObserver.observe(loadSentinel);
         }
 
         refreshLibraryBtn.addEventListener('click', function() {
@@ -1942,6 +2210,143 @@
             if (currentSubPage) {
                 openLibrary(currentSubPage);
             }
+        });
+
+        // ---- 博主文件夹视图 ----
+        function updateFolderBtn() {
+            libraryFolderBtn.classList.toggle('active', libraryFolderMode);
+            libraryFolderBtn.textContent = libraryFolderMode ? '▦ 瀑布流视图' : '📁 按博主分类';
+        }
+
+        function renderFolderGrid(filtered) {
+            var map = {};
+            filtered.forEach(function(item) {
+                var a = item.author || '未知博主';
+                if (!map[a]) {
+                    map[a] = { author: a, name: item.author_name || '', avatar: item.author_avatar || '', count: 0 };
+                }
+                map[a].count++;
+            });
+
+            allFolderGroups = Object.keys(map).map(function(k) { return map[k]; })
+                .sort(function(x, y) { return y.count - x.count; });
+
+            libraryGallery.innerHTML = '';
+            libraryGallery.classList.add('folder-grid');
+            libraryGallery.classList.remove('fade-in');
+            clearLoadSentinel();
+            if (isSelectMode) exitSelectMode();
+            selectToggleBtn.classList.add('hidden');
+
+            libraryCount.textContent = '共 ' + allFolderGroups.length + ' 位博主';
+            libraryResultHeader.classList.remove('hidden');
+            libraryResultTitle.textContent = currentSubPage === 'likes' ? '我的喜欢 · 博主分类' : '我的书签 · 博主分类';
+            libraryResultCount.textContent = '共 ' + allFolderGroups.length + ' 位博主';
+
+            currentFolderBatch = 0;
+            allLoaded = false;
+            isLoadingMore = false;
+            loadNextFolderBatch();
+        }
+
+        function loadNextFolderBatch() {
+            if (allLoaded || isLoadingMore) return;
+            if (currentFolderBatch * FOLDER_BATCH_SIZE >= allFolderGroups.length) {
+                allLoaded = true;
+                libraryGallery.classList.add('fade-in');
+                return;
+            }
+            isLoadingMore = true;
+            requestAnimationFrame(function() {
+                var start = currentFolderBatch * FOLDER_BATCH_SIZE;
+                var end = Math.min(start + FOLDER_BATCH_SIZE, allFolderGroups.length);
+                var fragment = document.createDocumentFragment();
+                for (var i = start; i < end; i++) {
+                    fragment.appendChild(createFolderCard(allFolderGroups[i]));
+                }
+                libraryGallery.appendChild(fragment);
+                currentFolderBatch++;
+                if (currentFolderBatch * FOLDER_BATCH_SIZE >= allFolderGroups.length) {
+                    allLoaded = true;
+                    libraryGallery.classList.add('fade-in');
+                }
+                isLoadingMore = false;
+            });
+        }
+
+        function createFolderCard(group) {
+            var card = document.createElement('div');
+            card.className = 'folder-card';
+
+            if (group.avatar) {
+                var img = document.createElement('img');
+                img.className = 'folder-avatar';
+                img.src = '/api/media-proxy?url=' + encodeURIComponent(group.avatar);
+                img.loading = 'lazy';
+                img.alt = '';
+                img.onerror = function() { this.style.display = 'none'; };
+                card.appendChild(img);
+            }
+
+            var name = document.createElement('div');
+            name.className = 'folder-name';
+            name.textContent = group.name || ('@' + group.author);
+            card.appendChild(name);
+
+            var handle = document.createElement('div');
+            handle.className = 'folder-handle';
+            handle.textContent = '@' + group.author;
+            card.appendChild(handle);
+
+            var count = document.createElement('div');
+            count.className = 'folder-count';
+            count.textContent = group.count + ' 个媒体';
+            card.appendChild(count);
+
+            card.addEventListener('click', function() {
+                folderAuthor = group.author;
+                resetPagination();
+                renderLibraryResults();
+                window.scrollTo(0, 0);
+            });
+            return card;
+        }
+
+        function renderFolderBackBar(group) {
+            var bar = document.createElement('div');
+            bar.className = 'folder-back-bar';
+
+            var back = document.createElement('span');
+            back.className = 'folder-back-btn';
+            back.textContent = '‹ 返回博主列表';
+            back.addEventListener('click', function() {
+                folderAuthor = '';
+                resetPagination();
+                renderLibraryResults();
+                window.scrollTo(0, 0);
+            });
+            bar.appendChild(back);
+
+            var title = document.createElement('span');
+            title.className = 'folder-back-title';
+            title.textContent = group.name || ('@' + group.author);
+            bar.appendChild(title);
+
+            var cnt = document.createElement('span');
+            cnt.className = 'folder-back-count';
+            cnt.textContent = group.count + ' 个媒体';
+            bar.appendChild(cnt);
+
+            libraryGallery.parentNode.insertBefore(bar, libraryGallery);
+        }
+
+        libraryFolderBtn.addEventListener('click', function() {
+            libraryFolderMode = !libraryFolderMode;
+            folderAuthor = '';
+            updateFolderBtn();
+            resetPagination();
+            renderLibraryResults();
+            window.scrollTo(0, 0);
         });
 
         // ---- 选项按钮 ----
@@ -2315,12 +2720,57 @@
                 var isM3u8 = rawVideoUrl.includes('.m3u8') || rawVideoUrl.includes('m3u8');
 
                 if (isM3u8) {
-                    // HLS 视频：直接在新标签页用系统播放器打开，不显示 Modal
-                    window.open(rawVideoUrl, '_blank');
-                    // 关闭 Modal
-                    modal.classList.add('hidden');
-                    modalContent.innerHTML = '';
-                    currentItem = null;
+                    // HLS 视频：hls.js 通过代理嵌入 Modal 播放
+                    var hlsContainer = document.createElement('div');
+                    hlsContainer.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;';
+                    var hlsVideo = document.createElement('video');
+                    hlsVideo.controls = true;
+                    hlsVideo.playsInline = true;
+                    hlsVideo.preload = 'auto';
+                    hlsVideo.style.cssText = 'max-width:100%;max-height:100%;';
+                    var hlsProxyUrl = '/api/media-proxy?url=' + encodeURIComponent(rawVideoUrl);
+                    if (window.Hls && Hls.isSupported()) {
+                        var hls = new Hls();
+                        currentHls = hls;
+                        hls.loadSource(hlsProxyUrl);
+                        hls.attachMedia(hlsVideo);
+                        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                            hlsVideo.play().catch(function() {
+                                var tip = document.createElement('div');
+                                tip.style.cssText = 'position:absolute;bottom:50px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.7);font-size:12px;background:rgba(0,0,0,0.6);padding:4px 12px;border-radius:999px;z-index:10;';
+                                tip.textContent = '浏览器阻止了自动播放，请点击视频播放';
+                                hlsContainer.appendChild(tip);
+                                setTimeout(function() { if (tip.parentNode) tip.parentNode.removeChild(tip); }, 4000);
+                            });
+                        });
+                        hls.on(Hls.Events.ERROR, function(evt, data) {
+                            if (data && data.fatal) {
+                                console.error('HLS 播放错误:', data);
+                                if (currentHls) { currentHls.destroy(); currentHls = null; }
+                                var errMsg = document.createElement('div');
+                                errMsg.style.cssText = 'color:rgba(255,255,255,0.5);text-align:center;padding:20px;font-size:14px;font-weight:300;';
+                                errMsg.textContent = '视频加载失败，请尝试下载后播放';
+                                hlsContainer.appendChild(errMsg);
+                            }
+                        });
+                    } else if (hlsVideo.canPlayType('application/vnd.apple.mpegurl')) {
+                        hlsVideo.src = hlsProxyUrl;
+                        hlsVideo.addEventListener('loadedmetadata', function() {
+                            hlsVideo.play().catch(function() {});
+                        });
+                    } else {
+                        var unsupported = document.createElement('div');
+                        unsupported.style.cssText = 'color:rgba(255,255,255,0.5);text-align:center;padding:20px;font-size:14px;font-weight:300;';
+                        unsupported.textContent = '当前浏览器不支持 HLS 播放，请使用下载功能';
+                        hlsContainer.appendChild(unsupported);
+                    }
+                    hlsContainer.appendChild(hlsVideo);
+                    modalContent.appendChild(hlsContainer);
+                    modalDownloadBtn.textContent = '下载视频';
+                    modalDownloadBtn.onclick = function() {
+                        downloadItem(item);
+                    };
+                    modal.classList.remove('hidden');
                     return;
                 }
 
@@ -2447,6 +2897,27 @@
 
         subBookmarks.addEventListener('click', function() {
             openLibrary('bookmarks');
+        });
+
+        // ---- 扫描入口：只负责跳到 X 正确页面，其余全部手动操作 ----
+        function openXScan(mode) {
+            var url = mode === 'likes'
+                ? 'https://x.com/i/history/likes'
+                : 'https://x.com/i/history';
+            window.open(url, '_blank');
+        }
+
+        document.querySelectorAll('.scan-btn[data-scan]').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openXScan(btn.getAttribute('data-scan'));
+            });
+        });
+        document.querySelectorAll('.scan-btn[data-open]').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openLibrary(btn.getAttribute('data-open'));
+            });
         });
 
         function refreshDomRefs() {
