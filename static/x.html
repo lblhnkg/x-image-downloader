@@ -1120,6 +1120,7 @@
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+            cursor: grab;
         }
 
         .modal-content video {
@@ -3204,6 +3205,42 @@
             }
         }
 
+        // ---- 滚轮缩放 + 拖拽平移 ----
+        var _zoom = 1, _tx = 0, _ty = 0, _drag = false, _sx = 0, _sy = 0, _stx = 0, _sty = 0;
+        function _applyT(img) {
+            img.style.transformOrigin = 'center center';
+            img.style.transform = 'translate(' + _tx + 'px,' + _ty + 'px) scale(' + _zoom + ')';
+        }
+        document.addEventListener('wheel', function(e) {
+            if (modal.classList.contains('hidden')) return;
+            var img = modalContent.querySelector('img');
+            if (!img) return;
+            e.preventDefault(); e.stopPropagation();
+            _zoom = Math.max(1, Math.min(8, _zoom + (e.deltaY < 0 ? 0.2 : -0.2)));
+            _applyT(img);
+        }, { passive: false, capture: true });
+        modalContent.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return;
+            var img = modalContent.querySelector('img');
+            if (!img || e.target !== img) return;
+            _drag = true; _sx = e.clientX; _sy = e.clientY; _stx = _tx; _sty = _ty;
+            e.preventDefault();
+        });
+        document.addEventListener('mousemove', function(e) {
+            if (!_drag) return;
+            _tx = _stx + (e.clientX - _sx);
+            _ty = _sty + (e.clientY - _sy);
+            var img = modalContent.querySelector('img');
+            if (img) _applyT(img);
+        });
+        document.addEventListener('mouseup', function() { _drag = false; });
+        document.addEventListener('dblclick', function(e) {
+            if (e.target && e.target.tagName === 'IMG' && !modal.classList.contains('hidden')) {
+                _zoom = 1; _tx = 0; _ty = 0;
+                e.target.style.transform = 'translate(0,0) scale(1)';
+            }
+        });
+
         // ---- 事件绑定、导航、初始化 ----
         modalCloseBtn.addEventListener('click', closeModal);
         modal.addEventListener('click', function(e) {
@@ -3224,6 +3261,7 @@
             }
             modal.classList.add('hidden');
             modalContent.innerHTML = '';
+            _zoom = 1; _tx = 0; _ty = 0;
             currentItem = null;
         }
 
