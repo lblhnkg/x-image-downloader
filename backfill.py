@@ -20,7 +20,7 @@ _running = False
 
 
 async def _fetch_author_info(client: httpx.AsyncClient, username: str):
-    """调 fxtwitter 用户接口，返回 (name, avatar)"""
+    """调 fxtwitter 用户接口，返回 (name, avatar, cover)"""
     for url in (
         f"https://api.fxtwitter.com/{username}",
         f"https://api.fxtwitter.com/2/profile/{username}",
@@ -33,14 +33,15 @@ async def _fetch_author_info(client: httpx.AsyncClient, username: str):
             user = data.get("user") or (data.get("data") or {}).get("user") or {}
             name = (user.get("name") or "").strip()
             avatar = (user.get("avatar_url") or user.get("profile_image_url") or "").strip()
+            cover = (user.get("banner_url") or user.get("profile_banner_url") or user.get("cover_url") or "").strip()
             if not name and not avatar:
                 continue
             if avatar and "_normal." in avatar:
                 avatar = avatar.replace("_normal.", "_200x200.")
-            return name, avatar
+            return name, avatar, cover
         except Exception:
             continue
-    return "", ""
+    return "", "", ""
 
 
 async def backfill_missing_authors(authors_hint=None, force: bool = False, library_ref=None):
@@ -71,7 +72,8 @@ async def backfill_missing_authors(authors_hint=None, force: bool = False, libra
                 continue
             has_name = bool((item.get("author_name") or "").strip())
             has_avatar = bool((item.get("author_avatar") or "").strip())
-            if force or not (has_name and has_avatar):
+            has_cover = bool((item.get("author_cover") or "").strip())
+            if force or not (has_name and has_avatar and has_cover):
                 authors.setdefault(author.lower(), author)
 
         if not authors:
@@ -84,7 +86,7 @@ async def backfill_missing_authors(authors_hint=None, force: bool = False, libra
             headers={"User-Agent": UA, "Accept": "application/json"},
         ) as client:
             for author in authors.values():
-                name, avatar = await _fetch_author_info(client, author)
+                name, avatar, cover = await _fetch_author_info(client, author)
                 if not name and not avatar:
                     fail_list.append(author)
                     print(f"[BACKFILL] @{author}: 未获取到（自动重试会跳过）")
@@ -101,6 +103,9 @@ async def backfill_missing_authors(authors_hint=None, force: bool = False, libra
                     if avatar and item.get("author_avatar") != avatar:
                         item["author_avatar"] = avatar
                         changed = True
+                    if cover and item.get("author_cover") != cover:
+                        item["author_cover"] = cover
+                        changed = True
                     if changed:
                         ok, err = await save_media_item(media_id, item)
                         if ok:
@@ -115,7 +120,7 @@ async def backfill_missing_authors(authors_hint=None, force: bool = False, libra
                     await save_favorite(fav_by_user[author.lower()]["username"], name or author)
 
                 ok_count += 1
-                print(f"[BACKFILL] @{author}: 昵称={name or '(无)'} 头像={'有' if avatar else '无'} 更新{updated}条")
+                print(f"[BACKFILL] @{author}: 昵称={name or '(无)'} 头像={'有' if avatar else '无'} 封面={'有' if cover else '无'} 更新{updated}条")
 
         if fail_list:
             print(f"[BACKFILL] 未获取到的博主（多为注销账号）: {', '.join('@' + a for a in fail_list)}")

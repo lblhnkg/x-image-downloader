@@ -591,35 +591,50 @@
         }
 
         .folder-card {
-            background: rgba(255, 255, 255, 0.05);
+            background: hsla(0, 0%, 8%, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 14px;
-            padding: 18px 10px 14px;
+            border-radius: 20px;
+            padding: 0;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 3px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            min-height: 120px;
-            justify-content: center;
+            transition: transform 0.25s cubic-bezier(0.16,1,0.3,1),
+                        box-shadow 0.25s ease,
+                        border-color 0.25s ease;
             overflow: hidden;
             min-width: 0;
         }
 
         .folder-card:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(77, 163, 255, 0.4);
-            transform: translateY(-2px);
+            border-color: rgba(56,189,248,0.4);
+            box-shadow: 0 12px 32px -8px rgba(56,189,248,0.15);
+            transform: translateY(-3px);
+        }
+
+        .folder-cover {
+            width: 100%;
+            height: 90px;
+            object-fit: cover;
+            display: block;
+        }
+        .folder-cover-placeholder {
+            width: 100%;
+            height: 90px;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+        }
+        .folder-body {
+            padding: 14px 16px 16px;
+            text-align: center;
         }
 
         .folder-avatar {
-            width: 58px;
-            height: 58px;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
             object-fit: cover;
-            margin-bottom: 8px;
-            border: 2px solid rgba(255, 255, 255, 0.12);
+            margin: -36px auto 8px;
+            border: 3px solid hsla(0, 0%, 8%, 0.85);
+            display: block;
             background: rgba(255, 255, 255, 0.06);
         }
 
@@ -2595,7 +2610,7 @@
             filtered.forEach(function(item) {
                 var a = item.author || '未知博主';
                 if (!map[a]) {
-                    map[a] = { author: a, name: item.author_name || '', avatar: item.author_avatar || '', count: 0 };
+                    map[a] = { author: a, name: item.author_name || '', avatar: item.author_avatar || '', cover: item.author_cover || '', count: 0 };
                 }
                 map[a].count++;
             });
@@ -2650,6 +2665,24 @@
             var card = document.createElement('div');
             card.className = 'folder-card';
 
+            // 顶部封面图
+            if (group.cover) {
+                var cover = document.createElement('img');
+                cover.className = 'folder-cover';
+                cover.src = '/api/media-proxy?url=' + encodeURIComponent(group.cover);
+                cover.loading = 'lazy';
+                cover.alt = '';
+                cover.onerror = function() { this.style.display = 'none'; };
+                card.appendChild(cover);
+            } else {
+                var ph = document.createElement('div');
+                ph.className = 'folder-cover-placeholder';
+                card.appendChild(ph);
+            }
+
+            var body = document.createElement('div');
+            body.className = 'folder-body';
+
             if (group.avatar) {
                 var img = document.createElement('img');
                 img.className = 'folder-avatar';
@@ -2657,23 +2690,25 @@
                 img.loading = 'lazy';
                 img.alt = '';
                 img.onerror = function() { this.style.display = 'none'; };
-                card.appendChild(img);
+                body.appendChild(img);
             }
 
             var name = document.createElement('div');
             name.className = 'folder-name';
             name.textContent = group.name || ('@' + group.author);
-            card.appendChild(name);
+            body.appendChild(name);
 
             var handle = document.createElement('div');
             handle.className = 'folder-handle';
             handle.textContent = '@' + group.author;
-            card.appendChild(handle);
+            body.appendChild(handle);
 
             var count = document.createElement('div');
             count.className = 'folder-count';
             count.textContent = group.count + ' 个媒体';
-            card.appendChild(count);
+            body.appendChild(count);
+
+            card.appendChild(body);
 
             card.addEventListener('click', function() {
                 folderAuthor = group.author;

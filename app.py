@@ -168,6 +168,10 @@ async def root():
 async def x_page():
     return FileResponse("static/x.html")
 
+@app.get("/bloggers")
+async def bloggers_page():
+    return FileResponse("static/bloggers.html")
+
 @app.get("/missav")
 async def missav_page():
     return FileResponse("static/missav.html")

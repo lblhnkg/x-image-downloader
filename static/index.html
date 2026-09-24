@@ -221,6 +221,11 @@
                     <div class="menu-card-title">下载 X 上的媒体</div>
                     <div class="menu-card-desc">图片 · 视频 · 喜欢 · 书签</div>
                 </div>
+                <div class="menu-card" id="menuBloggers">
+                    <span class="menu-arrow">›</span>
+                    <div class="menu-card-title">博主精选画廊</div>
+                    <div class="menu-card-desc">493 位博主 · 头像 · 粉丝 · 简介</div>
+                </div>
                 <div class="menu-card" id="menuMissav">
                     <span class="menu-arrow">›</span>
                     <div class="menu-card-title">下载 Missav 上的电影</div>
@@ -243,6 +248,7 @@
 
     <script>
         document.getElementById('menuX').addEventListener('click', function() { window.location.href = '/x'; });
+        document.getElementById('menuBloggers').addEventListener('click', function() { window.location.href = '/bloggers'; });
         document.getElementById('menuMissav').addEventListener('click', function() { window.location.href = '/missav'; });
         document.getElementById('menuM3u8').addEventListener('click', function() { window.location.href = '/m3u8'; });
         document.getElementById('menuBilibili').addEventListener('click', function() { window.location.href = '/bilibili'; });
