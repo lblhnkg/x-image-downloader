@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         万能媒体下载器 - 本地版
 // @namespace    http://127.0.0.1:8000/
-// @version      4.5
+// @version      4.6
 // @description  采集 Likes/Bookmarks，上传本地服务（手动控制：开始/停止/上传）
 // @author       浮生若夢
 // @match        https://x.com/*
@@ -345,6 +345,12 @@
         return [...getImageMedia(article), ...getVideoMedia(article)];
     }
 
+    function amplifyIdOf(item) {
+        if (!item || !item.url) return '';
+        const m = String(item.url).match(/amplify_video\/(\d+)\//);
+        return m ? m[1] : '';
+    }
+
     function mergeMedia(oldMedia, newMedia) {
         const result = Array.isArray(oldMedia) ? [...oldMedia] : [];
         for (const item of newMedia) {
@@ -355,6 +361,20 @@
                 if (pendingIndex >= 0) {
                     result[pendingIndex] = item;
                     continue;
+                }
+                // 同 amplify_id 的视频只留一条：新进来的如果是 m3u8，优先替换旧的 mp4
+                const aid = amplifyIdOf(item);
+                if (aid) {
+                    const sameIdx = result.findIndex(function (old) {
+                        return old.type === 'video' && amplifyIdOf(old) === aid;
+                    });
+                    if (sameIdx >= 0) {
+                        const oldIsHls = String(result[sameIdx].url).indexOf('.m3u8') !== -1;
+                        const newIsHls = String(item.url).indexOf('.m3u8') !== -1;
+                        // 已经是 m3u8 就不降级成 mp4；不是 m3u8 但新的是 m3u8 就升级
+                        if (!oldIsHls && newIsHls) result[sameIdx] = item;
+                        continue;
+                    }
                 }
             }
             if (item.url) {
