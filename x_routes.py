@@ -741,7 +741,7 @@ async def get_media(
     return {"ok": True, "count": len(output), "items": output}
 
 @router.delete("/api/media")
-async def delete_media(request: Request, media_ids: list[str] = Body(...)):
+async def delete_media(request: Request, media_ids: list[str] = Body(..., embed=True)):
     global media_library
 
     if not media_ids or not isinstance(media_ids, list):

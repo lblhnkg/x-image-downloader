@@ -669,12 +669,31 @@
         }
 
         .folder-back-bar {
+            position: sticky;
+            top: 100px;
+            z-index: 80;
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 10px 4px 12px;
+            padding: 10px 12px;
             margin-bottom: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            background: rgba(8, 8, 10, 0.85);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .library-sticky-row {
+            position: sticky;
+            top: 56px;
+            z-index: 80;
+            background: rgba(8, 8, 10, 0.85);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         .folder-back-btn {
@@ -1456,7 +1475,7 @@
         .submenu-card:hover::before, .folder-card:hover::before, .item:hover::before {
             opacity: 1;
         }
-        /* hover 上浮 + 主色描边发光（复刻 blogger-card:hover） */
+        /* hover 上浮 + 主色描边发光 */
         .submenu-card:hover, .folder-card:hover, .item:hover {
             transform: translateY(-4px);
             border-color: rgba(56, 189, 248, 0.45) !important;
@@ -1688,7 +1707,7 @@
             </div>
             <div class="submenu-title" id="libraryTitle">我的喜欢</div>
             <div class="submenu-desc" id="libraryDesc">查看采集器上传的喜欢列表</div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:4px;flex-wrap:wrap;gap:6px;">
+            <div class="library-sticky-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:4px;flex-wrap:wrap;gap:6px;">
                 <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:12px;color:rgba(255,255,255,0.25);font-weight:300;" id="libraryCount">正在读取…</span>
                     <button style="background:transparent;border:0;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px;transition:all 0.2s ease;" id="refreshLibraryBtn">刷新</button>

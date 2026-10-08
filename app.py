@@ -8,7 +8,7 @@ import asyncio
 import httpx
 from urllib.parse import quote
 import requests
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -167,10 +167,6 @@ async def root():
 @app.get("/x")
 async def x_page():
     return FileResponse("static/x.html")
-
-@app.get("/bloggers")
-async def bloggers_page():
-    return FileResponse("static/bloggers.html")
 
 @app.get("/missav")
 async def missav_page():
