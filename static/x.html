@@ -173,14 +173,22 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 22px;
+            margin-bottom: 12px;
             cursor: pointer;
             color: rgba(255, 255, 255, 0.5);
             font-size: 15px;
             transition: color 0.2s ease;
             font-weight: 400;
             letter-spacing: 0.2px;
-            padding: 4px 0;
+            padding: 10px 12px;
+            position: sticky;
+            top: 10px;
+            z-index: 80;
+            background: rgba(8, 8, 10, 0.85);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
         }
 
         .back-row:hover {
@@ -200,6 +208,15 @@
             margin-bottom: 18px;
             transition: color 0.2s ease;
             cursor: pointer;
+            position: sticky;
+            top: 10px;
+            z-index: 80;
+            background: rgba(8, 8, 10, 0.85);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 10px 12px;
         }
 
         .back-home:hover {
@@ -2592,7 +2609,23 @@
                 loadSentinel = null;
             }
             if (allLoaded || isLoadingMore) return;
-            if (libraryFolderMode && !folderAuthor) return;
+            // 博主文件夹列表模式：哨兵挂在最后一个 folder-card 上
+            if (libraryFolderMode && !folderAuthor) {
+                var cards = libraryGallery.querySelectorAll('.folder-card');
+                if (!cards.length) return;
+                loadSentinel = cards[cards.length - 1];
+                if (!sentinelObserver) {
+                    sentinelObserver = new IntersectionObserver(function(entries) {
+                        entries.forEach(function(en) {
+                            if (en.isIntersecting && !allLoaded && !isLoadingMore) {
+                                loadNextBatch();
+                            }
+                        });
+                    }, { rootMargin: '300px 0px' });
+                }
+                sentinelObserver.observe(loadSentinel);
+                return;
+            }
             var items = libraryGallery.querySelectorAll('.item');
             if (!items.length) return;
             var target = items.length >= 50 ? items[items.length - 50] : items[items.length - 1];
@@ -2677,6 +2710,7 @@
                     libraryGallery.classList.add('fade-in');
                 }
                 isLoadingMore = false;
+                setupLoadSentinel();
             });
         }
 
